@@ -25,15 +25,31 @@ abstract class GitDescribeValueSource : ValueSource<String, GitDescribeValueSour
     abstract val execOperations: ExecOperations
 
     override fun obtain(): String {
+        // `git describe --tags --abbrev=0` alone is ambiguous when more than one tag points at
+        // the exact same commit (e.g. a release re-tagged with no new commits): it picks
+        // *some* tag on that commit, not necessarily the highest version — verified the hard
+        // way when v1.2.1, tagged on the same commit as v1.2.0, built and shipped as "1.2.0".
+        // `git tag --points-at HEAD --sort=-v:refname` sorts by version and breaks that tie
+        // correctly. It only finds a tag exactly on the current commit, though, so it's not a
+        // full replacement for `describe` — a local/debug build off an untagged commit past
+        // the last release still needs `describe`'s "nearest ancestor tag" behavior.
+        val onHead = runGit("tag", "--points-at", "HEAD", "--list", "v[0-9]*", "--sort=-v:refname")
+            .lineSequence().firstOrNull { it.isNotBlank() }
+        if (onHead != null) return onHead
+
+        // No tags yet (a fresh clone before the first release) is normal, not an error.
+        return runGit("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*")
+    }
+
+    private fun runGit(vararg args: String): String {
         val stdout = ByteArrayOutputStream()
         val result = execOperations.exec {
-            commandLine("git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*")
+            commandLine(listOf("git") + args)
             workingDir = parameters.projectDir.get().asFile
             standardOutput = stdout
             errorOutput = ByteArrayOutputStream()
             isIgnoreExitValue = true
         }
-        // No tags yet (a fresh clone before the first release) is normal, not an error.
         return if (result.exitValue == 0) stdout.toString(Charsets.UTF_8).trim() else ""
     }
 }
