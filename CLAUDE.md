@@ -6,7 +6,7 @@ Guidance for Claude Code (claude.ai/code) working this repo.
 
 "אור ירח" (One More Moon) — private couple organizer, Shahar & Topaz, prep for baby arrival. Hebrew, RTL. Shopping list w/ budget & priorities, tasks (incl. hospital bag), important dates & wishes, menstrual cycle tracking, folders & documents (incl. scanning), countdown to due date framed as moon filling up.
 
-**Active product: Android app, `android/`.** End-to-end encrypted: both partners share one workspace + one encryption key; Supabase (backend) only ever sees ciphertext. See `docs/architecture/` for full decision record, `PROGRESS.md` for what's built vs. planned, phase by phase — read `PROGRESS.md` first when picking up work here, living plan.
+**Active product: Android app, `android/`.** End-to-end encrypted: both partners share one workspace + one encryption key; Supabase (backend) only ever sees ciphertext. See `docs/architecture/` for full decision record. What's built vs. planned: `git log` and the code itself are the source of truth — no separate progress doc is maintained.
 
 `src/` = original web PWA (React 19 + Vite, `localStorage`-only, no backend) — **retired**, kept for reference only. Export/import JSON format still migration path into Android app (`:core:domain`'s `WebSnapshot`/`toImportedSnapshot`). "Web app (legacy)" section below still accurate for that subtree — skip straight to "Android app" unless touching `src/`.
 
