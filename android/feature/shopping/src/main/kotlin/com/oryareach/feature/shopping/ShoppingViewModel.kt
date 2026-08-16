@@ -3,18 +3,23 @@ package com.oryareach.feature.shopping
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oryareach.core.database.repository.DocumentRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.model.Assignee
+import com.oryareach.core.model.Document
 import com.oryareach.core.model.Priority
 import com.oryareach.core.model.ShoppingAlternative
 import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
 import com.oryareach.core.network.auth.AuthRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -38,6 +43,8 @@ interface ShoppingActions {
     fun onSubmit()
     fun onStatusChange(id: String, status: ShoppingStatus)
     fun onDelete(id: String)
+    fun onAttachDocument(name: String, mimeType: String, bytes: ByteArray)
+    fun onDeleteAttachment(document: Document)
     fun onRefresh()
 }
 
@@ -45,8 +52,10 @@ interface ShoppingActions {
  * The workspace id is read once, same as [com.oryareach.feature.tasks.TasksViewModel]: routing
  * already guarantees a paired, unlocked device by the time this screen is reachable.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ShoppingViewModel(
     private val repository: ShoppingItemRepository,
+    private val documents: DocumentRepository,
     private val auth: AuthRepository,
     private val syncEngine: com.oryareach.core.sync.SyncEngine,
     private val workspaceId: () -> String?,
@@ -58,15 +67,25 @@ class ShoppingViewModel(
     private val _effects = Channel<ShoppingEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
+    /** Kept separate from [_uiState] so editing the form never re-triggers the attachments
+     * query — only actually switching which item is open should. */
+    private val editingItemId = MutableStateFlow<String?>(null)
+
     init {
         workspaceId()?.let { id ->
             viewModelScope.launch {
                 repository.observeAll(id).collect { items -> set { it.copy(items = items) } }
             }
+            viewModelScope.launch {
+                editingItemId.flatMapLatest { itemId ->
+                    if (itemId == null) emptyFlow() else documents.observeForShoppingItem(id, itemId)
+                }.collect { list -> set { it.copy(attachments = list) } }
+            }
         }
     }
 
     override fun onAddClick() = set {
+        editingItemId.value = null
         it.copy(
             sheetVisible = true,
             editingId = null,
@@ -84,6 +103,7 @@ class ShoppingViewModel(
     }
 
     override fun onEditClick(item: ShoppingItem) = set {
+        editingItemId.value = item.id
         it.copy(
             sheetVisible = true,
             editingId = item.id,
@@ -101,6 +121,7 @@ class ShoppingViewModel(
     }
 
     override fun onDismissSheet() {
+        editingItemId.value = null
         set { it.copy(sheetVisible = false) }
         _effects.trySend(ShoppingEffect.SheetDismissed)
     }
@@ -108,7 +129,7 @@ class ShoppingViewModel(
     override fun onNameChange(value: String) = set { it.copy(formName = value) }
     override fun onCategoryChange(value: ShoppingCategory) = set { it.copy(formCategory = value) }
     override fun onEstimatedPriceChange(value: String) = set {
-        it.copy(formEstimatedPrice = value.filter(Char::isDigit))
+        it.copy(formEstimatedPrice = value.filter { char -> char.isDigit() || char == '.' })
     }
     override fun onPriorityChange(value: Priority) = set { it.copy(formPriority = value) }
     override fun onAssigneeChange(value: Assignee?) = set { it.copy(formAssignee = value) }
@@ -117,7 +138,7 @@ class ShoppingViewModel(
 
     override fun onAltNameChange(value: String) = set { it.copy(formAltName = value) }
     override fun onAltPriceChange(value: String) = set {
-        it.copy(formAltPrice = value.filter(Char::isDigit))
+        it.copy(formAltPrice = value.filter { char -> char.isDigit() || char == '.' })
     }
 
     override fun onAddAlternative() = set { state ->
@@ -125,7 +146,7 @@ class ShoppingViewModel(
         val alternative = ShoppingAlternative(
             id = UUID.randomUUID().toString(),
             name = state.formAltName,
-            price = state.formAltPrice.toIntOrNull(),
+            price = state.formAltPrice.toDoubleOrNull(),
         )
         state.copy(
             formAlternatives = state.formAlternatives + alternative,
@@ -145,7 +166,7 @@ class ShoppingViewModel(
         set { it.copy(submitting = true) }
 
         viewModelScope.launch {
-            val price = state.formEstimatedPrice.toIntOrNull()
+            val price = state.formEstimatedPrice.toDoubleOrNull()
             val editingId = state.editingId
             if (editingId == null) {
                 repository.create(
@@ -176,6 +197,7 @@ class ShoppingViewModel(
                         ?.takeIf { chosenId -> state.formAlternatives.any { it.id == chosenId } },
                 )
             }
+            editingItemId.value = null
             set { it.copy(submitting = false, sheetVisible = false) }
             _effects.trySend(ShoppingEffect.SheetDismissed)
         }
@@ -187,6 +209,28 @@ class ShoppingViewModel(
 
     override fun onDelete(id: String) {
         viewModelScope.launch { repository.delete(id) }
+    }
+
+    override fun onAttachDocument(name: String, mimeType: String, bytes: ByteArray) {
+        val workspace = workspaceId() ?: return
+        val itemId = _uiState.value.editingId ?: return
+
+        viewModelScope.launch {
+            set { it.copy(attaching = true) }
+            documents.upload(
+                workspaceId = workspace,
+                userId = auth.currentUserId().orEmpty(),
+                shoppingItemId = itemId,
+                name = name,
+                mimeType = mimeType,
+                bytes = bytes,
+            )
+            set { it.copy(attaching = false) }
+        }
+    }
+
+    override fun onDeleteAttachment(document: Document) {
+        viewModelScope.launch { documents.delete(document.id) }
     }
 
     override fun onRefresh() {

@@ -26,7 +26,7 @@
     <string name="home_import_summary">נוספו %1$d משימות, %2$d פריטי קניות ו-%3$d תאריכים. פריטים שכבר היו קיימים דולגו.</string>
     <string name="home_import_failed">לא הצלחנו לקרוא את הקובץ</string>
     <string name="home_import_failed_body">ודאו שזה קובץ JSON שיוצא מאתר אור ירח.</string>
-    <string name="home_budget_spent_of_estimated">₪%1$d מתוך ₪%2$d הוצאו</string>
+    <string name="home_budget_spent_of_estimated">₪%1$.2f מתוך ₪%2$.2f הוצאו</string>
 
     <string-array name="home_daily_messages">
         <item>עוד קצת, ותהיו שלושה.</item>

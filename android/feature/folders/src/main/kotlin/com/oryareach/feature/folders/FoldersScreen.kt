@@ -8,6 +8,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,7 +63,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -68,6 +80,7 @@ import com.oryareach.core.model.Document
 import com.oryareach.core.model.Folder as FolderModel
 import com.oryareach.core.scanner.rememberDocumentScanner
 import com.oryareach.core.ui.theme.OrYareachTheme
+import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
@@ -159,16 +172,40 @@ fun FoldersScreen(
                     )
                 }
             } else {
+                val folderBounds = remember { androidx.compose.runtime.mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>() }
+                var hoveredFolderId by remember { mutableStateOf<String?>(null) }
+                var draggedDocumentId by remember { mutableStateOf<String?>(null) }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(uiState.children, key = FolderModel::id) { folder ->
-                        FolderRow(folder = folder, actions = actions)
+                        FolderRow(
+                            folder = folder,
+                            actions = actions,
+                            highlighted = folder.id == hoveredFolderId,
+                            onBoundsChanged = { bounds -> folderBounds[folder.id] = bounds },
+                        )
                     }
                     items(uiState.documents, key = Document::id) { document ->
-                        DocumentRow(document = document, actions = actions)
+                        DocumentRow(
+                            document = document,
+                            actions = actions,
+                            dragging = document.id == draggedDocumentId,
+                            onDragStart = { draggedDocumentId = document.id },
+                            onDrag = { rootPosition ->
+                                hoveredFolderId = folderBounds.entries
+                                    .firstOrNull { (_, bounds) -> bounds.contains(rootPosition) }
+                                    ?.key
+                            },
+                            onDragEnd = {
+                                hoveredFolderId?.let { targetId -> actions.onMoveDocument(document, targetId) }
+                                draggedDocumentId = null
+                                hoveredFolderId = null
+                            },
+                        )
                     }
                 }
             }
@@ -194,6 +231,17 @@ fun FoldersScreen(
             onValueChange = actions::onRenameChange,
             onConfirm = actions::onRenameSubmit,
             onDismiss = actions::onDismissRename,
+            confirmEnabled = uiState.canSubmitRename,
+        )
+    }
+
+    uiState.renamingDocument?.let {
+        NameDialog(
+            title = stringResource(R.string.folders_rename_document_title),
+            value = uiState.formName,
+            onValueChange = actions::onRenameDocumentChange,
+            onConfirm = actions::onRenameDocumentSubmit,
+            onDismiss = actions::onDismissRenameDocument,
             confirmEnabled = uiState.canSubmitRename,
         )
     }
@@ -288,10 +336,18 @@ private fun Breadcrumb(uiState: FoldersUiState, actions: FoldersActions) {
 }
 
 @Composable
-private fun FolderRow(folder: FolderModel, actions: FoldersActions) {
+private fun FolderRow(
+    folder: FolderModel,
+    actions: FoldersActions,
+    highlighted: Boolean = false,
+    onBoundsChanged: (androidx.compose.ui.geometry.Rect) -> Unit = {},
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+            .onGloballyPositioned { onBoundsChanged(it.boundsInRoot()) },
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -313,11 +369,73 @@ private fun FolderRow(folder: FolderModel, actions: FoldersActions) {
     }
 }
 
+/** Long-pressing the row starts a drag; [onDrag] reports the pointer's position in root
+ * coordinates on every move so the caller can test it against each [FolderRow]'s bounds and
+ * decide what to highlight, and [onDragEnd] is when the caller commits the move (or not, if
+ * nothing was hovered). Root coordinates, not row-local ones, are what makes that hit-test
+ * possible — the row has no idea where any folder row is. */
 @Composable
-private fun DocumentRow(document: Document, actions: FoldersActions) {
+private fun DocumentRow(
+    document: Document,
+    actions: FoldersActions,
+    dragging: Boolean = false,
+    onDragStart: () -> Unit = {},
+    onDrag: (androidx.compose.ui.geometry.Offset) -> Unit = {},
+    onDragEnd: () -> Unit = {},
+) {
+    var rowRootPosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var dragStartPosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+
+    // Follows the finger 1:1 while dragging (snapTo — no lag), then springs back to rest
+    // whether or not the drop landed on a folder; the caller has already read the final
+    // position by then, so this is purely the card retracting to its place in the list.
+    val dragOffset = remember {
+        Animatable(androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.geometry.Offset.VectorConverter)
+    }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val scale by animateFloatAsState(if (dragging) 1.04f else 1f, label = "documentDragScale")
+    val elevation by animateDpAsState(if (dragging) 10.dp else 0.dp, label = "documentDragElevation")
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer {
+                translationX = dragOffset.value.x
+                translationY = dragOffset.value.y
+                scaleX = scale
+                scaleY = scale
+            }
+            .onGloballyPositioned { rowRootPosition = it.positionInRoot() }
+            .pointerInput(document.id) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { offset ->
+                        dragStartPosition = rowRootPosition + offset
+                        onDragStart()
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        dragStartPosition += dragAmount
+                        onDrag(dragStartPosition)
+                        scope.launch { dragOffset.snapTo(dragOffset.value + dragAmount) }
+                    },
+                    onDragEnd = {
+                        onDragEnd()
+                        scope.launch { dragOffset.animateTo(androidx.compose.ui.geometry.Offset.Zero, spring()) }
+                    },
+                    onDragCancel = {
+                        onDragEnd()
+                        scope.launch { dragOffset.animateTo(androidx.compose.ui.geometry.Offset.Zero, spring()) }
+                    },
+                )
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation),
+        colors = CardDefaults.cardColors(
+            containerColor = if (dragging) {
+                MaterialTheme.colorScheme.surfaceVariant
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+        ),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -329,6 +447,9 @@ private fun DocumentRow(document: Document, actions: FoldersActions) {
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f).padding(start = 12.dp).clickable { actions.onPreviewDocument(document) },
             )
+            IconButton(onClick = { actions.onRenameDocumentClick(document) }) {
+                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.folders_rename_document_title))
+            }
             IconButton(onClick = { actions.onDeleteDocumentClick(document) }) {
                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.folders_delete))
             }
@@ -453,6 +574,11 @@ private object NoopFoldersActions : FoldersActions {
     override fun onDeleteDocumentClick(document: Document) = Unit
     override fun onConfirmDeleteDocument() = Unit
     override fun onDismissDeleteDocument() = Unit
+    override fun onRenameDocumentClick(document: Document) = Unit
+    override fun onRenameDocumentChange(value: String) = Unit
+    override fun onRenameDocumentSubmit() = Unit
+    override fun onDismissRenameDocument() = Unit
+    override fun onMoveDocument(document: Document, folderId: String) = Unit
     override fun onPreviewDocument(document: Document) = Unit
     override fun onDismissPreview() = Unit
     override fun onRefresh() = Unit

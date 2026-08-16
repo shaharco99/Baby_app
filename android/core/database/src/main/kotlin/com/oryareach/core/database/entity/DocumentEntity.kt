@@ -14,6 +14,7 @@ import androidx.room.PrimaryKey
         Index(value = ["workspace_id", "folder_id"]),
         Index(value = ["workspace_id", "task_id"]),
         Index(value = ["workspace_id", "cycle_id"]),
+        Index(value = ["workspace_id", "shopping_item_id"]),
     ],
 )
 data class DocumentEntity(
@@ -21,6 +22,7 @@ data class DocumentEntity(
     @ColumnInfo(name = "folder_id") val folderId: String?,
     @ColumnInfo(name = "task_id") val taskId: String?,
     @ColumnInfo(name = "cycle_id") val cycleId: String?,
+    @ColumnInfo(name = "shopping_item_id") val shoppingItemId: String?,
     val name: String,
     @ColumnInfo(name = "mime_type") val mimeType: String,
     @ColumnInfo(name = "size_bytes") val sizeBytes: Long,

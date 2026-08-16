@@ -32,7 +32,7 @@ interface TasksActions {
     fun onTitleChange(value: String)
     fun onCategoryChange(value: TaskCategory)
     fun onPriorityChange(value: Priority)
-    fun onAssigneeChange(value: Assignee?)
+    fun onAssigneeChange(value: Assignee)
     fun onNoteChange(value: String)
     fun onDueDateChange(value: LocalDate?)
     fun onRecurrenceChange(value: Recurrence?)
@@ -40,6 +40,8 @@ interface TasksActions {
     fun onAddTag()
     fun onRemoveTag(tag: String)
     fun onTagFilterChange(tag: String?)
+    fun onPriorityFilterChange(priority: Priority?)
+    fun onAssigneeFilterChange(assignee: Assignee?)
     fun onSubmit()
     fun onToggleDone(id: String)
     fun onDelete(id: String)
@@ -90,7 +92,13 @@ class TasksViewModel(
 
     override fun onAddClick() = set {
         editingTaskId.value = null
-        TasksUiState(tasks = it.tasks, activeTagFilter = it.activeTagFilter, sheetVisible = true)
+        TasksUiState(
+            tasks = it.tasks,
+            activeTagFilter = it.activeTagFilter,
+            activePriorityFilter = it.activePriorityFilter,
+            activeAssigneeFilter = it.activeAssigneeFilter,
+            sheetVisible = true,
+        )
     }
 
     override fun onEditClick(task: Task) = set {
@@ -100,7 +108,7 @@ class TasksViewModel(
             formTitle = task.title,
             formCategory = task.category,
             formPriority = task.priority,
-            formAssignee = task.assignee,
+            formAssignee = task.assignee ?: Assignee.BOTH,
             formNote = task.note.orEmpty(),
             formDueDate = task.dueDate,
             formRecurrence = task.recurrence,
@@ -113,14 +121,21 @@ class TasksViewModel(
 
     override fun onDismissSheet() {
         editingTaskId.value = null
-        set { TasksUiState(tasks = it.tasks, activeTagFilter = it.activeTagFilter) }
+        set {
+            TasksUiState(
+                tasks = it.tasks,
+                activeTagFilter = it.activeTagFilter,
+                activePriorityFilter = it.activePriorityFilter,
+                activeAssigneeFilter = it.activeAssigneeFilter,
+            )
+        }
         _effects.trySend(TasksEffect.SheetDismissed)
     }
 
     override fun onTitleChange(value: String) = set { it.copy(formTitle = value, errorMessage = null) }
     override fun onCategoryChange(value: TaskCategory) = set { it.copy(formCategory = value) }
     override fun onPriorityChange(value: Priority) = set { it.copy(formPriority = value) }
-    override fun onAssigneeChange(value: Assignee?) = set { it.copy(formAssignee = value) }
+    override fun onAssigneeChange(value: Assignee) = set { it.copy(formAssignee = value) }
     override fun onNoteChange(value: String) = set { it.copy(formNote = value) }
     override fun onDueDateChange(value: LocalDate?) = set {
         it.copy(formDueDate = value, formRecurrence = if (value == null) null else it.formRecurrence)
@@ -144,6 +159,14 @@ class TasksViewModel(
 
     override fun onTagFilterChange(tag: String?) = set {
         it.copy(activeTagFilter = if (it.activeTagFilter == tag) null else tag)
+    }
+
+    override fun onPriorityFilterChange(priority: Priority?) = set {
+        it.copy(activePriorityFilter = if (it.activePriorityFilter == priority) null else priority)
+    }
+
+    override fun onAssigneeFilterChange(assignee: Assignee?) = set {
+        it.copy(activeAssigneeFilter = if (it.activeAssigneeFilter == assignee) null else assignee)
     }
 
     override fun onSubmit() {
@@ -182,7 +205,14 @@ class TasksViewModel(
                 )
             }
             editingTaskId.value = null
-            set { TasksUiState(tasks = it.tasks, activeTagFilter = it.activeTagFilter) }
+            set {
+                TasksUiState(
+                    tasks = it.tasks,
+                    activeTagFilter = it.activeTagFilter,
+                    activePriorityFilter = it.activePriorityFilter,
+                    activeAssigneeFilter = it.activeAssigneeFilter,
+                )
+            }
             _effects.trySend(TasksEffect.SheetDismissed)
         }
     }

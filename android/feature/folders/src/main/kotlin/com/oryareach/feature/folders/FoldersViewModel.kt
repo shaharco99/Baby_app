@@ -37,6 +37,11 @@ interface FoldersActions {
     fun onDeleteDocumentClick(document: Document)
     fun onConfirmDeleteDocument()
     fun onDismissDeleteDocument()
+    fun onRenameDocumentClick(document: Document)
+    fun onRenameDocumentChange(value: String)
+    fun onRenameDocumentSubmit()
+    fun onDismissRenameDocument()
+    fun onMoveDocument(document: Document, folderId: String)
     fun onPreviewDocument(document: Document)
     fun onDismissPreview()
     fun onRefresh()
@@ -157,6 +162,27 @@ class FoldersViewModel(
             documents.delete(document.id)
             set { it.copy(deleteConfirmDocument = null) }
         }
+    }
+
+    override fun onRenameDocumentClick(document: Document) =
+        set { it.copy(renamingDocument = document, formName = document.name) }
+    override fun onRenameDocumentChange(value: String) = set { it.copy(formName = value) }
+    override fun onDismissRenameDocument() = set { it.copy(renamingDocument = null) }
+
+    override fun onRenameDocumentSubmit() {
+        val state = _uiState.value
+        val document = state.renamingDocument ?: return
+        if (!state.canSubmitRename) return
+
+        viewModelScope.launch {
+            documents.rename(document.id, state.formName.trim())
+            set { it.copy(renamingDocument = null) }
+        }
+    }
+
+    override fun onMoveDocument(document: Document, folderId: String) {
+        if (document.folderId == folderId) return
+        viewModelScope.launch { documents.move(document.id, folderId) }
     }
 
     override fun onPreviewDocument(document: Document) {

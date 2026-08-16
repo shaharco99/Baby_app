@@ -153,6 +153,7 @@ val appModule = module {
     viewModel {
         ShoppingViewModel(
             repository = get(),
+            documents = get(),
             auth = get(),
             syncEngine = get(),
             workspaceId = { get<SessionState>().workspaceId },

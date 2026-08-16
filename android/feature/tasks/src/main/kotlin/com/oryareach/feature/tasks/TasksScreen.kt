@@ -152,6 +152,26 @@ fun TasksScreen(
                 }
             }
 
+            androidx.compose.foundation.lazy.LazyRow(
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(Priority.entries, key = { "priority-${it.name}" }) { priority ->
+                    FilterChip(
+                        selected = uiState.activePriorityFilter == priority,
+                        onClick = { actions.onPriorityFilterChange(priority) },
+                        label = { Text(stringResource(priority.labelRes())) },
+                    )
+                }
+                items(Assignee.entries, key = { "assignee-${it.name}" }) { assignee ->
+                    FilterChip(
+                        selected = uiState.activeAssigneeFilter == assignee,
+                        onClick = { actions.onAssigneeFilterChange(assignee) },
+                        label = { Text(stringResource(assignee.labelRes())) },
+                    )
+                }
+            }
+
             if (uiState.tasks.isEmpty()) {
                 Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -167,7 +187,15 @@ fun TasksScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                    // Extra bottom padding keeps the last row's delete button clear of the
+                    // floating action button — without it, a short list (down to just one
+                    // task) leaves that row sitting directly under the FAB, unreachable.
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = 16.dp,
+                        bottom = 96.dp + 72.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(uiState.visibleTasks, key = Task::id) { task ->
@@ -316,8 +344,7 @@ private fun TaskForm(uiState: TasksUiState, actions: TasksActions) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val options: List<Assignee?> = listOf(null, Assignee.PARTNER_ONE, Assignee.PARTNER_TWO, Assignee.BOTH)
-            options.forEach { option ->
+            Assignee.entries.forEach { option ->
                 FilterChip(
                     selected = uiState.formAssignee == option,
                     onClick = { actions.onAssigneeChange(option) },
@@ -578,7 +605,7 @@ private object NoopTasksActions : TasksActions {
     override fun onTitleChange(value: String) = Unit
     override fun onCategoryChange(value: TaskCategory) = Unit
     override fun onPriorityChange(value: Priority) = Unit
-    override fun onAssigneeChange(value: Assignee?) = Unit
+    override fun onAssigneeChange(value: Assignee) = Unit
     override fun onNoteChange(value: String) = Unit
     override fun onDueDateChange(value: LocalDate?) = Unit
     override fun onRecurrenceChange(value: Recurrence?) = Unit
@@ -586,6 +613,8 @@ private object NoopTasksActions : TasksActions {
     override fun onAddTag() = Unit
     override fun onRemoveTag(tag: String) = Unit
     override fun onTagFilterChange(tag: String?) = Unit
+    override fun onPriorityFilterChange(priority: Priority?) = Unit
+    override fun onAssigneeFilterChange(assignee: Assignee?) = Unit
     override fun onSubmit() = Unit
     override fun onToggleDone(id: String) = Unit
     override fun onDelete(id: String) = Unit

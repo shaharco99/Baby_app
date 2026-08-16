@@ -20,7 +20,7 @@ data class TasksUiState(
     val formTitle: String = "",
     val formCategory: TaskCategory = TaskCategory.OTHER,
     val formPriority: Priority = Priority.NORMAL,
-    val formAssignee: Assignee? = null,
+    val formAssignee: Assignee = Assignee.BOTH,
     val formNote: String = "",
     val formDueDate: LocalDate? = null,
     val formRecurrence: Recurrence? = null,
@@ -32,8 +32,10 @@ data class TasksUiState(
     val attachments: List<Document> = emptyList(),
     val attaching: Boolean = false,
 
-    // Filters the task list; null means "all tags".
+    // Filters the task list; null means "all".
     val activeTagFilter: String? = null,
+    val activePriorityFilter: Priority? = null,
+    val activeAssigneeFilter: Assignee? = null,
 
     // Transient UI-only: must not survive the screen.
     val sheetVisible: Boolean = false,
@@ -50,7 +52,10 @@ data class TasksUiState(
     val allTags: List<String> get() = tasks.flatMap { it.tags }.distinct().sorted()
 
     val visibleTasks: List<Task>
-        get() = activeTagFilter?.let { tag -> tasks.filter { tag in it.tags } } ?: tasks
+        get() = tasks
+            .let { list -> activeTagFilter?.let { tag -> list.filter { tag in it.tags } } ?: list }
+            .let { list -> activePriorityFilter?.let { p -> list.filter { it.priority == p } } ?: list }
+            .let { list -> activeAssigneeFilter?.let { a -> list.filter { it.assignee == a } } ?: list }
 }
 
 sealed interface TasksEffect {

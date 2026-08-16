@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.shopping.calculateBudget
 import com.oryareach.core.model.Assignee
+import com.oryareach.core.model.Document
 import com.oryareach.core.model.Priority
 import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingAlternative
@@ -28,6 +29,11 @@ data class ShoppingUiState(
     val formAltName: String = "",
     val formAltPrice: String = "",
 
+    // Attachments — only meaningful while editing an existing item (an item must exist before
+    // anything, like a receipt, can be attached to it).
+    val attachments: List<Document> = emptyList(),
+    val attaching: Boolean = false,
+
     // Transient UI-only: must not survive the screen.
     val sheetVisible: Boolean = false,
     val submitting: Boolean = false,
@@ -41,7 +47,18 @@ data class ShoppingUiState(
     // Derived from the current list, never persisted — a stale total would drift from the
     // items it is supposed to summarize the moment one of them changes.
     val budget get() = calculateBudget(items)
+
+    // Still-needed items first, bought ones last — a bought item is done, so it shouldn't
+    // compete with what's still outstanding for the top of the list.
+    val sortedItems: List<ShoppingItem> get() = items.sortedBy { it.status.sortOrder }
 }
+
+private val ShoppingStatus.sortOrder: Int
+    get() = when (this) {
+        ShoppingStatus.NEED -> 0
+        ShoppingStatus.ORDERED -> 1
+        ShoppingStatus.BOUGHT -> 2
+    }
 
 sealed interface ShoppingEffect {
     data object SheetDismissed : ShoppingEffect

@@ -6,6 +6,7 @@
     <string name="folders_add">תיקייה חדשה</string>
     <string name="folders_new_title">תיקייה חדשה</string>
     <string name="folders_rename_title">שינוי שם תיקייה</string>
+    <string name="folders_rename_document_title">שינוי שם מסמך</string>
     <string name="folders_field_name">שם</string>
     <string name="folders_save">שמור</string>
     <string name="folders_cancel">ביטול</string>

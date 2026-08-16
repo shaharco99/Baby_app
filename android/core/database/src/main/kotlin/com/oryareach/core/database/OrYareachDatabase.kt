@@ -42,7 +42,7 @@ import com.oryareach.core.database.entity.TaskEntity
         SyncCursorEntity::class,
         SyncConflictEntity::class,
     ],
-    version = 11,
+    version = 13,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)

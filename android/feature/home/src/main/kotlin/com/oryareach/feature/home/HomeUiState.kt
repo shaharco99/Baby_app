@@ -10,8 +10,8 @@ data class HomeUiState(
     val dueDate: LocalDate? = null,
     val babyName: String? = null,
     val openTaskCount: Int = 0,
-    val budgetEstimated: Int = 0,
-    val budgetSpent: Int = 0,
+    val budgetEstimated: Double = 0.0,
+    val budgetSpent: Double = 0.0,
 
     // Derived from dueDate — a getter, never stored, so it can never go stale.
     val progress: PregnancyProgress? = null,

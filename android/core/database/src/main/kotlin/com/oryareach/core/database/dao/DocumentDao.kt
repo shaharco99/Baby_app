@@ -38,6 +38,15 @@ interface DocumentDao {
     )
     fun observeForCycle(workspaceId: String, cycleId: String): Flow<List<DocumentEntity>>
 
+    @Query(
+        """
+        SELECT * FROM documents
+        WHERE workspace_id = :workspaceId AND deleted_at IS NULL AND shopping_item_id = :shoppingItemId
+        ORDER BY name ASC
+        """,
+    )
+    fun observeForShoppingItem(workspaceId: String, shoppingItemId: String): Flow<List<DocumentEntity>>
+
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun findById(id: String): DocumentEntity?
 

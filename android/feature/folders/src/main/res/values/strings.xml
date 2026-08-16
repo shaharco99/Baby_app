@@ -6,6 +6,7 @@
     <string name="folders_add">New folder</string>
     <string name="folders_new_title">New folder</string>
     <string name="folders_rename_title">Rename folder</string>
+    <string name="folders_rename_document_title">Rename document</string>
     <string name="folders_field_name">Name</string>
     <string name="folders_save">Save</string>
     <string name="folders_cancel">Cancel</string>

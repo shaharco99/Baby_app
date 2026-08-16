@@ -328,3 +328,72 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
         db.execSQL("ALTER TABLE `documents` ADD COLUMN `thumbnail_base64` TEXT")
     }
 }
+
+/** `estimated_price`/`actual_price` were `INTEGER`, so a form entry like "5804.25" got its
+ * decimal point stripped before parsing and landed as 580425. Widens both columns (and the
+ * JSON-serialized `alternatives.price` field, which needs no migration) to `REAL`. SQLite has
+ * no `ALTER COLUMN`, so the table is rebuilt. */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE `shopping_items_new` (
+                `id` TEXT NOT NULL,
+                `name` TEXT NOT NULL,
+                `category` TEXT NOT NULL,
+                `estimated_price` REAL,
+                `actual_price` REAL,
+                `priority` TEXT NOT NULL,
+                `status` TEXT NOT NULL,
+                `assignee` TEXT,
+                `note` TEXT,
+                `link` TEXT,
+                `alternatives` TEXT NOT NULL,
+                `chosen_alternative_id` TEXT,
+                `workspace_id` TEXT NOT NULL,
+                `created_by` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `deleted_at` INTEGER,
+                `version` INTEGER NOT NULL,
+                `sync_status` TEXT NOT NULL,
+                `client_mutation_id` TEXT,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT INTO `shopping_items_new`
+            SELECT `id`, `name`, `category`, `estimated_price`, `actual_price`, `priority`, `status`,
+                `assignee`, `note`, `link`, `alternatives`, `chosen_alternative_id`, `workspace_id`,
+                `created_by`, `created_at`, `updated_at`, `deleted_at`, `version`, `sync_status`,
+                `client_mutation_id`
+            FROM `shopping_items`
+            """.trimIndent(),
+        )
+        db.execSQL("DROP TABLE `shopping_items`")
+        db.execSQL("ALTER TABLE `shopping_items_new` RENAME TO `shopping_items`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_shopping_items_sync_status` ON `shopping_items` (`sync_status`)")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shopping_items_workspace_id_updated_at` " +
+                "ON `shopping_items` (`workspace_id`, `updated_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shopping_items_workspace_id_category` " +
+                "ON `shopping_items` (`workspace_id`, `category`)",
+        )
+    }
+}
+
+/** Lets a document attach to a shopping item — e.g. a receipt photo — the same way one already
+ * attaches to a task or a cycle entry. */
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `documents` ADD COLUMN `shopping_item_id` TEXT")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_documents_workspace_id_shopping_item_id` " +
+                "ON `documents` (`workspace_id`, `shopping_item_id`)",
+        )
+    }
+}

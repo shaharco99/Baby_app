@@ -397,8 +397,8 @@ private fun HomePreview() {
                 dueDate = LocalDate(2026, 12, 25),
                 progress = PregnancyProgress(daysLeft = 60, week = 30, dayOfWeek = 3, hasArrived = false, moonFraction = 0.75f),
                 openTaskCount = 3,
-                budgetEstimated = 4000,
-                budgetSpent = 1200,
+                budgetEstimated = 4000.0,
+                budgetSpent = 1200.0,
             ),
             actions = NoopHomeActions,
         )

@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,7 +23,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -77,8 +82,8 @@ fun ShoppingScreen(
     var deleteConfirmItem by remember { mutableStateOf<ShoppingItem?>(null) }
     val listState = rememberLazyListState()
 
-    LaunchedEffect(highlightId, uiState.items) {
-        val index = uiState.items.indexOfFirst { it.id == highlightId }
+    LaunchedEffect(highlightId, uiState.sortedItems) {
+        val index = uiState.sortedItems.indexOfFirst { it.id == highlightId }
         if (index >= 0) {
             listState.animateScrollToItem(index)
             kotlinx.coroutines.delay(1500)
@@ -124,10 +129,10 @@ fun ShoppingScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(uiState.items, key = ShoppingItem::id) { item ->
+                    items(uiState.sortedItems, key = ShoppingItem::id) { item ->
                         ShoppingRow(
                             item = item,
                             actions = actions,
@@ -282,7 +287,7 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
             onValueChange = actions::onEstimatedPriceChange,
             label = { Text(stringResource(R.string.shopping_field_estimated_price)) },
             singleLine = true,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -336,6 +341,7 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
 
         if (uiState.isEditing) {
             AlternativesSection(uiState = uiState, actions = actions)
+            AttachmentsSection(uiState = uiState, actions = actions)
         }
 
         Spacer(Modifier.height(4.dp))
@@ -384,11 +390,89 @@ private fun AlternativesSection(uiState: ShoppingUiState, actions: ShoppingActio
             onValueChange = actions::onAltPriceChange,
             label = { Text(stringResource(R.string.shopping_field_estimated_price)) },
             singleLine = true,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f),
         )
         IconButton(onClick = actions::onAddAlternative, enabled = uiState.formAltName.isNotBlank()) {
             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.shopping_alternative_add))
+        }
+    }
+}
+
+@Composable
+private fun AttachmentsSection(uiState: ShoppingUiState, actions: ShoppingActions) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val attachLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
+        val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+        val name = context.contentResolver.query(
+            uri,
+            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        } ?: uri.lastPathSegment.orEmpty()
+        actions.onAttachDocument(name, mimeType, bytes)
+    }
+    val startScan = com.oryareach.core.scanner.rememberDocumentScanner { scanned ->
+        actions.onAttachDocument(scanned.name, scanned.mimeType, scanned.bytes)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = stringResource(R.string.shopping_field_attachments),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        uiState.attachments.forEach { document ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Default.Description,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                )
+                Text(
+                    text = document.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp),
+                )
+                IconButton(onClick = { actions.onDeleteAttachment(document) }) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.shopping_remove_attachment))
+                }
+            }
+        }
+        if (uiState.attaching) {
+            androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(20.dp))
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { attachLauncher.launch(arrayOf("*/*")) }) {
+                    Icon(
+                        Icons.Default.AttachFile,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.shopping_attach_document))
+                }
+                TextButton(onClick = startScan) {
+                    Icon(
+                        Icons.Default.DocumentScanner,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.shopping_scan_document))
+                }
+            }
         }
     }
 }
@@ -414,7 +498,8 @@ private fun CategoryDropdown(value: ShoppingCategory, onChange: (ShoppingCategor
     }
 }
 
-private fun formatIls(amount: Int): String = "₪$amount"
+private fun formatIls(amount: Double): String =
+    if (amount == amount.toLong().toDouble()) "₪${amount.toLong()}" else "₪%.2f".format(amount)
 
 @Preview(showBackground = true)
 @Composable
@@ -423,7 +508,7 @@ private fun ShoppingPreview() {
         ShoppingScreen(
             uiState = ShoppingUiState(
                 items = listOf(
-                    ShoppingItem(id = "1", name = "Crib", category = ShoppingCategory.NURSERY, estimatedPrice = 800),
+                    ShoppingItem(id = "1", name = "Crib", category = ShoppingCategory.NURSERY, estimatedPrice = 800.0),
                 ),
             ),
             actions = NoopShoppingActions,
@@ -449,5 +534,7 @@ private object NoopShoppingActions : ShoppingActions {
     override fun onSubmit() = Unit
     override fun onStatusChange(id: String, status: ShoppingStatus) = Unit
     override fun onDelete(id: String) = Unit
+    override fun onAttachDocument(name: String, mimeType: String, bytes: ByteArray) = Unit
+    override fun onDeleteAttachment(document: com.oryareach.core.model.Document) = Unit
     override fun onRefresh() = Unit
 }

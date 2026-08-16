@@ -99,7 +99,7 @@ private fun WebShoppingItem.toShoppingItem(newId: () -> String): ShoppingItem {
         ShoppingAlternative(
             id = idsBySourceId.getValue(alt.id),
             name = alt.name,
-            price = alt.price?.toInt(),
+            price = alt.price,
             link = alt.link,
             note = alt.note,
         )
@@ -109,8 +109,8 @@ private fun WebShoppingItem.toShoppingItem(newId: () -> String): ShoppingItem {
         id = newId(),
         name = name,
         category = shoppingCategoryByHebrew[category] ?: ShoppingCategory.OTHER,
-        estimatedPrice = estimatedPrice?.toInt(),
-        actualPrice = actualPrice?.toInt(),
+        estimatedPrice = estimatedPrice,
+        actualPrice = actualPrice,
         priority = priorityOf(priority),
         status = statusOf(status),
         assignee = assigneeByHebrew[assignee],

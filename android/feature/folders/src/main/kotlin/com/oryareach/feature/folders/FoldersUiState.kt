@@ -15,6 +15,7 @@ data class FoldersUiState(
     // Editable input: the create/rename dialogs.
     val formName: String = "",
     val renamingFolder: Folder? = null,
+    val renamingDocument: Document? = null,
 
     // Transient UI-only.
     val createDialogVisible: Boolean = false,

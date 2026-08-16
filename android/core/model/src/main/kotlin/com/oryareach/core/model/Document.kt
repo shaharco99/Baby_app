@@ -15,6 +15,8 @@ data class Document(
     val taskId: String? = null,
     /** Set when attached to a logged period — e.g. an ultrasound report tied to that cycle. */
     val cycleId: String? = null,
+    /** Set when this document is a receipt (or similar) attached to a shopping item. */
+    val shoppingItemId: String? = null,
     val name: String,
     val mimeType: String,
     val sizeBytes: Long,

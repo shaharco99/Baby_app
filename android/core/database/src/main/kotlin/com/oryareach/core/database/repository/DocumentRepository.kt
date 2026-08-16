@@ -56,12 +56,16 @@ class DocumentRepository(
     fun observeForCycle(workspaceId: String, cycleId: String): Flow<List<Document>> =
         documents.observeForCycle(workspaceId, cycleId).map { list -> list.map { it.toDocument() } }
 
+    fun observeForShoppingItem(workspaceId: String, shoppingItemId: String): Flow<List<Document>> =
+        documents.observeForShoppingItem(workspaceId, shoppingItemId).map { list -> list.map { it.toDocument() } }
+
     suspend fun upload(
         workspaceId: String,
         userId: String,
         folderId: String? = null,
         taskId: String? = null,
         cycleId: String? = null,
+        shoppingItemId: String? = null,
         name: String,
         mimeType: String,
         bytes: ByteArray,
@@ -79,6 +83,7 @@ class DocumentRepository(
             folderId = folderId,
             taskId = taskId,
             cycleId = cycleId,
+            shoppingItemId = shoppingItemId,
             name = name,
             mimeType = mimeType,
             sizeBytes = bytes.size.toLong(),
@@ -114,6 +119,16 @@ class DocumentRepository(
         }
 
         return cipher.decrypt(key, ciphertext, associatedData(id))
+    }
+
+    suspend fun rename(id: String, name: String) {
+        val existing = documents.findById(id) ?: return
+        enqueue(withBumpedSync(existing.copy(name = name)), SyncOperationType.UPDATE)
+    }
+
+    suspend fun move(id: String, folderId: String?) {
+        val existing = documents.findById(id) ?: return
+        enqueue(withBumpedSync(existing.copy(folderId = folderId)), SyncOperationType.UPDATE)
     }
 
     suspend fun delete(id: String) {
@@ -178,6 +193,14 @@ class DocumentRepository(
             Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
         }.getOrNull()
     }
+
+    private fun withBumpedSync(entity: DocumentEntity): DocumentEntity = entity.copy(
+        sync = entity.sync.copy(
+            updatedAt = now(),
+            syncStatus = SyncStatus.PENDING_UPDATE,
+            clientMutationId = newId(),
+        ),
+    )
 
     private fun associatedData(id: String): ByteArray = "${EntityType.DOCUMENT.wireName}:$id".toByteArray(Charsets.UTF_8)
 

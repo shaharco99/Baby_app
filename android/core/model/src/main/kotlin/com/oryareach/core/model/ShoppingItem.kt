@@ -22,7 +22,7 @@ enum class ShoppingStatus {
 data class ShoppingAlternative(
     val id: String,
     val name: String,
-    val price: Int? = null,
+    val price: Double? = null,
     val link: String? = null,
     val note: String? = null,
 )
@@ -32,8 +32,8 @@ data class ShoppingItem(
     val id: String,
     val name: String,
     val category: ShoppingCategory,
-    val estimatedPrice: Int? = null,
-    val actualPrice: Int? = null,
+    val estimatedPrice: Double? = null,
+    val actualPrice: Double? = null,
     val priority: Priority = Priority.NORMAL,
     val status: ShoppingStatus = ShoppingStatus.NEED,
     val assignee: Assignee? = null,
