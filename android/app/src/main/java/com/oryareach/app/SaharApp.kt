@@ -178,6 +178,7 @@ private enum class HomeTab { Home, Tasks, Shopping, Dates, Folders, Cycle, Calen
 @Composable
 private fun HomeRoute() {
     var tab by rememberSaveable { mutableStateOf(HomeTab.Home) }
+    var highlightId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDeviceManagement by rememberSaveable { mutableStateOf(false) }
     val drawerState = androidx.compose.material3.rememberDrawerState(androidx.compose.material3.DrawerValue.Closed)
     val drawerScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -267,18 +268,30 @@ private fun HomeRoute() {
     ) { padding ->
         when (tab) {
             HomeTab.Home -> HomeTabRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
-            HomeTab.Tasks -> TasksRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
-            HomeTab.Shopping -> ShoppingRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
-            HomeTab.Dates -> DatesRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
+            HomeTab.Tasks -> TasksRoute(
+                modifier = androidx.compose.ui.Modifier.padding(padding),
+                highlightId = highlightId,
+                onHighlightConsumed = { highlightId = null },
+            )
+            HomeTab.Shopping -> ShoppingRoute(
+                modifier = androidx.compose.ui.Modifier.padding(padding),
+                highlightId = highlightId,
+                onHighlightConsumed = { highlightId = null },
+            )
+            HomeTab.Dates -> DatesRoute(
+                modifier = androidx.compose.ui.Modifier.padding(padding),
+                highlightId = highlightId,
+                onHighlightConsumed = { highlightId = null },
+            )
             HomeTab.Folders -> FoldersRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
             HomeTab.Cycle -> CycleRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
             HomeTab.Calendar -> CalendarRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
-                onNavigateToTab = { tab = it },
+                onNavigateToTab = { destination, recordId -> tab = destination; highlightId = recordId },
             )
             HomeTab.Search -> SearchRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
-                onNavigateToTab = { tab = it },
+                onNavigateToTab = { destination, recordId -> tab = destination; highlightId = recordId },
             )
             HomeTab.Settings -> if (showDeviceManagement) {
                 DeviceManagementRoute(
@@ -299,10 +312,18 @@ private fun HomeRoute() {
 @Composable
 private fun TasksRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    highlightId: String? = null,
+    onHighlightConsumed: () -> Unit = {},
     viewModel: TasksViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    TasksScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+    TasksScreen(
+        uiState = uiState,
+        actions = viewModel,
+        modifier = modifier,
+        highlightId = highlightId,
+        onHighlightConsumed = onHighlightConsumed,
+    )
 }
 
 @Composable
@@ -317,19 +338,35 @@ private fun HomeTabRoute(
 @Composable
 private fun ShoppingRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    highlightId: String? = null,
+    onHighlightConsumed: () -> Unit = {},
     viewModel: ShoppingViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    ShoppingScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+    ShoppingScreen(
+        uiState = uiState,
+        actions = viewModel,
+        modifier = modifier,
+        highlightId = highlightId,
+        onHighlightConsumed = onHighlightConsumed,
+    )
 }
 
 @Composable
 private fun DatesRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    highlightId: String? = null,
+    onHighlightConsumed: () -> Unit = {},
     viewModel: DatesViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    DatesScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+    DatesScreen(
+        uiState = uiState,
+        actions = viewModel,
+        modifier = modifier,
+        highlightId = highlightId,
+        onHighlightConsumed = onHighlightConsumed,
+    )
 }
 
 @Composable
@@ -353,7 +390,7 @@ private fun CycleRoute(
 @Composable
 private fun CalendarRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
-    onNavigateToTab: (HomeTab) -> Unit,
+    onNavigateToTab: (HomeTab, String?) -> Unit,
     viewModel: CalendarViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -363,7 +400,8 @@ private fun CalendarRoute(
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.effects.collect { effect ->
                 when (effect) {
-                    is CalendarEffect.OpenEvent -> onNavigateToTab(effect.event.entityType.toHomeTab())
+                    is CalendarEffect.OpenEvent ->
+                        onNavigateToTab(effect.event.entityType.toHomeTab(), effect.event.recordId)
                 }
             }
         }
@@ -375,7 +413,7 @@ private fun CalendarRoute(
 @Composable
 private fun SearchRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
-    onNavigateToTab: (HomeTab) -> Unit,
+    onNavigateToTab: (HomeTab, String?) -> Unit,
     viewModel: SearchViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -385,7 +423,8 @@ private fun SearchRoute(
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.effects.collect { effect ->
                 when (effect) {
-                    is SearchEffect.OpenResult -> onNavigateToTab(effect.result.entityType.toHomeTab())
+                    is SearchEffect.OpenResult ->
+                        onNavigateToTab(effect.result.entityType.toHomeTab(), effect.result.recordId)
                 }
             }
         }

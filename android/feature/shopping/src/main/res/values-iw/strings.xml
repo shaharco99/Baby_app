@@ -12,6 +12,10 @@
     <string name="shopping_field_assignee">באחריות</string>
     <string name="shopping_field_link">קישור (אופציונלי)</string>
     <string name="shopping_field_note">הערה (אופציונלי)</string>
+    <string name="shopping_field_alternatives">חלופות</string>
+    <string name="shopping_alternative_name">שם החלופה</string>
+    <string name="shopping_alternative_add">הוספת חלופה</string>
+    <string name="shopping_alternative_remove">הסרת חלופה</string>
     <string name="shopping_save">שמור</string>
     <string name="shopping_delete">מחק</string>
     <string name="shopping_delete_title">למחוק את הפריט?</string>

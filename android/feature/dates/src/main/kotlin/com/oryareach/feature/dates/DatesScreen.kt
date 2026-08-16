@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -39,6 +42,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,8 +67,20 @@ fun DatesScreen(
     uiState: DatesUiState,
     actions: DatesActions,
     modifier: Modifier = Modifier,
+    highlightId: String? = null,
+    onHighlightConsumed: () -> Unit = {},
 ) {
     var deleteConfirmDate by remember { mutableStateOf<ImportantDate?>(null) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(highlightId, uiState.dates) {
+        val index = uiState.dates.indexOfFirst { it.id == highlightId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+            kotlinx.coroutines.delay(1500)
+            onHighlightConsumed()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize().safeDrawingPadding(),
@@ -100,12 +116,18 @@ fun DatesScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(uiState.dates, key = ImportantDate::id) { date ->
-                        DateRow(date = date, actions = actions, onDeleteClick = { deleteConfirmDate = date })
+                        DateRow(
+                            date = date,
+                            actions = actions,
+                            onDeleteClick = { deleteConfirmDate = date },
+                            highlighted = date.id == highlightId,
+                        )
                     }
                 }
             }
@@ -156,9 +178,18 @@ fun DatesScreen(
 }
 
 @Composable
-private fun DateRow(date: ImportantDate, actions: DatesActions, onDeleteClick: () -> Unit) {
+private fun DateRow(
+    date: ImportantDate,
+    actions: DatesActions,
+    onDeleteClick: () -> Unit,
+    highlighted: Boolean = false,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (highlighted) {
+            Modifier.fillMaxWidth().border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+        } else {
+            Modifier.fillMaxWidth()
+        },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(

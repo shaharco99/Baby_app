@@ -20,6 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
@@ -53,6 +56,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,9 +90,21 @@ fun TasksScreen(
     uiState: TasksUiState,
     actions: TasksActions,
     modifier: Modifier = Modifier,
+    highlightId: String? = null,
+    onHighlightConsumed: () -> Unit = {},
 ) {
     val hospitalBagTitles = androidx.compose.ui.res.stringArrayResource(R.array.hospital_bag_preset).toList()
     var deleteConfirmTask by remember { mutableStateOf<Task?>(null) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(highlightId, uiState.visibleTasks) {
+        val index = uiState.visibleTasks.indexOfFirst { it.id == highlightId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+            kotlinx.coroutines.delay(1500)
+            onHighlightConsumed()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize().safeDrawingPadding(),
@@ -149,12 +165,18 @@ fun TasksScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(uiState.visibleTasks, key = Task::id) { task ->
-                        TaskRow(task = task, actions = actions, onDeleteClick = { deleteConfirmTask = task })
+                        TaskRow(
+                            task = task,
+                            actions = actions,
+                            onDeleteClick = { deleteConfirmTask = task },
+                            highlighted = task.id == highlightId,
+                        )
                     }
                 }
             }
@@ -188,9 +210,13 @@ fun TasksScreen(
 }
 
 @Composable
-private fun TaskRow(task: Task, actions: TasksActions, onDeleteClick: () -> Unit) {
+private fun TaskRow(task: Task, actions: TasksActions, onDeleteClick: () -> Unit, highlighted: Boolean = false) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (highlighted) {
+            Modifier.fillMaxWidth().border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+        } else {
+            Modifier.fillMaxWidth()
+        },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(

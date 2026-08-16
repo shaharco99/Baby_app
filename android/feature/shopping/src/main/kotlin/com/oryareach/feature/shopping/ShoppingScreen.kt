@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -42,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,8 +71,20 @@ fun ShoppingScreen(
     uiState: ShoppingUiState,
     actions: ShoppingActions,
     modifier: Modifier = Modifier,
+    highlightId: String? = null,
+    onHighlightConsumed: () -> Unit = {},
 ) {
     var deleteConfirmItem by remember { mutableStateOf<ShoppingItem?>(null) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(highlightId, uiState.items) {
+        val index = uiState.items.indexOfFirst { it.id == highlightId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+            kotlinx.coroutines.delay(1500)
+            onHighlightConsumed()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize().safeDrawingPadding(),
@@ -106,6 +122,7 @@ fun ShoppingScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -115,6 +132,7 @@ fun ShoppingScreen(
                             item = item,
                             actions = actions,
                             onDeleteClick = { deleteConfirmItem = item },
+                            highlighted = item.id == highlightId,
                         )
                     }
                 }
@@ -188,9 +206,18 @@ private fun BudgetSummary(uiState: ShoppingUiState) {
 }
 
 @Composable
-private fun ShoppingRow(item: ShoppingItem, actions: ShoppingActions, onDeleteClick: () -> Unit) {
+private fun ShoppingRow(
+    item: ShoppingItem,
+    actions: ShoppingActions,
+    onDeleteClick: () -> Unit,
+    highlighted: Boolean = false,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (highlighted) {
+            Modifier.fillMaxWidth().border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+        } else {
+            Modifier.fillMaxWidth()
+        },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
@@ -307,6 +334,10 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
             modifier = Modifier.fillMaxWidth(),
         )
 
+        if (uiState.isEditing) {
+            AlternativesSection(uiState = uiState, actions = actions)
+        }
+
         Spacer(Modifier.height(4.dp))
 
         Button(
@@ -318,6 +349,47 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
         }
 
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun AlternativesSection(uiState: ShoppingUiState, actions: ShoppingActions) {
+    Text(
+        text = stringResource(R.string.shopping_field_alternatives),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    uiState.formAlternatives.forEach { alternative ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = alternative.name + alternative.price?.let { " · " + formatIls(it) }.orEmpty(),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = { actions.onRemoveAlternative(alternative.id) }) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.shopping_alternative_remove))
+            }
+        }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = uiState.formAltName,
+            onValueChange = actions::onAltNameChange,
+            label = { Text(stringResource(R.string.shopping_alternative_name)) },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        OutlinedTextField(
+            value = uiState.formAltPrice,
+            onValueChange = actions::onAltPriceChange,
+            label = { Text(stringResource(R.string.shopping_field_estimated_price)) },
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = actions::onAddAlternative, enabled = uiState.formAltName.isNotBlank()) {
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.shopping_alternative_add))
+        }
     }
 }
 
@@ -370,6 +442,10 @@ private object NoopShoppingActions : ShoppingActions {
     override fun onAssigneeChange(value: Assignee?) = Unit
     override fun onNoteChange(value: String) = Unit
     override fun onLinkChange(value: String) = Unit
+    override fun onAltNameChange(value: String) = Unit
+    override fun onAltPriceChange(value: String) = Unit
+    override fun onAddAlternative() = Unit
+    override fun onRemoveAlternative(id: String) = Unit
     override fun onSubmit() = Unit
     override fun onStatusChange(id: String, status: ShoppingStatus) = Unit
     override fun onDelete(id: String) = Unit

@@ -159,19 +159,45 @@ kept outside the repo, user holds the offline backup) and set all 4 secrets
 `ANDROID_KEY_PASSWORD`) via `gh secret set`. `v1.0.1` is the first tag built against real
 signing secrets.
 
-## Known minor gaps (real, low-priority, not blocking)
+## Phase 16: closed out the "known minor gaps" list
 
-- Shopping alternatives (per-item price comparison): DB column exists (JSON list), no UI to
-  add one.
-- Web-import: `Task.dueDate` not carried over from web-app JSON export (dead field since
-  Phase 1 — no UI/repository support for it regardless of import).
-- Scanner (`:core:scanner`): launch path confirmed live; actual page capture via real camera
-  never exercised (needs a physical document + camera, not something `adb` can drive).
-- Task/cycle document attachment (as opposed to folder placement): upload path shared with
-  folder import, which is live-verified, but the attachment-specific UI wasn't separately
-  tap-tested.
-- Search/Calendar "open result" only jumps to the owning tab, not the exact row/item
-  (documented, deliberate scope limit — no per-screen "scroll to id" support yet).
+Investigated all 5 items from Phase 15's gap list (a fork did the read-only investigation,
+concrete findings only, no speculation). Two were real work, one turned out to already be
+done, two were live-verified as already fine:
+
+- **Shopping alternatives UI — built.** The DB column, repository `update()`, and domain
+  model already fully supported `alternatives`/`chosenAlternativeId`; only the UI/ViewModel
+  layer was missing. Added `formAlternatives`/`formAltName`/`formAltPrice` to
+  `ShoppingUiState`, four new actions to `ShoppingViewModel` (add/remove alternative,
+  edit-name/price), and an `AlternativesSection` composable in `ShoppingForm` (shown only
+  when editing an existing item — a brand-new item has nothing to compare against yet).
+  Build-verified; live-verified the section renders correctly and Save stays reachable
+  below it (didn't complete a full add-round-trip live — ADB text-input kept landing on the
+  wrong field on this session's test device, not an app defect).
+- **Web-import `Task.dueDate` — false alarm, not a real gap.** Investigation found the field
+  fully wired end-to-end: `Task.kt` has had `dueDate` since the first tasks-feature commit,
+  `TasksScreen`'s date picker reads/writes it, `TaskRepository.create()`/`update()` persist
+  it, and `WebImportMapper.kt:89` already maps it from the web export JSON. The "dead field"
+  note in this doc was simply wrong — removed rather than acted on.
+- **Search/Calendar scroll-to-item — built.** `onNavigateToTab` (`SaharApp.kt`) now carries
+  an optional `recordId` alongside the destination tab. `HomeRoute` holds a
+  `highlightId: String?` alongside its tab state; `TasksScreen`/`ShoppingScreen`/
+  `DatesScreen` each gained an optional `highlightId`/`onHighlightConsumed` pair, a
+  `LazyListState`, and a `LaunchedEffect` that scrolls to the matching item and gives it a
+  2dp primary-color border for ~1.5s before clearing. Live-verified end-to-end: searched
+  "TestItem" from Search, tapped the result, landed on Shopping scrolled to and outlining
+  the right row, border faded cleanly on its own.
+- **Scanner real-camera capture — not independently re-verified.** Confirmed the
+  Attach/Scan-document row is present and reachable in the Tasks edit sheet's Attachments
+  section (screenshot). Couldn't complete a live tap-through of "Scan document" itself this
+  session — ADB tap coordinates kept going stale after keyboard show/hide cycles on the test
+  device, unrelated to the app. The underlying wiring (`rememberDocumentScanner`) was
+  already confirmed present and correct in Phase 15's investigation pass. Still genuinely
+  needs a human with a physical document in front of a camera — no amount of scripting
+  substitutes for that, as previously noted.
+- **Task/cycle document attachment UI — live-verified, no issue found.** Opened a task's
+  edit sheet on-device: title, category, priority, assignee, note, due date, tags, and the
+  Attach/Scan-document row all render correctly and the sheet scrolls properly to reach Save.
 
 ## Deferred (P2)
 

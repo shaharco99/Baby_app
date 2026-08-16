@@ -6,6 +6,7 @@ import com.oryareach.core.domain.shopping.calculateBudget
 import com.oryareach.core.model.Assignee
 import com.oryareach.core.model.Priority
 import com.oryareach.core.model.ShoppingCategory
+import com.oryareach.core.model.ShoppingAlternative
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
 
@@ -23,6 +24,9 @@ data class ShoppingUiState(
     val formAssignee: Assignee? = null,
     val formNote: String = "",
     val formLink: String = "",
+    val formAlternatives: List<ShoppingAlternative> = emptyList(),
+    val formAltName: String = "",
+    val formAltPrice: String = "",
 
     // Transient UI-only: must not survive the screen.
     val sheetVisible: Boolean = false,
