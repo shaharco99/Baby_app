@@ -41,6 +41,16 @@ jobs:
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
 
+      - name: Check Supabase config
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_URL/SUPABASE_ANON_KEY is not set. A release built without it crashes on launch (Koin fails constructing the Supabase client)."
+            exit 1
+          fi
+
       - name: Build release APK
         working-directory: android
         env:
@@ -48,6 +58,11 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # ORG_GRADLE_PROJECT_<name> is Gradle's own convention for exposing an env var as a
+          # project property — picked up by :core:network's `connectionSetting()` fallback to
+          # `providers.gradleProperty(name)` when no local.properties exists (CI has none).
+          ORG_GRADLE_PROJECT_supabaseUrl: ${{ secrets.SUPABASE_URL }}
+          ORG_GRADLE_PROJECT_supabaseAnonKey: ${{ secrets.SUPABASE_ANON_KEY }}
         run: ./gradlew :app:assembleRelease
 
       - name: Package release assets
