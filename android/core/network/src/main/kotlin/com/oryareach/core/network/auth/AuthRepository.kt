@@ -4,7 +4,9 @@ import com.oryareach.core.common.AppError
 import com.oryareach.core.common.AppResult
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,6 +30,12 @@ interface AuthRepository {
      * this is what "remember me" being checked by default on the sign-in form maps to.
      */
     suspend fun signIn(email: String, password: String, rememberMe: Boolean = true): AppResult<Unit>
+
+    /** [idToken] is the raw Google ID token obtained via Credential Manager (see
+     * `:core:security`'s `GoogleIdentitySignIn`) — Supabase verifies it server-side against
+     * the Google provider configured in its dashboard. Always "remembered": there is no
+     * password-based session here to distinguish a throwaway sign-in from a lasting one. */
+    suspend fun signInWithGoogle(idToken: String): AppResult<Unit>
     suspend fun signOut(): AppResult<Unit>
 }
 
@@ -68,6 +76,14 @@ class SupabaseAuthRepository(
         client.auth.signInWith(Email) {
             this.email = email
             this.password = password
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): AppResult<Unit> = attempt {
+        sessionManager.persistNextSession = true
+        client.auth.signInWith(IDToken) {
+            this.idToken = idToken
+            this.provider = Google
         }
     }
 

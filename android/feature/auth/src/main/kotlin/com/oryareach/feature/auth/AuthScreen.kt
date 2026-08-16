@@ -18,14 +18,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
@@ -36,7 +40,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.oryareach.core.security.BuildConfig as SecurityBuildConfig
+import com.oryareach.core.security.GoogleIdentitySignIn
 import com.oryareach.core.ui.theme.OrYareachTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen(
@@ -188,6 +195,20 @@ fun AuthScreen(
                 }
             }
 
+            Spacer(Modifier.height(4.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HorizontalDivider(modifier = Modifier.weight(1f))
+                Text(
+                    stringResource(R.string.auth_or_divider),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f))
+            }
+
+            GoogleSignInButton(uiState = uiState, actions = actions)
+
             TextButton(
                 onClick = {
                     actions.onModeChange(
@@ -210,6 +231,51 @@ fun AuthScreen(
     }
 }
 
+/**
+ * Owns the Credential Manager call itself — it needs an Android `Context`, which [AuthViewModel]
+ * must not hold — and only ever hands the ViewModel a finished result: the raw ID token on
+ * success, via [AuthActions.onGoogleIdToken], or a failure via [AuthActions.onGoogleSignInFailed].
+ * A user simply dismissing the account picker is treated as silence, not an error — Credential
+ * Manager throws a `GetCredentialCancellationException` for that, which the caller doesn't need
+ * to see as "something went wrong".
+ */
+@Composable
+private fun GoogleSignInButton(uiState: AuthUiState, actions: AuthActions) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    OutlinedButton(
+        onClick = {
+            actions.onGoogleSignInStarted()
+            scope.launch {
+                val clientId = SecurityBuildConfig.GOOGLE_WEB_CLIENT_ID
+                if (clientId.isBlank()) {
+                    actions.onGoogleSignInFailed("No Google OAuth client id configured")
+                    return@launch
+                }
+                GoogleIdentitySignIn.getIdToken(context, clientId).fold(
+                    onSuccess = { idToken -> actions.onGoogleIdToken(idToken) },
+                    onFailure = { error ->
+                        if (error::class.simpleName == "GetCredentialCancellationException") {
+                            actions.onGoogleSignInFailed(null)
+                        } else {
+                            actions.onGoogleSignInFailed(error.message)
+                        }
+                    },
+                )
+            }
+        },
+        enabled = !uiState.submitting && !uiState.googleSigningIn,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        if (uiState.googleSigningIn) {
+            CircularProgressIndicator(modifier = Modifier.height(20.dp), strokeWidth = 2.dp)
+        } else {
+            Text(stringResource(R.string.auth_continue_with_google))
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun AuthPreview() {
@@ -225,4 +291,7 @@ private object NoopAuthActions : AuthActions {
     override fun onRememberMeChange(value: Boolean) = Unit
     override fun onModeChange(mode: AuthMode) = Unit
     override fun onSubmit() = Unit
+    override fun onGoogleIdToken(idToken: String) = Unit
+    override fun onGoogleSignInStarted() = Unit
+    override fun onGoogleSignInFailed(message: String?) = Unit
 }

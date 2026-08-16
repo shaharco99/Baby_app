@@ -14,10 +14,13 @@
     <string name="auth_switch_to_sign_up">No account yet? Create one</string>
     <string name="auth_switch_to_sign_in">Already have an account? Sign in</string>
     <string name="auth_confirmation_sent">Check your email to confirm the account.</string>
+    <string name="auth_or_divider">or</string>
+    <string name="auth_continue_with_google">Continue with Google</string>
 
     <string name="auth_error_credentials">That email or password is not right.</string>
     <string name="auth_error_offline">No connection. Check your internet and try again.</string>
     <string name="auth_error_timeout">The server took too long to answer. Try again.</string>
     <string name="auth_error_already_registered">That email already has an account.</string>
     <string name="auth_error_generic">Something went wrong. Try again.</string>
+    <string name="auth_error_google_failed">Google sign-in did not complete. Try again.</string>
 </resources>

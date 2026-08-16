@@ -14,10 +14,13 @@
     <string name="auth_switch_to_sign_up">אין עדיין חשבון? צרו אחד</string>
     <string name="auth_switch_to_sign_in">יש כבר חשבון? כניסה</string>
     <string name="auth_confirmation_sent">בדקו את האימייל כדי לאשר את החשבון.</string>
+    <string name="auth_or_divider">או</string>
+    <string name="auth_continue_with_google">המשיכו עם Google</string>
 
     <string name="auth_error_credentials">האימייל או הסיסמה אינם נכונים.</string>
     <string name="auth_error_offline">אין חיבור. בדקו את האינטרנט ונסו שוב.</string>
     <string name="auth_error_timeout">השרת לא הגיב בזמן. נסו שוב.</string>
     <string name="auth_error_already_registered">לאימייל הזה כבר יש חשבון.</string>
     <string name="auth_error_generic">משהו השתבש. נסו שוב.</string>
+    <string name="auth_error_google_failed">ההתחברות עם Google לא הושלמה. נסו שוב.</string>
 </resources>

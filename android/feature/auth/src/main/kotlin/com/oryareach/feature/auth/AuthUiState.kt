@@ -15,6 +15,7 @@ data class AuthUiState(
 
     // Transient UI-only: must not survive the screen
     val submitting: Boolean = false,
+    val googleSigningIn: Boolean = false,
     val passwordVisible: Boolean = false,
     @StringRes val errorMessage: Int? = null,
 
@@ -28,7 +29,7 @@ data class AuthUiState(
 
     val passwordValid: Boolean get() = password.length >= MIN_PASSWORD_LENGTH
 
-    val canSubmit: Boolean get() = emailValid && passwordValid && !submitting
+    val canSubmit: Boolean get() = emailValid && passwordValid && !submitting && !googleSigningIn
 
     companion object {
         /** Matches the minimum enforced by the Supabase project. */

@@ -39,6 +39,18 @@ android {
             "GOOGLE_CALENDAR_OAUTH_CLIENT_ID",
             "\"${connectionSetting("googleCalendarOauthClientId")}\"",
         )
+        // Same kind of value as GOOGLE_CALENDAR_OAUTH_CLIENT_ID above (a Google Cloud Console
+        // Web-application-type OAuth client id, used as Credential Manager's "server client
+        // id") but kept as its own property — "sign in with Google" and the Calendar
+        // integration are unrelated features that happen to both need one of these, and
+        // there's no reason forcing them to share a client id if the app owner ever wants
+        // to split them. Point both at the same value in local.properties if one client
+        // covers both for now.
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${connectionSetting("googleWebClientId")}\"",
+        )
     }
 
     buildFeatures {

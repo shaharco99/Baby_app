@@ -20,6 +20,16 @@ interface AuthActions {
     fun onRememberMeChange(value: Boolean)
     fun onModeChange(mode: AuthMode)
     fun onSubmit()
+
+    /** Called once Credential Manager (see [com.oryareach.core.security.GoogleIdentitySignIn],
+     * invoked by the Composable — it needs an Android `Context`, which a ViewModel must not
+     * hold) has returned a Google ID token. */
+    fun onGoogleIdToken(idToken: String)
+    fun onGoogleSignInStarted()
+
+    /** [message] null means the user just dismissed the account picker — not an error worth
+     * showing. Anything else surfaces a generic failure message. */
+    fun onGoogleSignInFailed(message: String?)
 }
 
 class AuthViewModel(private val auth: AuthRepository) : ViewModel(), AuthActions {
@@ -91,6 +101,35 @@ class AuthViewModel(private val auth: AuthRepository) : ViewModel(), AuthActions
                     it.copy(submitting = false, errorMessage = result.error.toMessageRes())
                 }
             }
+        }
+    }
+
+    override fun onGoogleSignInStarted() {
+        _uiState.update { it.copy(googleSigningIn = true, errorMessage = null, infoMessage = null) }
+    }
+
+    override fun onGoogleIdToken(idToken: String) {
+        viewModelScope.launch {
+            when (val result = auth.signInWithGoogle(idToken)) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(googleSigningIn = false) }
+                    _effects.trySend(AuthEffect.SignedIn)
+                }
+                is AppResult.Failure -> _uiState.update {
+                    it.copy(googleSigningIn = false, errorMessage = result.error.toMessageRes())
+                }
+            }
+        }
+    }
+
+    /** [message] is null for a silent dismissal (the user closed the account picker) — that
+     * gets no error text, just resets the spinner. Anything else shows the generic message. */
+    override fun onGoogleSignInFailed(message: String?) {
+        _uiState.update {
+            it.copy(
+                googleSigningIn = false,
+                errorMessage = if (message == null) null else R.string.auth_error_google_failed,
+            )
         }
     }
 }
