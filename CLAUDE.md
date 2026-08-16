@@ -64,7 +64,7 @@ Tests live next to code they cover (`*.test.ts`), config = `vitest.config.ts` (s
 
 **Bottom sheets and keyboard**: add/edit forms (`shopping-item-form.tsx`, `task-form.tsx`, `date-form.tsx`) use `Sheet` (`side="bottom"`) w/ max-height clamped to `--visual-vh` CSS var, kept live by `useVisualViewportHeight()` (`src/lib/use-visual-viewport.ts`, mounted once in `RootLayout`). iOS Safari fallback for mobile-keyboard-covers-sheet problem; `index.html`'s `interactive-widget=resizes-content` viewport meta handles natively on Chromium. Adding another bottom sheet w/ form inputs: reuse same `max-h-[min(92dvh,calc(var(--visual-vh,100dvh)*0.92))]` pattern rather than bare `dvh` value.
 
-**PWA / deploy**: `vite.config.ts` sets `base: '/Baby_Prep_Site-Shahar-Topaz-/'` for GitHub Pages — must match repo name if repo ever renamed. `VitePWA` config (manifest, workbox caching) also lives there. Deploys automatically via `.github/workflows/deploy.yml` on push to `main`; GitHub Pages source must be set to "GitHub Actions" once per repo.
+**PWA / deploy**: `vite.config.ts` sets `base: '/Baby_app/'` for GitHub Pages — must match repo name if repo ever renamed. `VitePWA` config (manifest, workbox caching) also lives there. Deploys automatically via `.github/workflows/deploy.yml` on push to `main`; GitHub Pages source must be set to "GitHub Actions" once per repo.
 
 **Compiler**: React Compiler enabled via `@rolldown/plugin-babel` + `reactCompilerPreset()` in `vite.config.ts` — avoid manual `useMemo`/`useCallback` unless specific reason, compiler handles most of it.
 
