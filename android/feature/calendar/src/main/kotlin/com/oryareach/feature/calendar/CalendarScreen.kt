@@ -96,6 +96,7 @@ fun CalendarScreen(
                 LegendRow(color = MaterialTheme.colorScheme.primary, label = stringResource(R.string.calendar_legend_task))
                 LegendRow(color = MaterialTheme.colorScheme.tertiary, label = stringResource(R.string.calendar_legend_important_date))
                 LegendRow(color = MaterialTheme.colorScheme.error, label = stringResource(R.string.calendar_legend_period))
+                LegendRow(color = MaterialTheme.colorScheme.secondary, label = stringResource(R.string.calendar_legend_google))
             }
         }
       }
@@ -165,6 +166,7 @@ private fun DayCell(day: Int, kinds: Set<CalendarEventKind>, onClick: () -> Unit
             if (CalendarEventKind.PERIOD_ACTUAL in kinds || CalendarEventKind.PERIOD_PREDICTED in kinds) {
                 Dot(MaterialTheme.colorScheme.error)
             }
+            if (CalendarEventKind.GOOGLE_EVENT in kinds) Dot(MaterialTheme.colorScheme.secondary)
         }
     }
 }

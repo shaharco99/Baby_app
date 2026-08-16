@@ -3,17 +3,22 @@ package com.oryareach.feature.calendar
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oryareach.core.calendar.GoogleCalendarSyncRepository
 import com.oryareach.core.database.repository.CycleRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.cycle.calculateCycleStatistics
 import com.oryareach.core.domain.cycle.predictNextCycle
 import com.oryareach.core.model.EntityType
+import com.oryareach.core.settings.SettingsPreferences
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -45,6 +50,8 @@ class CalendarViewModel(
     private val cycles: CycleRepository,
     private val syncEngine: com.oryareach.core.sync.SyncEngine,
     private val workspaceId: () -> String?,
+    private val googleCalendarSync: GoogleCalendarSyncRepository,
+    private val settingsPreferences: SettingsPreferences,
 ) : ViewModel(), CalendarActions {
 
     private val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -54,14 +61,23 @@ class CalendarViewModel(
     private val _effects = Channel<CalendarEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val googleEventsFlow = settingsPreferences.selectedGoogleCalendarIds
+        .flatMapLatest { ids -> googleCalendarSync.observeCachedEvents(ids.toList()) }
+
     init {
+        // Cached Google events are device-local, not workspace-scoped — always observed
+        // regardless of pairing state, unlike the three repositories below. `flatMapLatest`
+        // re-subscribes to the cache whenever the selected calendar set changes (e.g. after the
+        // user picks calendars in Settings).
         workspaceId()?.let { id ->
             viewModelScope.launch {
                 combine(
                     tasks.observeAll(id),
                     importantDates.observeAll(id),
                     cycles.observeAll(id),
-                ) { taskList, dateList, cycleList ->
+                    googleEventsFlow,
+                ) { taskList, dateList, cycleList, googleEventList ->
                     val taskEvents = taskList.mapNotNull { task ->
                         task.dueDate?.let {
                             CalendarEvent(it, EntityType.TASK, task.id, task.title, CalendarEventKind.TASK_DUE)
@@ -84,8 +100,17 @@ class CalendarViewModel(
                             CalendarEvent(it, EntityType.CYCLE, "predicted", "", CalendarEventKind.PERIOD_PREDICTED)
                         }
                     }.orEmpty()
+                    val remoteEvents = googleEventList.map { event ->
+                        CalendarEvent(
+                            date = event.startAt.date,
+                            entityType = null,
+                            recordId = event.id,
+                            title = event.title,
+                            kind = CalendarEventKind.GOOGLE_EVENT,
+                        )
+                    }
 
-                    taskEvents + dateEvents + actualEvents + predictedEvents
+                    taskEvents + dateEvents + actualEvents + predictedEvents + remoteEvents
                 }.collect { events -> set { it.copy(events = events) } }
             }
         }
@@ -107,7 +132,11 @@ class CalendarViewModel(
         if (_uiState.value.refreshing) return
         set { it.copy(refreshing = true) }
         viewModelScope.launch {
+            val selectedGoogleCalendarIds = settingsPreferences.selectedGoogleCalendarIds.first()
+            // Independent of SyncEngine (that's the couple's Supabase workspace sync) — this is
+            // a separate, simpler on-demand fetch against the connected Google account, if any.
             syncEngine.sync()
+            googleCalendarSync.refresh(selectedGoogleCalendarIds.toList())
             set { it.copy(refreshing = false) }
         }
     }

@@ -9,11 +9,14 @@ enum class CalendarEventKind {
     IMPORTANT_DATE,
     PERIOD_ACTUAL,
     PERIOD_PREDICTED,
+    GOOGLE_EVENT,
 }
 
 data class CalendarEvent(
     val date: LocalDate,
-    val entityType: EntityType,
+    /** Null for [CalendarEventKind.GOOGLE_EVENT]: a fetched Google event has no in-app record
+     * or tab to open, unlike every other kind here — see [CalendarEffect.OpenEvent]. */
+    val entityType: EntityType?,
     val recordId: String,
     val title: String,
     val kind: CalendarEventKind,

@@ -56,6 +56,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:update"))
     implementation(project(":core:settings"))
+    implementation(project(":core:calendar"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:search"))

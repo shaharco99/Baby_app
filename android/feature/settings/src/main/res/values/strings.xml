@@ -21,6 +21,15 @@
     <string name="settings_devices_title">Devices</string>
     <string name="settings_manage_devices">Manage devices</string>
 
+    <string name="settings_google_calendar_title">Google Calendar</string>
+    <string name="settings_google_calendar_body">Show a read-only view of your Google Calendar events on the Calendar page. Events you add in this app are never sent to Google.</string>
+    <string name="settings_google_calendar_connect">Connect Google Calendar</string>
+    <string name="settings_google_calendar_connected_as">Connected as %1$s</string>
+    <string name="settings_google_calendar_choose_calendars">Choose calendars</string>
+    <string name="settings_google_calendar_disconnect">Disconnect</string>
+    <string name="settings_google_calendar_picker_title">Show events from</string>
+    <string name="settings_google_calendar_picker_empty">No calendars found on this account.</string>
+
     <string name="settings_sign_out">Sign out</string>
     <string name="settings_sign_out_title">Sign out?</string>
     <string name="settings_sign_out_body">You will need to pair this device again to see your data.</string>

@@ -21,6 +21,15 @@
     <string name="settings_devices_title">מכשירים</string>
     <string name="settings_manage_devices">ניהול מכשירים</string>
 
+    <string name="settings_google_calendar_title">יומן Google</string>
+    <string name="settings_google_calendar_body">הצגת אירועי יומן Google שלך (לקריאה בלבד) בעמוד היומן. אירועים שמוסיפים באפליקציה הזו לא נשלחים ל-Google.</string>
+    <string name="settings_google_calendar_connect">חיבור יומן Google</string>
+    <string name="settings_google_calendar_connected_as">מחובר כ-%1$s</string>
+    <string name="settings_google_calendar_choose_calendars">בחירת יומנים</string>
+    <string name="settings_google_calendar_disconnect">ניתוק</string>
+    <string name="settings_google_calendar_picker_title">הצגת אירועים מתוך</string>
+    <string name="settings_google_calendar_picker_empty">לא נמצאו יומנים בחשבון הזה.</string>
+
     <string name="settings_sign_out">התנתקות</string>
     <string name="settings_sign_out_title">להתנתק?</string>
     <string name="settings_sign_out_body">יהיה עליך לצמד את המכשיר הזה מחדש כדי לראות את הנתונים שלך.</string>

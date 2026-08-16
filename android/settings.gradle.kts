@@ -37,6 +37,7 @@ include(":core:update")
 include(":core:domain")
 include(":core:scanner")
 include(":core:settings")
+include(":core:calendar")
 
 include(":feature:auth")
 include(":feature:pairing")

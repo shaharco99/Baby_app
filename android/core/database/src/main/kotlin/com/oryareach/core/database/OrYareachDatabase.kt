@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.oryareach.core.database.dao.AppSettingsDao
+import com.oryareach.core.database.dao.CachedCalendarEventDao
 import com.oryareach.core.database.dao.CycleEntryDao
 import com.oryareach.core.database.dao.DocumentDao
 import com.oryareach.core.database.dao.FolderDao
@@ -15,6 +16,7 @@ import com.oryareach.core.database.dao.SyncOperationDao
 import com.oryareach.core.database.dao.SyncStateDao
 import com.oryareach.core.database.dao.TaskDao
 import com.oryareach.core.database.entity.AppSettingsEntity
+import com.oryareach.core.database.entity.CachedCalendarEventEntity
 import com.oryareach.core.database.entity.CycleEntryEntity
 import com.oryareach.core.database.entity.DocumentEntity
 import com.oryareach.core.database.entity.FolderEntity
@@ -41,8 +43,9 @@ import com.oryareach.core.database.entity.TaskEntity
         SyncOperationEntity::class,
         SyncCursorEntity::class,
         SyncConflictEntity::class,
+        CachedCalendarEventEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -58,6 +61,7 @@ abstract class OrYareachDatabase : RoomDatabase() {
     abstract fun searchDao(): SearchDao
     abstract fun syncOperationDao(): SyncOperationDao
     abstract fun syncStateDao(): SyncStateDao
+    abstract fun cachedCalendarEventDao(): CachedCalendarEventDao
 
     companion object {
         const val NAME = "or-yareach.db"

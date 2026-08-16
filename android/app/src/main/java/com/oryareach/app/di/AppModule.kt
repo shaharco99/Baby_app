@@ -3,6 +3,13 @@ package com.oryareach.app.di
 import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.sync.WorkManagerSyncTrigger
+import com.oryareach.core.calendar.CalendarEventSource
+import com.oryareach.core.calendar.GoogleAccessTokenProvider
+import com.oryareach.core.calendar.GoogleCalendarApi
+import com.oryareach.core.calendar.GoogleCalendarSyncRepository
+import com.oryareach.core.security.GoogleCalendarAuthManager
+import com.oryareach.core.security.GoogleCalendarAuthManagerImpl
+import com.oryareach.core.security.GoogleCalendarTokenStore
 import com.oryareach.core.settings.ReminderScheduler
 import com.oryareach.core.settings.SettingsPreferences
 import com.oryareach.core.database.DatabaseFactory
@@ -85,6 +92,7 @@ val appModule = module {
     single { get<OrYareachDatabase>().documentDao() }
     single { get<OrYareachDatabase>().syncOperationDao() }
     single { get<OrYareachDatabase>().syncStateDao() }
+    single { get<OrYareachDatabase>().cachedCalendarEventDao() }
 
     single<WorkspaceKeyProvider> { get<SessionState>().keyProvider() }
     single { RecordCodec(keys = get()) }
@@ -100,6 +108,17 @@ val appModule = module {
     single { SyncEngine(store = get(), remote = get()) }
 
     single { DeviceIdentity(get()) }
+
+    // Google Calendar (phase 1, docs/specs/03-google-calendar-integration.md) — entirely
+    // separate from the workspace pairing/session above: a device-local Google credential that
+    // never syncs to Supabase. See GoogleCalendarTokenStore's doc comment.
+    single { GoogleCalendarTokenStore(androidContext()) }
+    single<GoogleCalendarAuthManager> { GoogleCalendarAuthManagerImpl(androidContext(), get()) }
+    // Same cross-module lambda seam as `workspaceIdQualifier` above: `:core:calendar` depends on
+    // a token-supplying function, not on `:core:security`'s concrete auth manager.
+    single<GoogleAccessTokenProvider> { GoogleAccessTokenProvider { get<GoogleCalendarAuthManager>().currentAccessToken() } }
+    single<CalendarEventSource> { GoogleCalendarApi(get()) }
+    single { GoogleCalendarSyncRepository(database = get(), source = get()) }
 
     single { VersionManager(androidContext()) }
     single { ReleaseChecker(versionManager = get()) }
@@ -195,6 +214,8 @@ val appModule = module {
             session = get(),
             auth = get(),
             localDataWiper = get(),
+            googleCalendarAuth = get(),
+            googleCalendarSync = get(),
         )
     }
     viewModel {
@@ -210,6 +231,8 @@ val appModule = module {
             cycles = get(),
             syncEngine = get(),
             workspaceId = { get<SessionState>().workspaceId },
+            googleCalendarSync = get(),
+            settingsPreferences = get(),
         )
     }
     viewModel { ConflictsViewModel(repository = get()) }

@@ -14,6 +14,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -68,6 +71,7 @@ fun SettingsScreen(
             item { NotificationsSection(uiState = uiState, actions = actions) }
             item { RecoverySection(actions = actions) }
             item { DevicesSection(actions = actions) }
+            item { GoogleCalendarSection(uiState = uiState, actions = actions) }
             item { footer() }
 
             item {
@@ -221,6 +225,92 @@ private fun DevicesSection(actions: SettingsActions) {
 }
 
 @Composable
+private fun GoogleCalendarSection(uiState: SettingsUiState, actions: SettingsActions) {
+    val context = LocalContext.current
+
+    SectionCard(title = stringResource(R.string.settings_google_calendar_title)) {
+        Text(
+            text = stringResource(R.string.settings_google_calendar_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        uiState.googleCalendarError?.let { error ->
+            Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
+
+        if (uiState.googleCalendarConnected) {
+            uiState.googleCalendarAccountEmail?.let { email ->
+                Text(
+                    stringResource(R.string.settings_google_calendar_connected_as, email),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            OutlinedButton(
+                onClick = actions::onOpenCalendarPickerClick,
+                enabled = !uiState.googleCalendarBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_google_calendar_choose_calendars))
+            }
+            TextButton(onClick = actions::onDisconnectGoogleCalendarClick, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_google_calendar_disconnect))
+            }
+        } else {
+            Button(
+                onClick = { actions.onConnectGoogleCalendarClick(context) },
+                enabled = !uiState.googleCalendarBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_google_calendar_connect))
+            }
+        }
+
+        if (uiState.googleCalendarBusy) {
+            CircularProgressIndicator(modifier = Modifier.padding(top = 4.dp))
+        }
+    }
+
+    if (uiState.calendarPickerVisible) {
+        AlertDialog(
+            onDismissRequest = actions::onDismissCalendarPicker,
+            title = { Text(stringResource(R.string.settings_google_calendar_picker_title)) },
+            text = {
+                if (uiState.availableGoogleCalendars.isEmpty() && !uiState.googleCalendarBusy) {
+                    Text(
+                        stringResource(R.string.settings_google_calendar_picker_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                } else {
+                    Column {
+                        uiState.availableGoogleCalendars.forEach { option ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .toggleable(
+                                        value = option.selected,
+                                        onValueChange = { actions.onToggleCalendarSelection(option.id) },
+                                        role = Role.Checkbox,
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(checked = option.selected, onCheckedChange = null)
+                                Text(option.summary, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = actions::onDismissCalendarPicker) {
+                    Text(stringResource(R.string.settings_close))
+                }
+            },
+        )
+    }
+}
+
+@Composable
 private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
@@ -257,4 +347,10 @@ private object NoopSettingsActions : SettingsActions {
     override fun onDismissRecoveryPhrase() = Unit
     override fun onManageDevicesClick() = Unit
     override fun onSignOutClick() = Unit
+    override fun onConnectGoogleCalendarClick(context: android.content.Context) = Unit
+    override fun onGoogleCalendarResolutionResult(resultCode: Int, data: android.content.Intent?) = Unit
+    override fun onOpenCalendarPickerClick() = Unit
+    override fun onDismissCalendarPicker() = Unit
+    override fun onToggleCalendarSelection(calendarId: String) = Unit
+    override fun onDisconnectGoogleCalendarClick() = Unit
 }

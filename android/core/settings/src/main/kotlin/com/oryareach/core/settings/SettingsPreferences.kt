@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -30,6 +31,7 @@ class SettingsPreferences(private val context: Context) {
         val autoLockTimeoutMinutes = intPreferencesKey("auto_lock_timeout_minutes")
         val screenshotsBlocked = booleanPreferencesKey("screenshots_blocked")
         val notificationsEnabled = booleanPreferencesKey("notifications_enabled")
+        val selectedGoogleCalendarIds = stringSetPreferencesKey("selected_google_calendar_ids")
     }
 
     val biometricUnlockEnabled: Flow<Boolean> =
@@ -46,6 +48,12 @@ class SettingsPreferences(private val context: Context) {
     val notificationsEnabled: Flow<Boolean> =
         context.settingsDataStore.data.map { it[Keys.notificationsEnabled] ?: false }
 
+    /** Which of the connected Google account's calendars to show on the Calendar page. Empty
+     * until the user picks at least one — see `:feature:settings`'s calendar picker. Device-local
+     * like the rest of this file: which calendars a device shows is not couple-shared data. */
+    val selectedGoogleCalendarIds: Flow<Set<String>> =
+        context.settingsDataStore.data.map { it[Keys.selectedGoogleCalendarIds] ?: emptySet() }
+
     suspend fun setBiometricUnlockEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.biometricUnlockEnabled] = enabled }
     }
@@ -60,6 +68,10 @@ class SettingsPreferences(private val context: Context) {
 
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.notificationsEnabled] = enabled }
+    }
+
+    suspend fun setSelectedGoogleCalendarIds(ids: Set<String>) {
+        context.settingsDataStore.edit { it[Keys.selectedGoogleCalendarIds] = ids }
     }
 
     companion object {

@@ -9,4 +9,5 @@
     <string name="calendar_legend_important_date">תאריך</string>
     <string name="calendar_legend_period">וסת</string>
     <string name="calendar_period_predicted">וסת צפויה</string>
+    <string name="calendar_legend_google">יומן Google</string>
 </resources>

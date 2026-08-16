@@ -8,4 +8,5 @@ internal fun CalendarEventKind.labelRes(): Int = when (this) {
     CalendarEventKind.IMPORTANT_DATE -> R.string.calendar_legend_important_date
     CalendarEventKind.PERIOD_ACTUAL -> R.string.calendar_legend_period
     CalendarEventKind.PERIOD_PREDICTED -> R.string.calendar_period_predicted
+    CalendarEventKind.GOOGLE_EVENT -> R.string.calendar_legend_google
 }

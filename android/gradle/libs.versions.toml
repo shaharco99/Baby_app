@@ -16,14 +16,17 @@ bouncycastle = "1.85.2"
 composeBom = "2026.08.00"
 coreKtx = "1.19.0"
 coroutines = "1.11.0"
+credentials = "1.5.0"
 datastore = "1.2.1"
 datetime = "0.8.0"
+googleid = "1.1.1"
 junit = "4.13.2"
 koin = "4.2.2"
 kotest = "6.0.4"
 ktor = "3.5.2"
 lifecycle = "2.11.0"
 mlkitDocumentScanner = "16.0.0"
+playServicesAuth = "21.3.0"
 navigation = "2.9.8"
 room = "2.8.4"
 serialization = "1.11.0"
@@ -45,6 +48,14 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 
 mlkit-document-scanner = { module = "com.google.android.gms:play-services-mlkit-document-scanner", version.ref = "mlkitDocumentScanner" }
+
+# Google Calendar integration (phase 1, docs/specs/03-google-calendar-integration.md): identity
+# sign-in via Credential Manager, scope authorization + access token via the Identity
+# Authorization API (play-services-auth) — neither is the deprecated GoogleSignInClient.
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
@@ -81,6 +92,9 @@ supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }

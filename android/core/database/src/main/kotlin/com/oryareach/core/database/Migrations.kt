@@ -397,3 +397,35 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
         )
     }
 }
+
+/** Adds `cached_calendar_events` — the Google Calendar read-only integration's local cache
+ * (phase 1, docs/specs/03-google-calendar-integration.md). Deliberately not a synced entity: no
+ * `sync_status`/`workspace_id`/etc columns, and not part of [RoomSyncStore]'s `EntityType` set —
+ * see [CachedCalendarEventEntity]'s doc comment. */
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `cached_calendar_events` (
+                `id` TEXT NOT NULL,
+                `calendar_id` TEXT NOT NULL,
+                `event_id` TEXT NOT NULL,
+                `title` TEXT NOT NULL,
+                `start_at` TEXT NOT NULL,
+                `end_at` TEXT NOT NULL,
+                `all_day` INTEGER NOT NULL,
+                `fetched_at` INTEGER NOT NULL,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_cached_calendar_events_calendar_id` " +
+                "ON `cached_calendar_events` (`calendar_id`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_cached_calendar_events_start_at` " +
+                "ON `cached_calendar_events` (`start_at`)",
+        )
+    }
+}

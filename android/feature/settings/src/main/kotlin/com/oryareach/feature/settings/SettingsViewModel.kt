@@ -1,11 +1,16 @@
 package com.oryareach.feature.settings
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oryareach.core.calendar.GoogleCalendarSyncRepository
 import com.oryareach.core.crypto.RecoveryPhrase
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.security.DeviceIdentity
+import com.oryareach.core.security.GoogleCalendarAuthManager
+import com.oryareach.core.security.GoogleCalendarConnectResult
 import com.oryareach.core.security.LocalDataWiper
 import com.oryareach.core.security.SessionController
 import com.oryareach.core.settings.ReminderScheduler
@@ -30,6 +35,12 @@ interface SettingsActions {
     fun onDismissRecoveryPhrase()
     fun onManageDevicesClick()
     fun onSignOutClick()
+    fun onConnectGoogleCalendarClick(context: Context)
+    fun onGoogleCalendarResolutionResult(resultCode: Int, data: Intent?)
+    fun onOpenCalendarPickerClick()
+    fun onDismissCalendarPicker()
+    fun onToggleCalendarSelection(calendarId: String)
+    fun onDisconnectGoogleCalendarClick()
 }
 
 class SettingsViewModel(
@@ -39,10 +50,19 @@ class SettingsViewModel(
     private val session: SessionController,
     private val auth: AuthRepository,
     private val localDataWiper: LocalDataWiper,
+    private val googleCalendarAuth: GoogleCalendarAuthManager,
+    private val googleCalendarSync: GoogleCalendarSyncRepository,
 ) : ViewModel(), SettingsActions {
 
-    private val _uiState = MutableStateFlow(SettingsUiState())
+    private val _uiState = MutableStateFlow(
+        SettingsUiState(
+            googleCalendarConnected = googleCalendarAuth.isConnected(),
+            googleCalendarAccountEmail = googleCalendarAuth.connectedAccountEmail(),
+        ),
+    )
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    private var selectedCalendarIds: Set<String> = emptySet()
 
     private val _effects = Channel<SettingsEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
@@ -66,6 +86,9 @@ class SettingsViewModel(
                     )
                 }
             }
+        }
+        viewModelScope.launch {
+            preferences.selectedGoogleCalendarIds.collect { ids -> selectedCalendarIds = ids }
         }
     }
 
@@ -123,6 +146,106 @@ class SettingsViewModel(
             // Restarts the process — nothing after this point runs; see LocalDataWiper's
             // doc comment for why the database can't just be swapped out in place.
             localDataWiper.wipeAndRestart()
+        }
+    }
+
+    override fun onConnectGoogleCalendarClick(context: Context) {
+        if (_uiState.value.googleCalendarBusy) return
+        set { it.copy(googleCalendarBusy = true, googleCalendarError = null) }
+        viewModelScope.launch {
+            applyGoogleCalendarResult(googleCalendarAuth.connect(context))
+        }
+    }
+
+    override fun onGoogleCalendarResolutionResult(resultCode: Int, data: Intent?) {
+        set { it.copy(googleCalendarBusy = true, googleCalendarError = null) }
+        viewModelScope.launch {
+            applyGoogleCalendarResult(googleCalendarAuth.completeResolution(resultCode, data))
+        }
+    }
+
+    private suspend fun applyGoogleCalendarResult(result: GoogleCalendarConnectResult) {
+        when (result) {
+            is GoogleCalendarConnectResult.Connected -> {
+                set {
+                    it.copy(
+                        googleCalendarBusy = false,
+                        googleCalendarConnected = true,
+                        googleCalendarAccountEmail = googleCalendarAuth.connectedAccountEmail(),
+                    )
+                }
+                onOpenCalendarPickerClick()
+            }
+            is GoogleCalendarConnectResult.ResolutionRequired -> {
+                set { it.copy(googleCalendarBusy = false) }
+                _effects.trySend(SettingsEffect.LaunchGoogleCalendarResolution(result.intentSender))
+            }
+            is GoogleCalendarConnectResult.Failed -> {
+                set { it.copy(googleCalendarBusy = false, googleCalendarError = result.message) }
+            }
+        }
+    }
+
+    override fun onOpenCalendarPickerClick() {
+        set { it.copy(calendarPickerVisible = true, googleCalendarBusy = true, googleCalendarError = null) }
+        viewModelScope.launch {
+            googleCalendarSync.fetchCalendarList()
+                .onSuccess { calendars ->
+                    set {
+                        it.copy(
+                            googleCalendarBusy = false,
+                            availableGoogleCalendars = calendars.map { entry ->
+                                GoogleCalendarOption(
+                                    id = entry.id,
+                                    summary = entry.summary,
+                                    selected = entry.id in selectedCalendarIds,
+                                )
+                            },
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    set { it.copy(googleCalendarBusy = false, googleCalendarError = error.message) }
+                }
+        }
+    }
+
+    override fun onDismissCalendarPicker() = set { it.copy(calendarPickerVisible = false) }
+
+    override fun onToggleCalendarSelection(calendarId: String) {
+        val newSelection = if (calendarId in selectedCalendarIds) {
+            selectedCalendarIds - calendarId
+        } else {
+            selectedCalendarIds + calendarId
+        }
+        selectedCalendarIds = newSelection
+        set {
+            it.copy(
+                availableGoogleCalendars = it.availableGoogleCalendars.map { option ->
+                    if (option.id == calendarId) option.copy(selected = !option.selected) else option
+                },
+            )
+        }
+        viewModelScope.launch {
+            preferences.setSelectedGoogleCalendarIds(newSelection)
+            googleCalendarSync.refresh(newSelection.toList())
+        }
+    }
+
+    override fun onDisconnectGoogleCalendarClick() {
+        googleCalendarAuth.disconnect()
+        selectedCalendarIds = emptySet()
+        set {
+            it.copy(
+                googleCalendarConnected = false,
+                googleCalendarAccountEmail = null,
+                availableGoogleCalendars = emptyList(),
+                calendarPickerVisible = false,
+            )
+        }
+        viewModelScope.launch {
+            preferences.setSelectedGoogleCalendarIds(emptySet())
+            googleCalendarSync.refresh(emptyList())
         }
     }
 

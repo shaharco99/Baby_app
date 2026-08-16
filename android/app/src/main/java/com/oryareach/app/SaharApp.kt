@@ -401,7 +401,9 @@ private fun CalendarRoute(
             viewModel.effects.collect { effect ->
                 when (effect) {
                     is CalendarEffect.OpenEvent ->
-                        onNavigateToTab(effect.event.entityType.toHomeTab(), effect.event.recordId)
+                        // Google-sourced events have no entityType (no in-app record to open)
+                        // and no in-app tab to route to — see CalendarEvent's doc comment.
+                        effect.event.entityType?.let { onNavigateToTab(it.toHomeTab(), effect.event.recordId) }
                 }
             }
         }
@@ -458,6 +460,14 @@ private fun SettingsRoute(
         viewModel.onNotificationPermissionResult(granted)
     }
 
+    // Google Calendar consent needs an intent-sender launch — same
+    // `StartIntentSenderResult`-launcher shape `:core:scanner`'s `DocumentScanner` uses.
+    val googleCalendarLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        viewModel.onGoogleCalendarResolutionResult(result.resultCode, result.data)
+    }
+
     LaunchedEffect(Unit) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.effects.collect { effect ->
@@ -470,6 +480,11 @@ private fun SettingsRoute(
                             // No runtime permission needed before Android 13.
                             viewModel.onNotificationPermissionResult(true)
                         }
+                    }
+                    is SettingsEffect.LaunchGoogleCalendarResolution -> {
+                        googleCalendarLauncher.launch(
+                            androidx.activity.result.IntentSenderRequest.Builder(effect.intentSender).build(),
+                        )
                     }
                 }
             }
