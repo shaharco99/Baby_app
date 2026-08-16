@@ -5,8 +5,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 
-// GitHub Pages project site: https://amitbc123.github.io/Baby_Prep_Site-Shahar-Topaz-/
-const base = '/Baby_Prep_Site-Shahar-Topaz-/'
+// GitHub Pages project site: https://shaharco99.github.io/Baby_app/
+const base = '/Baby_app/'
 
 export default defineConfig({
   base,

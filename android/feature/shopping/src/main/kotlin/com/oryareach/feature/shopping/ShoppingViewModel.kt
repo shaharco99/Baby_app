@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.model.Assignee
 import com.oryareach.core.model.Priority
+import com.oryareach.core.model.ShoppingAlternative
 import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @Stable
 interface ShoppingActions {
@@ -29,6 +31,10 @@ interface ShoppingActions {
     fun onAssigneeChange(value: Assignee?)
     fun onNoteChange(value: String)
     fun onLinkChange(value: String)
+    fun onAltNameChange(value: String)
+    fun onAltPriceChange(value: String)
+    fun onAddAlternative()
+    fun onRemoveAlternative(id: String)
     fun onSubmit()
     fun onStatusChange(id: String, status: ShoppingStatus)
     fun onDelete(id: String)
@@ -71,6 +77,9 @@ class ShoppingViewModel(
             formAssignee = null,
             formNote = "",
             formLink = "",
+            formAlternatives = emptyList(),
+            formAltName = "",
+            formAltPrice = "",
         )
     }
 
@@ -85,6 +94,9 @@ class ShoppingViewModel(
             formAssignee = item.assignee,
             formNote = item.note.orEmpty(),
             formLink = item.link.orEmpty(),
+            formAlternatives = item.alternatives,
+            formAltName = "",
+            formAltPrice = "",
         )
     }
 
@@ -102,6 +114,29 @@ class ShoppingViewModel(
     override fun onAssigneeChange(value: Assignee?) = set { it.copy(formAssignee = value) }
     override fun onNoteChange(value: String) = set { it.copy(formNote = value) }
     override fun onLinkChange(value: String) = set { it.copy(formLink = value) }
+
+    override fun onAltNameChange(value: String) = set { it.copy(formAltName = value) }
+    override fun onAltPriceChange(value: String) = set {
+        it.copy(formAltPrice = value.filter(Char::isDigit))
+    }
+
+    override fun onAddAlternative() = set { state ->
+        if (state.formAltName.isBlank()) return@set state
+        val alternative = ShoppingAlternative(
+            id = UUID.randomUUID().toString(),
+            name = state.formAltName,
+            price = state.formAltPrice.toIntOrNull(),
+        )
+        state.copy(
+            formAlternatives = state.formAlternatives + alternative,
+            formAltName = "",
+            formAltPrice = "",
+        )
+    }
+
+    override fun onRemoveAlternative(id: String) = set { state ->
+        state.copy(formAlternatives = state.formAlternatives.filterNot { it.id == id })
+    }
 
     override fun onSubmit() {
         val state = _uiState.value
@@ -136,8 +171,9 @@ class ShoppingViewModel(
                     assignee = state.formAssignee,
                     note = state.formNote.ifBlank { null },
                     link = state.formLink.ifBlank { null },
-                    alternatives = existing.alternatives,
-                    chosenAlternativeId = existing.chosenAlternativeId,
+                    alternatives = state.formAlternatives,
+                    chosenAlternativeId = existing.chosenAlternativeId
+                        ?.takeIf { chosenId -> state.formAlternatives.any { it.id == chosenId } },
                 )
             }
             set { it.copy(submitting = false, sheetVisible = false) }

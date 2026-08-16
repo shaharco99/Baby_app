@@ -45,7 +45,6 @@ secrets that aren't in the public repo — without them the build still passes, 
 comes out unsigned.
 
 Full module layout and architecture decisions: `docs/architecture/`.
-What's built vs. still planned, phase by phase: `PROGRESS.md`.
 
 ## Auto-update: how it works and how to trigger it
 
