@@ -29,7 +29,7 @@ jobs:
 
       # setup-gradle only caches ~/.gradle; Kotlin's own incremental-compile state
       # lives under each module's build/ dir and is lost on every fresh runner,
-      # forcing a full (non-incremental) recompile every run.
+      # forcing a full (non-incremental) recompile every run otherwise.
       - uses: actions/cache@v4
         with:
           path: |
