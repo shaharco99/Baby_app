@@ -57,14 +57,21 @@ build succeeded and is published (`gh release view v1.2.3`).
    linked, GitHub Actions is free (repo is public), Supabase is on the free
    plan. No surprise-bill risk from any of this setup.
 
-## Open item 2 — `:feature:dates` removal (deferred, not blocking)
+## Open item 2 — `:feature:dates` removal — done
 
-The calendar spec's original plan called for deleting `:feature:dates`
-(superseded by the Calendar view showing `ImportantDate` records already).
-An earlier pass in this session built that deletion, but it was never
-committed and the worktree it lived in may no longer exist. Dates and
-Calendar currently coexist fine — this is a deliberate, separate follow-up
-(data-model implications worth its own pass), not something broken.
+`:feature:dates` was the only add/edit/delete UI for `ImportantDate`;
+`:feature:calendar` only displayed it read-only, so a naive deletion would
+have silently removed the couple's only way to add/edit important dates.
+Fixed properly: ported the add/edit/delete form (FAB, bottom sheet, date
+picker, delete-confirm dialog) directly into `:feature:calendar`
+(`CalendarViewModel`/`CalendarScreen`), same `ImportantDateRepository` calls
+`:feature:dates` used, entirely local records — the read-only Google
+Calendar integration is untouched throughout. `:feature:dates` module then
+deleted (Gradle module, DI wiring, nav tab, all references — see commit
+`feat(calendar): move ImportantDate CRUD into Calendar, delete
+:feature:dates`). Build, lint, and unit tests all pass; not yet manually
+tested on-device (add/edit/delete a date, confirm it still shows in the
+month grid and day sheet).
 
 ## What's already shipped and working (don't redo)
 
