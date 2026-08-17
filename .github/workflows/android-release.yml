@@ -63,6 +63,7 @@ jobs:
           # `providers.gradleProperty(name)` when no local.properties exists (CI has none).
           ORG_GRADLE_PROJECT_supabaseUrl: ${{ secrets.SUPABASE_URL }}
           ORG_GRADLE_PROJECT_supabaseAnonKey: ${{ secrets.SUPABASE_ANON_KEY }}
+          ORG_GRADLE_PROJECT_googleWebClientId: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: ./gradlew :app:assembleRelease
 
       - name: Package release assets
