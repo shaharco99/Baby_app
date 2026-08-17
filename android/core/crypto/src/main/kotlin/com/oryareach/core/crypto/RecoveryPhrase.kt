@@ -27,6 +27,10 @@ object RecoveryPhrase {
     private const val CHECKSUM_BITS = ENTROPY_BITS / 32
 
     private val wordList: List<String> by lazy {
+        // Absolute (leading "/") so lookup is classpath-root-relative rather than relative to
+        // this class's package — R8 flattens/repackages obfuscated classes in release builds,
+        // which breaks a package-relative getResourceAsStream even though the packaged resource
+        // itself is untouched and still sits at its original path.
         val stream = requireNotNull(RecoveryPhrase::class.java.getResourceAsStream(WORDLIST_RESOURCE)) {
             "missing BIP-39 word list at $WORDLIST_RESOURCE"
         }
@@ -100,5 +104,5 @@ object RecoveryPhrase {
     private fun Byte.toBitString(): String =
         (toInt() and 0xFF).toString(2).padStart(8, '0')
 
-    private const val WORDLIST_RESOURCE = "bip39-english.txt"
+    private const val WORDLIST_RESOURCE = "/com/oryareach/core/crypto/bip39-english.txt"
 }

@@ -1,5 +1,6 @@
 package com.oryareach.feature.pairing
 
+import android.content.ClipData
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,14 +12,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,9 +36,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -42,9 +52,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.oryareach.core.scanner.InvitationQrCode
+import com.oryareach.core.scanner.rememberInvitationCodeScanner
 import com.oryareach.core.security.InvitationToken
 import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.theme.OrYareachTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun PairingScreen(
@@ -169,6 +182,21 @@ private fun RecoveryPhraseStage(
         }
     }
 
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    OutlinedButton(
+        onClick = {
+            scope.launch {
+                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("recovery-phrase", stage.words.joinToString(" "))))
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.pairing_phrase_copy))
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -234,6 +262,23 @@ private fun EnterCodeStage(uiState: PairingUiState, actions: PairingActions) {
         enabled = uiState.canSubmitCode,
         modifier = Modifier.fillMaxWidth(),
     ) { Text(stringResource(R.string.pairing_code_submit)) }
+
+    // Scans the QR code off the partner's Ready screen instead of typing the 20 characters —
+    // same code, just read by camera. onSubmitCode re-checks well-formedness itself, so a
+    // misread scan just leaves the field populated for the user to fix rather than failing loud.
+    val scanCode = rememberInvitationCodeScanner { scanned ->
+        actions.onCodeChange(InvitationToken.normalize(scanned))
+        actions.onSubmitCode()
+    }
+    OutlinedButton(
+        onClick = scanCode,
+        enabled = !uiState.busy,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.pairing_code_scan))
+    }
 }
 
 @Composable
@@ -325,12 +370,22 @@ private fun ReadyStage(
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.pairing_invite_generate)) }
     } else {
+        val clipboard = LocalClipboard.current
+        val scope = rememberCoroutineScope()
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                // Lets the partner's device scan instead of this code being read aloud and
+                // typed in — encodes the raw (undashed) token, same string EnterCodeStage
+                // normalizes a typed or scanned code down to.
+                InvitationQrCode(
+                    content = stage.inviteCode,
+                    contentDescription = stringResource(R.string.pairing_invite_qr_description),
+                    modifier = Modifier.size(200.dp),
+                )
                 Text(
                     text = InvitationToken.forDisplay(stage.inviteCode).asLtrIsolate(),
                     style = MaterialTheme.typography.headlineSmall,
@@ -343,6 +398,18 @@ private fun ReadyStage(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val text = InvitationToken.forDisplay(stage.inviteCode)
+                            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("invite-code", text)))
+                        }
+                    },
+                ) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.pairing_invite_copy))
+                }
             }
         }
     }

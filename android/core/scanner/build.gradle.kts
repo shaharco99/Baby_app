@@ -11,4 +11,6 @@ dependencies {
     implementation(project(":core:model"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.mlkit.document.scanner)
+    implementation(libs.mlkit.code.scanner)
+    implementation(libs.zxing.core)
 }

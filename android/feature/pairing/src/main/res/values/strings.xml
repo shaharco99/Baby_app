@@ -9,11 +9,13 @@
     <string name="pairing_phrase_body">These words are the key to your data. If both phones are lost and you do not have them, nothing can be recovered — not by us, not by anyone. Write them on paper and keep them somewhere safe.</string>
     <string name="pairing_phrase_confirm">I have written them down</string>
     <string name="pairing_phrase_continue">Continue</string>
+    <string name="pairing_phrase_copy">Copy phrase</string>
 
     <string name="pairing_code_title">Enter the code</string>
     <string name="pairing_code_body">Ask your partner to open the app and read out the code it shows.</string>
     <string name="pairing_code_label">Invitation code</string>
     <string name="pairing_code_submit">Join</string>
+    <string name="pairing_code_scan">Scan QR code instead</string>
 
     <string name="pairing_waiting_title">Almost there</string>
     <string name="pairing_waiting_body">You have joined the space. Your partner needs to approve this phone before it can read anything — ask them to tap approve, then check again.</string>
@@ -28,7 +30,9 @@
 
     <string name="pairing_ready_title">Your space is ready</string>
     <string name="pairing_invite_generate">Invite your partner</string>
-    <string name="pairing_invite_body">Read this code out to your partner. It works once and expires in 24 hours.</string>
+    <string name="pairing_invite_body">Let your partner scan this code, or read it out to them. It works once and expires in 24 hours.</string>
+    <string name="pairing_invite_qr_description">Invitation QR code</string>
+    <string name="pairing_invite_copy">Copy code</string>
     <string name="pairing_pending_title">Waiting for approval</string>
     <string name="pairing_pending_body">This phone joined your space. Approve it only if you recognise it — approving hands it the key to everything.</string>
     <string name="pairing_approve">Approve</string>

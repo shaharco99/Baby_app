@@ -17,6 +17,7 @@
     <string name="settings_recovery_body">The 24-word phrase you were shown when this workspace was created. It is the only way back in if every paired device is lost.</string>
     <string name="settings_show_recovery_phrase">Show recovery phrase</string>
     <string name="settings_recovery_phrase_title">Recovery phrase</string>
+    <string name="settings_recovery_phrase_copy">Copy phrase</string>
 
     <string name="settings_devices_title">Devices</string>
     <string name="settings_manage_devices">Manage devices</string>

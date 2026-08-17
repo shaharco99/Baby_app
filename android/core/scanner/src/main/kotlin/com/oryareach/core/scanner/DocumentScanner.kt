@@ -30,14 +30,19 @@ fun rememberDocumentScanner(onScanned: (ScannedDocument) -> Unit): () -> Unit {
     val activity = context as? Activity
     val callback = rememberUpdatedState(onScanned)
 
+    // GmsDocumentScanning.getClient() can throw (observed: NPE deep in ML Kit's internals on
+    // devices where Play Services doesn't support the document-scanner module) — caught here so
+    // a scanner-unavailable device doesn't crash the whole Documents screen just for opening it.
     val scanner = remember {
-        val options = GmsDocumentScannerOptions.Builder()
-            .setGalleryImportAllowed(false)
-            .setPageLimit(20)
-            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
-            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
-            .build()
-        GmsDocumentScanning.getClient(options)
+        runCatching {
+            val options = GmsDocumentScannerOptions.Builder()
+                .setGalleryImportAllowed(false)
+                .setPageLimit(20)
+                .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
+                .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+                .build()
+            GmsDocumentScanning.getClient(options)
+        }.getOrNull()
     }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
@@ -48,7 +53,7 @@ fun rememberDocumentScanner(onScanned: (ScannedDocument) -> Unit): () -> Unit {
         callback.value(ScannedDocument(name = "Scan-${System.currentTimeMillis()}.pdf", mimeType = "application/pdf", bytes = bytes))
     }
 
-    if (activity == null) return {}
+    if (activity == null || scanner == null) return {}
 
     return {
         scanner.getStartScanIntent(activity)

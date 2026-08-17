@@ -9,11 +9,13 @@
     <string name="pairing_phrase_body">המילים האלה הן המפתח לנתונים שלכם. אם שני הטלפונים יאבדו והמילים לא יהיו אצלכם, אי אפשר יהיה לשחזר כלום — לא על ידינו ולא על ידי אף אחד. כתבו אותן על נייר ושמרו במקום בטוח.</string>
     <string name="pairing_phrase_confirm">כתבתי אותן</string>
     <string name="pairing_phrase_continue">המשך</string>
+    <string name="pairing_phrase_copy">העתקת המשפט</string>
 
     <string name="pairing_code_title">הזינו את הקוד</string>
     <string name="pairing_code_body">בקשו מבן/בת הזוג לפתוח את האפליקציה ולהקריא את הקוד שמופיע.</string>
     <string name="pairing_code_label">קוד הזמנה</string>
     <string name="pairing_code_submit">הצטרפות</string>
+    <string name="pairing_code_scan">סריקת קוד QR במקום זאת</string>
 
     <string name="pairing_waiting_title">כמעט סיימנו</string>
     <string name="pairing_waiting_body">הצטרפתם למרחב. בן/בת הזוג צריכים לאשר את הטלפון הזה לפני שיוכל לקרוא משהו — בקשו מהם ללחוץ על אישור ואז בדקו שוב.</string>
@@ -28,7 +30,9 @@
 
     <string name="pairing_ready_title">המרחב שלכם מוכן</string>
     <string name="pairing_invite_generate">הזמנת בן/בת הזוג</string>
-    <string name="pairing_invite_body">הקריאו את הקוד הזה לבן/בת הזוג. הוא תקף לשימוש אחד ופג תוך 24 שעות.</string>
+    <string name="pairing_invite_body">תנו לבן/בת הזוג לסרוק את הקוד הזה, או הקריאו אותו להם. הוא תקף לשימוש אחד ופג תוך 24 שעות.</string>
+    <string name="pairing_invite_qr_description">קוד QR להזמנה</string>
+    <string name="pairing_invite_copy">העתקת הקוד</string>
     <string name="pairing_pending_title">ממתין לאישור</string>
     <string name="pairing_pending_body">הטלפון הזה הצטרף למרחב שלכם. אשרו רק אם אתם מזהים אותו — אישור מוסר לו את המפתח להכול.</string>
     <string name="pairing_approve">אישור</string>

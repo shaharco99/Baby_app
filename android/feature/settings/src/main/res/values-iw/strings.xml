@@ -17,6 +17,7 @@
     <string name="settings_recovery_body">משפט 24 המילים שהוצג בעת יצירת סביבת העבודה. זו הדרך היחידה לחזור אליה אם כל המכשירים המצומדים אבדו.</string>
     <string name="settings_show_recovery_phrase">הצגת משפט שחזור</string>
     <string name="settings_recovery_phrase_title">משפט שחזור</string>
+    <string name="settings_recovery_phrase_copy">העתקת המשפט</string>
 
     <string name="settings_devices_title">מכשירים</string>
     <string name="settings_manage_devices">ניהול מכשירים</string>
