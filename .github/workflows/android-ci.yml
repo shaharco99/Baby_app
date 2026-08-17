@@ -15,22 +15,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # versionName is derived from the newest v* tag, so the build needs tag history.
           fetch-depth: 0
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       # setup-gradle only caches ~/.gradle; Kotlin's own incremental-compile state
       # lives under each module's build/ dir and is lost on every fresh runner,
       # forcing a full (non-incremental) recompile every run otherwise.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             android/**/build/kotlin
@@ -46,7 +46,7 @@ jobs:
 
       - name: Upload reports on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: |
