@@ -1,42 +1,50 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`, latest tag `v1.2.2` (auto-update verified
-working end-to-end on both the MIUI phone and the Pixel — see git log for
-`fix(build): break git-describe ties...` and `feat(auth): sign in with
-Google` for the two most recent pieces of work).
+Branch `feature/android-app`, latest tag `v1.2.3` (in flight as of this
+write-up — see "Open item 1" below for what's still unverified).
 
-## Open item 1 — Google OAuth client setup (blocks two features)
+## Open item 1 — Google OAuth client setup (mostly done, verify on device)
 
 Both **Google Calendar integration** (`:core:calendar`,
 `docs/specs/03-google-calendar-integration.md`) and **Sign in with Google**
-(`:feature:auth`) are fully coded and merged, but neither works yet — both
-fail fast with a clear in-app error instead of hanging. They're blocked on
-the same missing setup, which needs someone with access to a Google Cloud
-project:
+(`:feature:auth`) are fully coded and merged. External config is now done:
 
-1. Create an OAuth 2.0 client, **Android** application type, package
-   `com.oryareach.app`, with the debug and release keystore's SHA-1
-   fingerprints attached (get them with `keytool -list -v -keystore
-   <path>`).
-2. Create an OAuth 2.0 client, **Web application** type. Its client ID goes
-   into `android/local.properties` (never committed) as:
-   - `googleCalendarOauthClientId=<id>` — for Calendar
-   - `googleWebClientId=<id>` — for login
-   - One client can cover both if that's simpler; see the `TODO(app
-     owner)` comments in `android/core/security/build.gradle.kts` for the
-     exact mechanics of how these get read.
-3. For CI release builds to also have these (currently they don't — local
-   dev builds work once `local.properties` is set, but the GitHub Actions
-   release workflow needs the same two values as repo secrets, wired into
-   `.github/workflows/android-release.yml` the same way
-   `SUPABASE_URL`/`SUPABASE_ANON_KEY` already are).
-4. For "Sign in with Google" specifically, also configure the Web client ID
-   as the Google provider in the **Supabase dashboard** → Authentication →
-   Providers → Google.
+- Google Cloud project `baby-app-505815`. Three OAuth clients exist (the
+  Android type only supports one SHA-1 per client in the current console UI,
+  hence two Android entries):
+  - **Android** ("Baby app"), package `com.oryareach.app`, debug SHA-1
+    (`A0:A2:97:DF:12:8C:11:AC:39:A3:03:AC:F4:C8:15:10:6E:00:F4:D9`).
+  - **Android** ("Baby app - release"), same package, release SHA-1
+    (`BF:56:84:AB:05:E4:35:EA:9D:1F:ED:2E:8F:A7:76:C4:2E:82:A1:9E` —
+    extracted from the `v1.2.3` release APK via `apksigner verify
+    --print-certs`).
+  - **Web application** type (`904126204563-a3h105j2d1ousge0b92ung0okpgposnc
+    .apps.googleusercontent.com`), used as the Credential Manager server
+    client id for both login and Calendar (one client covers both, per the
+    doc comment in `android/core/security/build.gradle.kts`). Its redirect
+    URI is registered for Supabase's callback.
+- `android/local.properties` (local dev, not committed) has both
+  `googleWebClientId` and `googleCalendarOauthClientId` set to the Web
+  client id above.
+- GitHub repo secret `GOOGLE_WEB_CLIENT_ID` set; wired into
+  `.github/workflows/android-release.yml` for both
+  `ORG_GRADLE_PROJECT_googleWebClientId` and
+  `ORG_GRADLE_PROJECT_googleCalendarOauthClientId`.
+- Supabase dashboard → Authentication → Providers → Google: enabled, same
+  client id + secret set.
 
-Once set, both features should work without further code changes — the
-implementation is done, this is purely external configuration.
+All external config is done, including the release SHA-1. `v1.2.3` release
+build succeeded and is published (`gh release view v1.2.3`).
+
+**Still to do:**
+1. Install `v1.2.3` on a release-only test device (MIUI or Pixel — see
+   memory) and actually test "Sign in with Google" end-to-end.
+2. Test Calendar connect too — same underlying mechanism
+   (`GetSignInWithGoogleOption`), likely works if login does, but unverified.
+3. Nothing here costs money — Google Cloud project has no billing account
+   linked, GitHub Actions is free (repo is public), Supabase is on the free
+   plan. No surprise-bill risk from any of this setup.
 
 ## Open item 2 — `:feature:dates` removal (deferred, not blocking)
 
