@@ -27,17 +27,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Unit tests
+      - name: Test, lint, assemble
         working-directory: android
-        run: ./gradlew test
-
-      - name: Lint
-        working-directory: android
-        run: ./gradlew lint
-
-      - name: Assemble debug
-        working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew test lint assembleDebug
 
       - name: Upload reports on failure
         if: failure()

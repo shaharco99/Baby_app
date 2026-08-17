@@ -23,13 +23,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       # A release is only cut from a build that passed its checks.
-      - name: Unit tests
+      - name: Test and lint
         working-directory: android
-        run: ./gradlew test
-
-      - name: Lint
-        working-directory: android
-        run: ./gradlew lint
+        run: ./gradlew test lint
 
       - name: Restore signing keystore
         env:
