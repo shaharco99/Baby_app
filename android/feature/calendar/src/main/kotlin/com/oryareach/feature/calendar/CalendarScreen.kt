@@ -1,6 +1,7 @@
 package com.oryareach.feature.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -68,7 +69,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,6 +121,7 @@ fun CalendarScreen(
                 }
             }
 
+            WeekdayHeaderRow()
             CalendarGrid(uiState = uiState, onSelectDate = actions::onSelectDate)
 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -240,27 +244,57 @@ private fun LegendRow(color: Color, label: String) {
     }
 }
 
+/** Sunday-first weekday initials, in the current locale — mirrors automatically in RTL
+ * alongside [CalendarGrid] since both are plain `Row`s under the same layout direction. */
+@Composable
+private fun WeekdayHeaderRow() {
+    val locale = androidx.compose.ui.platform.LocalLocale.current.platformLocale
+    val labels = remember(locale) {
+        listOf(7, 1, 2, 3, 4, 5, 6).map {
+            java.time.DayOfWeek.of(it).getDisplayName(java.time.format.TextStyle.NARROW, locale)
+        }
+    }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        labels.forEach { label ->
+            Box(modifier = Modifier.size(CELL_SIZE), contentAlignment = Alignment.Center) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun CalendarGrid(uiState: CalendarUiState, onSelectDate: (LocalDate) -> Unit) {
     val month = uiState.visibleMonth
     val dayCount = daysInMonth(month)
     val leadingBlanks = (month.dayOfWeek.ordinal + 1) % 7
     val eventsByDate = remember(uiState.events) { uiState.events.groupBy { it.date } }
+    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
     val cells = leadingBlanks + dayCount
     val rows = (cells + 6) / 7
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         for (row in 0 until rows) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 for (col in 0 until 7) {
                     val cellIndex = row * 7 + col
                     val dayNumber = cellIndex - leadingBlanks + 1
                     if (dayNumber < 1 || dayNumber > dayCount) {
-                        Box(modifier = Modifier.minimumInteractiveComponentSize().size(36.dp))
+                        Box(modifier = Modifier.minimumInteractiveComponentSize().size(CELL_SIZE))
                     } else {
                         val date = LocalDate(month.year, month.month, dayNumber)
-                        DayCell(day = dayNumber, kinds = eventsByDate[date]?.map { it.kind }.orEmpty().toSet(), onClick = { onSelectDate(date) })
+                        DayCell(
+                            day = dayNumber,
+                            kinds = eventsByDate[date]?.map { it.kind }.orEmpty().toSet(),
+                            isToday = date == today,
+                            isSelected = date == uiState.selectedDate,
+                            onClick = { onSelectDate(date) },
+                        )
                     }
                 }
             }
@@ -269,20 +303,37 @@ private fun CalendarGrid(uiState: CalendarUiState, onSelectDate: (LocalDate) -> 
 }
 
 @Composable
-private fun DayCell(day: Int, kinds: Set<CalendarEventKind>, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun DayCell(
+    day: Int,
+    kinds: Set<CalendarEventKind>,
+    isToday: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Box(
-            modifier = Modifier.minimumInteractiveComponentSize().size(36.dp).clip(CircleShape).clickable(onClick = onClick),
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .size(CELL_SIZE)
+                .clip(CircleShape)
+                .let {
+                    when {
+                        isToday -> it.background(MaterialTheme.colorScheme.primary)
+                        isSelected -> it.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        else -> it
+                    }
+                }
+                .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = day.toString(),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (kinds.isNotEmpty()) FontWeight.Bold else FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.size(width = CELL_SIZE, height = 6.dp)) {
             if (CalendarEventKind.TASK_DUE in kinds) Dot(MaterialTheme.colorScheme.primary)
             if (CalendarEventKind.IMPORTANT_DATE in kinds) Dot(MaterialTheme.colorScheme.tertiary)
             if (CalendarEventKind.PERIOD_ACTUAL in kinds || CalendarEventKind.PERIOD_PREDICTED in kinds) {
@@ -295,8 +346,10 @@ private fun DayCell(day: Int, kinds: Set<CalendarEventKind>, onClick: () -> Unit
 
 @Composable
 private fun Dot(color: Color) {
-    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(color))
+    Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(color))
 }
+
+private val CELL_SIZE = 34.dp
 
 @Composable
 private fun DaySheetContent(
