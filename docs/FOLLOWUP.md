@@ -1,8 +1,9 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`, latest tag `v1.2.3` (in flight as of this
-write-up — see "Open item 1" below for what's still unverified).
+Branch `feature/android-app`, latest tag `v1.3.0` (released 2026-08-17,
+adds forgot password, Google account linking, pairing sign-out escape
+hatch — see commits `c9f3ba1`, `3683ce5`).
 
 ## Open item 1 — Google OAuth client setup — actually fixed and confirmed 2026-08-17 ~20:55
 
@@ -27,9 +28,9 @@ Audience/test users, Data Access scopes, enabled APIs, Supabase provider config,
 web client ID embedded in the installed APK's `classes.dex`) had already confirmed everything
 else was correct — see the "Exhaustive config re-check" note preserved below for the record.
 
-**Still to verify:** Pixel device (`tp54477@gmail.com`) — pending device unlock as of this
-writing. Calendar connect (shares the same `GetSignInWithGoogleOption` + client) should now
-work too, not yet explicitly retested.
+Confirmed on the Pixel too (`tp54477@gmail.com`) later the same session — see "Open item 3"
+below. Calendar connect (shares the same `GetSignInWithGoogleOption` + client) should now work
+too, not yet explicitly retested.
 
 ### Preserved history — earlier "STILL BROKEN, false positive" write-up (superseded above)
 
@@ -219,12 +220,12 @@ the Google OAuth issue above (email/password auth was never affected by it):
 
 Redirect URL added 2026-08-17 (Authentication → URL Configuration → Redirect URLs now lists
 `com.oryareach.app://reset-password` alongside the default `https://127.0.0.1:3000`). Build,
-lint, and full `test` all pass. **Still to do:** neither the Google-linking nor the
-forgot-password code path (dialog → email → tap the link on-device → `ResetPasswordScreen` →
-`updatePassword`) has been run end to end on a real device/inbox yet — needs a new release
-build first, same blocker as Open item 1c below.
+lint, and full `test` all pass. Shipped in `v1.3.0` (released 2026-08-17). **Still to do:**
+neither the Google-linking nor the forgot-password code path (dialog → email → tap the link
+on-device → `ResetPasswordScreen` → `updatePassword`) has been run end to end on a real
+device/inbox yet — no longer blocked on a release, just hasn't been tried.
 
-## Open item 1c — Pairing screen: no sign-out, no partner identity (half-fixed, needs a release)
+## Open item 1c — Pairing screen: no sign-out, no partner identity (sign-out shipped, identity not built)
 
 User-reported bug 2026-08-17: the "Almost there — you've joined the space, your partner needs
 to approve this phone" pairing-pending screen (`PairingScreen`'s `AwaitingKeyStage`) gave no way
@@ -255,12 +256,80 @@ Two-part fix, only the first part built so far:
   into the UI. Not attempted this session — ask before starting, it's a real schema/migration
   change to a production Supabase project, not just an app-side fix.
 
-**Blocker for testing either part:** the MIUI test device is still running the installed
-`v1.2.3` release build, which predates this fix — the new "Sign out" button won't exist on the
-device until a new signed release ships (no release-signing secrets available locally this
-session, see `docs/architecture/011-release-signing-and-updates.md`). Until then, the immediate
-per-device workaround discussed but not yet actioned: `adb shell pm clear com.oryareach.app`
-to force a fresh login on the MIUI device — offered, not yet confirmed/run as of this write-up.
+Shipped in `v1.3.0` (released 2026-08-17) and confirmed live on-device the same session — the
+"Sign out" button showed up on the Pixel's `AwaitingKey` screen exactly as designed (see Open
+item 1d below for the pairing saga it appeared in the middle of). Partner/workspace identity
+display is still not built — the investigation notes above are still accurate.
+
+## Open item 1d — old workspace unrecoverable, recreated; found a real device_keys bug along the way
+
+2026-08-17, same session as Open item 1. Both physical devices ended up stuck simultaneously on
+the pairing-pending screen ("joined the space, partner needs to approve"), each waiting on the
+other to already hold the workspace key — a genuine deadlock, since neither could approve the
+other. Root cause: the workspace's 24-word recovery phrase (`docs/architecture/007-encryption.md`
+— it *is* the key, encoded; never stored anywhere, by design) had never been saved by the user.
+Per that same doc, losing all devices' keys and the phrase means the workspace data is
+unrecoverable — confirmed with the user, who chose to abandon the old workspace
+(`2f734a4d-6f24-4f5f-8606-1bff87111859`, created 2026-08-15) and start fresh rather than chase
+an unrecoverable key.
+
+**What was done** (all DB writes run by the user directly in the Supabase SQL Editor — the
+`execute_sql` MCP tool refused every write attempt here, including a single 0-row delete;
+routing around that block via browser automation was considered and deliberately rejected as
+defeating its purpose, so every write below was handed to the user to run themselves):
+1. Deleted the two stale `workspace_members` rows for the old workspace (left the 34
+   now-permanently-unreadable `records` rows and other cascade data alone — user's call, "for
+   now," full cleanup not done).
+2. On the MIUI device (`shaharco1804@gmail.com`), tapping "Check again" on the stuck pairing
+   screen correctly re-evaluated to `PairingStage.Choose` (per `PairingViewModel.onRefresh()` —
+   confirmed by reading the code, not guessed) once the stale membership was gone, and a
+   workspace got created (`d576a8b0-6ad6-4ffe-b870-e00f6e0e587d`). Note for next time: the
+   `adb shell monkey -p <pkg> -c android.intent.category.LAUNCHER 1` idiom used throughout this
+   session to bring the app to the foreground **injects a random synthetic input event by
+   default**, not just a launch intent — switched to `adb shell am start -n <pkg>/.MainActivity`
+   (no synthetic input) for the rest of the session and going forward.
+3. Invited the Pixel in via Settings → Manage devices → invite code (`WorkspaceRepository`'s
+   normal invite/accept flow, `couple_invitations` table) — no recovery phrase needed for a
+   fresh creation, since the creating device already holds the key live and can approve in
+   real time.
+4. Pixel accepted the invite and reached the same "awaiting approval" pairing-pending screen —
+   but MIUI's "Manage devices" showed no pending device to approve, even after refreshing.
+
+**Real bug found:** `PairingViewModel.registerDevice()` (`android/feature/pairing/.../
+PairingViewModel.kt:338`) short-circuits on `identity.registeredKeyId` — if a device has *ever*
+registered a `device_keys` row (identity keypairs are device-scoped, reused across workspace
+changes by design), it returns that same row's id forever and never calls
+`WorkspaceRepository.publishDeviceKey()` again. `device_keys.workspace_id`, however, is only set
+at insert time and never updated on reuse. Both test devices had stale `device_keys` rows from
+earlier registration attempts against the *old* (now-membership-less) workspace; since nobody is
+a member of that workspace anymore, RLS hid those rows from *everyone*, including their own
+owners — so `WorkspaceRepository.devices()` (queried by `showReady()` to populate the pending
+list) came back empty even though the real wrapped-key linkage (`wrapped_workspace_keys`,
+correctly pointing at the new workspace) was fine. Confirmed via direct SQL, not guessed: the
+`device_keys` row backing MIUI's fresh registration was actually one created ~8 min earlier
+(18:45:27) against `2f734a4d`, and Pixel's the same. **Not fixed in code, on purpose (user's
+explicit instruction — document only).** Proper fix: either update `device_keys.workspace_id`
+on the `registerDevice()` reuse path, or stop keying pending/paired lookups off that column and
+join through `wrapped_workspace_keys.workspace_id` instead, which is always correct.
+
+**Workaround used to unblock pairing this session** (also run by the user, per the same
+permission pattern as above):
+```sql
+update device_keys
+set workspace_id = 'd576a8b0-6ad6-4ffe-b870-e00f6e0e587d'
+where id in ('073784ca-f5ae-4e59-8d37-bbadbd0b586b', 'f76033c1-2eff-452a-b68f-598617189636');
+```
+After this, MIUI's "Manage devices" correctly showed the Pixel as pending, approval succeeded,
+and both devices landed on the real Home screen (cycle-tracking onboarding, confirming a fresh
+empty workspace) within the same session.
+
+**Loose end:** the new workspace's recovery phrase was never deliberately viewed/recorded this
+time either (the creation flow was driven by a "Check again" tap plus one `am`/`monkey`
+foreground call, not a manual walkthrough of the `ShowRecoveryPhrase` screen). Not urgent — the
+raw key is already sealed on the MIUI device (`identity.workspaceKey()`), so Settings → "Show
+recovery phrase" re-derives and displays the identical phrase on demand, nothing was lost — but
+the user should actually do that and write it down, since it's still true that losing every
+device *and* the phrase is unrecoverable by design.
 
 ## Open item 2 — `:feature:dates` removal — done
 
