@@ -13,7 +13,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Search
@@ -79,8 +77,6 @@ import com.oryareach.feature.update.UpdateEffect
 import com.oryareach.feature.update.UpdateViewModel
 import com.oryareach.feature.shopping.ShoppingScreen
 import com.oryareach.feature.shopping.ShoppingViewModel
-import com.oryareach.feature.dates.DatesScreen
-import com.oryareach.feature.dates.DatesViewModel
 import com.oryareach.feature.home.HomeScreen
 import com.oryareach.feature.home.HomeViewModel
 import com.oryareach.feature.folders.FoldersScreen
@@ -168,7 +164,7 @@ private fun UpdateHost(viewModel: UpdateViewModel = koinViewModel()) {
     }
 }
 
-private enum class HomeTab { Home, Tasks, Shopping, Dates, Folders, Cycle, Calendar, Search, Settings }
+private enum class HomeTab { Home, Tasks, Shopping, Folders, Cycle, Calendar, Search, Settings }
 
 /**
  * A plain tab switch, not `navigation-compose`: two peer screens with no back-stack semantics
@@ -210,13 +206,6 @@ private fun HomeRoute() {
                         unselectedIcon = Icons.Outlined.ShoppingCart,
                         selected = tab == HomeTab.Shopping,
                         onClick = { tab = HomeTab.Shopping; drawerScope.launch { drawerState.close() } },
-                    ),
-                    MoonNavItem(
-                        label = stringResource(com.oryareach.feature.dates.R.string.dates_title),
-                        selectedIcon = Icons.Filled.Event,
-                        unselectedIcon = Icons.Outlined.Event,
-                        selected = tab == HomeTab.Dates,
-                        onClick = { tab = HomeTab.Dates; drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.folders.R.string.folders_title),
@@ -274,11 +263,6 @@ private fun HomeRoute() {
                 onHighlightConsumed = { highlightId = null },
             )
             HomeTab.Shopping -> ShoppingRoute(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
-                highlightId = highlightId,
-                onHighlightConsumed = { highlightId = null },
-            )
-            HomeTab.Dates -> DatesRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
                 highlightId = highlightId,
                 onHighlightConsumed = { highlightId = null },
@@ -344,23 +328,6 @@ private fun ShoppingRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ShoppingScreen(
-        uiState = uiState,
-        actions = viewModel,
-        modifier = modifier,
-        highlightId = highlightId,
-        onHighlightConsumed = onHighlightConsumed,
-    )
-}
-
-@Composable
-private fun DatesRoute(
-    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
-    highlightId: String? = null,
-    onHighlightConsumed: () -> Unit = {},
-    viewModel: DatesViewModel = koinViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    DatesScreen(
         uiState = uiState,
         actions = viewModel,
         modifier = modifier,
@@ -441,7 +408,7 @@ private fun SearchRoute(
 private fun com.oryareach.core.model.EntityType.toHomeTab(): HomeTab = when (this) {
     com.oryareach.core.model.EntityType.TASK -> HomeTab.Tasks
     com.oryareach.core.model.EntityType.SHOPPING_ITEM -> HomeTab.Shopping
-    com.oryareach.core.model.EntityType.IMPORTANT_DATE -> HomeTab.Dates
+    com.oryareach.core.model.EntityType.IMPORTANT_DATE -> HomeTab.Calendar
     com.oryareach.core.model.EntityType.FOLDER, com.oryareach.core.model.EntityType.DOCUMENT -> HomeTab.Folders
     com.oryareach.core.model.EntityType.CYCLE, com.oryareach.core.model.EntityType.CYCLE_ENTRY -> HomeTab.Cycle
     com.oryareach.core.model.EntityType.SETTINGS -> HomeTab.Settings

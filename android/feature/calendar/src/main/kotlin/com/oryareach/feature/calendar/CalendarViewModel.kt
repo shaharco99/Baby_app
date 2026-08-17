@@ -10,6 +10,8 @@ import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.cycle.calculateCycleStatistics
 import com.oryareach.core.domain.cycle.predictNextCycle
 import com.oryareach.core.model.EntityType
+import com.oryareach.core.model.ImportantDate
+import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.settings.SettingsPreferences
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,19 @@ interface CalendarActions {
     fun onDismissDaySheet()
     fun onEventClick(event: CalendarEvent)
     fun onRefresh()
+
+    // Important-date add/edit/delete — Calendar's own local records, unrelated to the
+    // read-only Google Calendar integration below.
+    fun onAddClick()
+    fun onEditClick(date: ImportantDate)
+    fun onDismissSheet()
+    fun onOpenDatePicker()
+    fun onDismissDatePicker()
+    fun onDateChange(value: LocalDate)
+    fun onTitleChange(value: String)
+    fun onWishChange(value: String)
+    fun onSubmit()
+    fun onDelete(id: String)
 }
 
 /**
@@ -52,6 +67,7 @@ class CalendarViewModel(
     private val workspaceId: () -> String?,
     private val googleCalendarSync: GoogleCalendarSyncRepository,
     private val settingsPreferences: SettingsPreferences,
+    private val auth: AuthRepository,
 ) : ViewModel(), CalendarActions {
 
     private val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -71,6 +87,9 @@ class CalendarViewModel(
         // re-subscribes to the cache whenever the selected calendar set changes (e.g. after the
         // user picks calendars in Settings).
         workspaceId()?.let { id ->
+            viewModelScope.launch {
+                importantDates.observeAll(id).collect { dateList -> set { it.copy(importantDates = dateList) } }
+            }
             viewModelScope.launch {
                 combine(
                     tasks.observeAll(id),
@@ -125,7 +144,63 @@ class CalendarViewModel(
     override fun onDismissDaySheet() = set { it.copy(selectedDate = null) }
 
     override fun onEventClick(event: CalendarEvent) {
+        if (event.kind == CalendarEventKind.IMPORTANT_DATE) {
+            // Already on the right screen — open the edit sheet in place instead of the
+            // tab-switch effect used for every other kind.
+            val date = _uiState.value.importantDates.firstOrNull { it.id == event.recordId } ?: return
+            onEditClick(date)
+            return
+        }
         _effects.trySend(CalendarEffect.OpenEvent(event))
+    }
+
+    override fun onAddClick() = set {
+        it.copy(sheetVisible = true, editingId = null, formDate = it.selectedDate, formTitle = "", formWish = "")
+    }
+
+    override fun onEditClick(date: ImportantDate) = set {
+        it.copy(
+            sheetVisible = true,
+            editingId = date.id,
+            formDate = date.date,
+            formTitle = date.title,
+            formWish = date.wish.orEmpty(),
+        )
+    }
+
+    override fun onDismissSheet() = set { it.copy(sheetVisible = false) }
+    override fun onOpenDatePicker() = set { it.copy(datePickerVisible = true) }
+    override fun onDismissDatePicker() = set { it.copy(datePickerVisible = false) }
+    override fun onDateChange(value: LocalDate) = set { it.copy(formDate = value, datePickerVisible = false) }
+    override fun onTitleChange(value: String) = set { it.copy(formTitle = value) }
+    override fun onWishChange(value: String) = set { it.copy(formWish = value) }
+
+    override fun onSubmit() {
+        val state = _uiState.value
+        val workspace = workspaceId() ?: return
+        val date = state.formDate ?: return
+        if (!state.canSubmitForm) return
+        set { it.copy(submitting = true) }
+
+        viewModelScope.launch {
+            val editingId = state.editingId
+            if (editingId == null) {
+                importantDates.create(
+                    workspaceId = workspace,
+                    userId = auth.currentUserId().orEmpty(),
+                    date = date,
+                    title = state.formTitle,
+                    wish = state.formWish.ifBlank { null },
+                )
+            } else {
+                importantDates.update(editingId, date, state.formTitle, state.formWish.ifBlank { null })
+            }
+            set { it.copy(submitting = false, sheetVisible = false) }
+        }
+    }
+
+    override fun onDelete(id: String) {
+        viewModelScope.launch { importantDates.delete(id) }
     }
 
     override fun onRefresh() {

@@ -67,7 +67,6 @@ dependencies {
     implementation(project(":feature:cycle"))
     implementation(project(":feature:update"))
     implementation(project(":feature:shopping"))
-    implementation(project(":feature:dates"))
     implementation(project(":feature:home"))
     implementation(project(":feature:folders"))
 

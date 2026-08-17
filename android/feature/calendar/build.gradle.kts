@@ -11,5 +11,6 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:calendar"))
     implementation(project(":core:settings"))
+    implementation(project(":core:network"))
     implementation(libs.compose.material.icons.extended)
 }

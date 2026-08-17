@@ -46,7 +46,6 @@ import com.oryareach.feature.tasks.TasksViewModel
 import com.oryareach.feature.cycle.CycleViewModel
 import com.oryareach.feature.update.UpdateViewModel
 import com.oryareach.feature.shopping.ShoppingViewModel
-import com.oryareach.feature.dates.DatesViewModel
 import com.oryareach.feature.home.HomeViewModel
 import com.oryareach.feature.folders.FoldersViewModel
 import com.oryareach.feature.settings.SettingsViewModel
@@ -179,14 +178,6 @@ val appModule = module {
         )
     }
     viewModel {
-        DatesViewModel(
-            repository = get(),
-            auth = get(),
-            syncEngine = get(),
-            workspaceId = { get<SessionState>().workspaceId },
-        )
-    }
-    viewModel {
         HomeViewModel(
             settingsRepository = get(),
             taskRepository = get(),
@@ -233,6 +224,7 @@ val appModule = module {
             workspaceId = { get<SessionState>().workspaceId },
             googleCalendarSync = get(),
             settingsPreferences = get(),
+            auth = get(),
         )
     }
     viewModel { ConflictsViewModel(repository = get()) }

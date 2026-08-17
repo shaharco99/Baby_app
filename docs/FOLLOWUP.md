@@ -38,11 +38,22 @@ All external config is done, including the release SHA-1. `v1.2.3` release
 build succeeded and is published (`gh release view v1.2.3`).
 
 **Still to do:**
-1. Install `v1.2.3` on a release-only test device (MIUI or Pixel — see
-   memory) and actually test "Sign in with Google" end-to-end.
-2. Test Calendar connect too — same underlying mechanism
-   (`GetSignInWithGoogleOption`), likely works if login does, but unverified.
-3. Nothing here costs money — Google Cloud project has no billing account
+1. `v1.2.3` installed and tested on the MIUI device — currently **fails**
+   with `cmia: [8] Unknown error [status=UNREGISTERED_ON_API_CONSOLE]`
+   (see logcat filtered on `Auth.Api.Credentials`). Not a config mistake —
+   installed APK is confirmed `v1.2.3` with the matching release cert,
+   package name and SHA-1 in Cloud Console both check out. Most likely
+   cause: the "Baby app - release" Android OAuth client (SHA-1 above) was
+   only just created and Google's own console warns propagation can take
+   "5 minutes to a few hours." **Retry login after waiting longer** (try
+   ~1 hour after creation) before assuming something else is wrong.
+2. If it still fails after a real wait, re-verify: SHA-1 was typed
+   correctly (no truncation/typo), the release client's package name is
+   exactly `com.oryareach.app`, and pull a fresh logcat filtered on
+   `Auth.Api.Credentials|cmia` to see if the error code changed.
+3. Test Calendar connect too — same underlying mechanism
+   (`GetSignInWithGoogleOption`), blocked on the same propagation issue.
+4. Nothing here costs money — Google Cloud project has no billing account
    linked, GitHub Actions is free (repo is public), Supabase is on the free
    plan. No surprise-bill risk from any of this setup.
 

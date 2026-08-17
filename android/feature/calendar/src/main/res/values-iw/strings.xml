@@ -10,4 +10,18 @@
     <string name="calendar_legend_period">וסת</string>
     <string name="calendar_period_predicted">וסת צפויה</string>
     <string name="calendar_legend_google">יומן Google</string>
+
+    <string name="dates_add">הוסף תאריך</string>
+    <string name="dates_edit_title">עריכת תאריך</string>
+    <string name="dates_add_title">תאריך חדש</string>
+    <string name="dates_field_pick_date">בחר תאריך</string>
+    <string name="dates_field_title">כותרת</string>
+    <string name="dates_field_wish">איחול (אופציונלי)</string>
+    <string name="dates_save">שמור</string>
+    <string name="dates_delete">מחק</string>
+    <string name="dates_delete_title">למחוק את התאריך?</string>
+    <string name="dates_delete_body">"%1$s יימחק."</string>
+    <string name="dates_cancel">ביטול</string>
+    <string name="dates_pick_confirm">אישור</string>
+    <string name="dates_pick_cancel">ביטול</string>
 </resources>
