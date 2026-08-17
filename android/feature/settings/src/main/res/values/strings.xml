@@ -21,6 +21,12 @@
     <string name="settings_devices_title">Devices</string>
     <string name="settings_manage_devices">Manage devices</string>
 
+    <string name="settings_account_title">Account</string>
+    <string name="settings_account_google_body">Sign in with email and password now, then connect Google here anytime — same account, same data, nothing lost.</string>
+    <string name="settings_account_google_connect">Connect Google account</string>
+    <string name="settings_account_google_connected">Google sign-in connected</string>
+    <string name="settings_account_google_error">Couldn\'t connect your Google account. Try again.</string>
+
     <string name="settings_google_calendar_title">Google Calendar</string>
     <string name="settings_google_calendar_body">Show a read-only view of your Google Calendar events on the Calendar page. Events you add in this app are never sent to Google.</string>
     <string name="settings_google_calendar_connect">Connect Google Calendar</string>

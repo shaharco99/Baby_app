@@ -21,6 +21,12 @@
     <string name="settings_devices_title">מכשירים</string>
     <string name="settings_manage_devices">ניהול מכשירים</string>
 
+    <string name="settings_account_title">חשבון</string>
+    <string name="settings_account_google_body">אפשר להתחבר עכשיו עם אימייל וסיסמה, ולחבר את Google כאן בכל שלב — אותו חשבון, אותם נתונים, בלי לאבד כלום.</string>
+    <string name="settings_account_google_connect">חיבור חשבון Google</string>
+    <string name="settings_account_google_connected">התחברות עם Google מחוברת</string>
+    <string name="settings_account_google_error">החיבור לחשבון Google נכשל. נסו שוב.</string>
+
     <string name="settings_google_calendar_title">יומן Google</string>
     <string name="settings_google_calendar_body">הצגת אירועי יומן Google שלך (לקריאה בלבד) בעמוד היומן. אירועים שמוסיפים באפליקציה הזו לא נשלחים ל-Google.</string>
     <string name="settings_google_calendar_connect">חיבור יומן Google</string>

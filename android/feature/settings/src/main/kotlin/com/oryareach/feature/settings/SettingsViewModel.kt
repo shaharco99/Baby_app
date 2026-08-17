@@ -6,15 +6,18 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.calendar.GoogleCalendarSyncRepository
+import com.oryareach.core.common.AppResult
 import com.oryareach.core.crypto.RecoveryPhrase
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.security.GoogleCalendarAuthManager
 import com.oryareach.core.security.GoogleCalendarConnectResult
+import com.oryareach.core.security.GoogleIdentitySignIn
 import com.oryareach.core.security.LocalDataWiper
 import com.oryareach.core.security.SessionController
 import com.oryareach.core.settings.ReminderScheduler
 import com.oryareach.core.settings.SettingsPreferences
+import com.oryareach.core.security.BuildConfig as SecurityBuildConfig
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +38,7 @@ interface SettingsActions {
     fun onDismissRecoveryPhrase()
     fun onManageDevicesClick()
     fun onSignOutClick()
+    fun onConnectGoogleAccountClick(context: Context)
     fun onConnectGoogleCalendarClick(context: Context)
     fun onGoogleCalendarResolutionResult(resultCode: Int, data: Intent?)
     fun onOpenCalendarPickerClick()
@@ -58,6 +62,7 @@ class SettingsViewModel(
         SettingsUiState(
             googleCalendarConnected = googleCalendarAuth.isConnected(),
             googleCalendarAccountEmail = googleCalendarAuth.connectedAccountEmail(),
+            googleAccountLinked = auth.isGoogleLinked(),
         ),
     )
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -146,6 +151,43 @@ class SettingsViewModel(
             // Restarts the process — nothing after this point runs; see LocalDataWiper's
             // doc comment for why the database can't just be swapped out in place.
             localDataWiper.wipeAndRestart()
+        }
+    }
+
+    /** Same Credential Manager flow the login screen uses (see `:feature:auth`'s
+     * `GoogleSignInButton`), just handed to [AuthRepository.linkGoogleIdentity] instead of
+     * `signInWithGoogle` — attaches Google to the already-signed-in user rather than resolving a
+     * (possibly different) one. Requires the user to already be signed in, which this screen
+     * only renders for. */
+    override fun onConnectGoogleAccountClick(context: Context) {
+        if (_uiState.value.googleAccountLinkBusy) return
+        set { it.copy(googleAccountLinkBusy = true, googleAccountLinkError = false) }
+
+        viewModelScope.launch {
+            val clientId = SecurityBuildConfig.GOOGLE_WEB_CLIENT_ID
+            if (clientId.isBlank()) {
+                set { it.copy(googleAccountLinkBusy = false, googleAccountLinkError = true) }
+                return@launch
+            }
+
+            GoogleIdentitySignIn.getIdToken(context, clientId).fold(
+                onSuccess = { idToken ->
+                    when (auth.linkGoogleIdentity(idToken)) {
+                        is AppResult.Success -> set {
+                            it.copy(googleAccountLinkBusy = false, googleAccountLinked = true)
+                        }
+                        is AppResult.Failure -> set {
+                            it.copy(googleAccountLinkBusy = false, googleAccountLinkError = true)
+                        }
+                    }
+                },
+                onFailure = { error ->
+                    // A dismissed account picker is silent, same as the login screen's handling
+                    // — it's not a failure worth surfacing.
+                    val cancelled = error::class.simpleName == "GetCredentialCancellationException"
+                    set { it.copy(googleAccountLinkBusy = false, googleAccountLinkError = !cancelled) }
+                },
+            )
         }
     }
 

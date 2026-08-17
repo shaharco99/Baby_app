@@ -17,10 +17,24 @@
     <string name="auth_or_divider">or</string>
     <string name="auth_continue_with_google">Continue with Google</string>
 
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_forgot_password_title">Reset your password</string>
+    <string name="auth_forgot_password_submit">Send reset link</string>
+    <string name="auth_forgot_password_cancel">Cancel</string>
+    <string name="auth_forgot_password_done">Done</string>
+    <string name="auth_forgot_password_sent">If that email has an account, a reset link is on its way. Open it on this device to set a new password.</string>
+
     <string name="auth_error_credentials">That email or password is not right.</string>
     <string name="auth_error_offline">No connection. Check your internet and try again.</string>
     <string name="auth_error_timeout">The server took too long to answer. Try again.</string>
     <string name="auth_error_already_registered">That email already has an account.</string>
     <string name="auth_error_generic">Something went wrong. Try again.</string>
     <string name="auth_error_google_failed">Google sign-in did not complete. Try again.</string>
+
+    <string name="reset_password_title">Set a new password</string>
+    <string name="reset_password_subtitle">Choose a new password for your account.</string>
+    <string name="reset_password_new_password">New password</string>
+    <string name="reset_password_confirm_password">Confirm password</string>
+    <string name="reset_password_mismatch">Passwords don\'t match.</string>
+    <string name="reset_password_submit">Save new password</string>
 </resources>

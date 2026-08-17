@@ -25,6 +25,9 @@ data class SettingsUiState(
     val googleCalendarError: String? = null,
     val calendarPickerVisible: Boolean = false,
     val availableGoogleCalendars: List<GoogleCalendarOption> = emptyList(),
+    val googleAccountLinked: Boolean = false,
+    val googleAccountLinkBusy: Boolean = false,
+    val googleAccountLinkError: Boolean = false,
 ) {
     val autoLockOptionMinutes: List<Int> get() = listOf(1, 5, 15, 30)
 }

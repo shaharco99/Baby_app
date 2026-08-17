@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -67,6 +68,7 @@ fun SettingsScreen(
                 )
             }
 
+            item { AccountSection(uiState = uiState, actions = actions) }
             item { SecuritySection(uiState = uiState, actions = actions) }
             item { NotificationsSection(uiState = uiState, actions = actions) }
             item { RecoverySection(actions = actions) }
@@ -131,6 +133,46 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
             content()
+        }
+    }
+}
+
+@Composable
+private fun AccountSection(uiState: SettingsUiState, actions: SettingsActions) {
+    val context = LocalContext.current
+
+    SectionCard(title = stringResource(R.string.settings_account_title)) {
+        Text(
+            text = stringResource(R.string.settings_account_google_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (uiState.googleAccountLinkError) {
+            Text(
+                stringResource(R.string.settings_account_google_error),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        if (uiState.googleAccountLinked) {
+            Text(
+                stringResource(R.string.settings_account_google_connected),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        } else {
+            Button(
+                onClick = { actions.onConnectGoogleAccountClick(context) },
+                enabled = !uiState.googleAccountLinkBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (uiState.googleAccountLinkBusy) {
+                    CircularProgressIndicator(modifier = Modifier.height(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.settings_account_google_connect))
+                }
+            }
         }
     }
 }
@@ -347,6 +389,7 @@ private object NoopSettingsActions : SettingsActions {
     override fun onDismissRecoveryPhrase() = Unit
     override fun onManageDevicesClick() = Unit
     override fun onSignOutClick() = Unit
+    override fun onConnectGoogleAccountClick(context: android.content.Context) = Unit
     override fun onConnectGoogleCalendarClick(context: android.content.Context) = Unit
     override fun onGoogleCalendarResolutionResult(resultCode: Int, data: android.content.Intent?) = Unit
     override fun onOpenCalendarPickerClick() = Unit

@@ -30,6 +30,11 @@ interface AuthActions {
     /** [message] null means the user just dismissed the account picker — not an error worth
      * showing. Anything else surfaces a generic failure message. */
     fun onGoogleSignInFailed(message: String?)
+
+    fun onForgotPasswordClick()
+    fun onForgotPasswordEmailChange(value: String)
+    fun onForgotPasswordSubmit()
+    fun onDismissForgotPassword()
 }
 
 class AuthViewModel(private val auth: AuthRepository) : ViewModel(), AuthActions {
@@ -132,13 +137,46 @@ class AuthViewModel(private val auth: AuthRepository) : ViewModel(), AuthActions
             )
         }
     }
+
+    override fun onForgotPasswordClick() {
+        // Pre-fills with whatever's already in the sign-in form — the common case is the user
+        // typed their email, then realized they don't remember the password.
+        _uiState.update {
+            it.copy(forgotPasswordVisible = true, forgotPasswordEmail = it.email, forgotPasswordSent = false)
+        }
+    }
+
+    override fun onForgotPasswordEmailChange(value: String) {
+        _uiState.update { it.copy(forgotPasswordEmail = value.trim()) }
+    }
+
+    override fun onDismissForgotPassword() {
+        _uiState.update { it.copy(forgotPasswordVisible = false) }
+    }
+
+    override fun onForgotPasswordSubmit() {
+        val state = _uiState.value
+        if (!state.forgotPasswordEmailValid || state.forgotPasswordSubmitting) return
+
+        _uiState.update { it.copy(forgotPasswordSubmitting = true) }
+        viewModelScope.launch {
+            when (val result = auth.sendPasswordResetEmail(state.forgotPasswordEmail)) {
+                is AppResult.Success -> _uiState.update {
+                    it.copy(forgotPasswordSubmitting = false, forgotPasswordSent = true)
+                }
+                is AppResult.Failure -> _uiState.update {
+                    it.copy(forgotPasswordSubmitting = false, errorMessage = result.error.toMessageRes())
+                }
+            }
+        }
+    }
 }
 
 private fun MutableStateFlow<AuthUiState>.update(block: (AuthUiState) -> AuthUiState) {
     value = block(value)
 }
 
-private fun AppError.toMessageRes(): Int = when (this) {
+internal fun AppError.toMessageRes(): Int = when (this) {
     is AppError.Network.Offline -> R.string.auth_error_offline
     is AppError.Network.Timeout -> R.string.auth_error_timeout
     // Deliberately the same message for a wrong password and an unknown address: telling the

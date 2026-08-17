@@ -65,6 +65,9 @@ import com.oryareach.core.network.auth.AuthState
 import com.oryareach.feature.auth.AuthEffect
 import com.oryareach.feature.auth.AuthScreen
 import com.oryareach.feature.auth.AuthViewModel
+import com.oryareach.feature.auth.ResetPasswordEffect
+import com.oryareach.feature.auth.ResetPasswordScreen
+import com.oryareach.feature.auth.ResetPasswordViewModel
 import com.oryareach.feature.cycle.CycleScreen
 import com.oryareach.feature.cycle.CycleViewModel
 import com.oryareach.feature.pairing.PairingEffect
@@ -93,7 +96,11 @@ import org.koin.compose.koinInject
  * applies by pressing back, and a sign-out anywhere unwinds correctly on its own.
  */
 @Composable
-fun SaharApp(authState: AuthState) {
+fun SaharApp(
+    authState: AuthState,
+    passwordRecoveryPending: Boolean = false,
+    onPasswordRecoveryHandled: () -> Unit = {},
+) {
     val session: SessionState = koinInject()
     val workspaceId by session.workspaceIdFlow.collectAsStateWithLifecycle()
     val locked by session.lockedFlow.collectAsStateWithLifecycle()
@@ -102,6 +109,11 @@ fun SaharApp(authState: AuthState) {
         authState == AuthState.Unknown -> Unit
 
         authState == AuthState.SignedOut -> AuthRoute()
+
+        // Checked before the pairing/lock checks below: a recovery session is signed in, so it
+        // would otherwise fall through to the normal app. The user asked to reset a forgotten
+        // password, not to land back in the workspace they may not even remember pairing.
+        passwordRecoveryPending -> ResetPasswordRoute(onDone = onPasswordRecoveryHandled)
 
         workspaceId == null -> PairingRoute()
 
@@ -516,6 +528,24 @@ private fun AuthRoute(viewModel: AuthViewModel = koinViewModel()) {
     }
 
     AuthScreen(uiState = uiState, actions = viewModel)
+}
+
+@Composable
+private fun ResetPasswordRoute(onDone: () -> Unit, viewModel: ResetPasswordViewModel = koinViewModel()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+
+    LaunchedEffect(Unit) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.effects.collect { effect ->
+                when (effect) {
+                    ResetPasswordEffect.PasswordUpdated -> onDone()
+                }
+            }
+        }
+    }
+
+    ResetPasswordScreen(uiState = uiState, actions = viewModel)
 }
 
 @Composable

@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -140,14 +141,23 @@ fun AuthScreen(
 
             if (uiState.mode == AuthMode.SignIn) {
                 Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { actions.onRememberMeChange(!uiState.rememberMe) },
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Checkbox(checked = uiState.rememberMe, onCheckedChange = actions::onRememberMeChange)
-                    Text(
-                        stringResource(R.string.auth_remember_me),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { actions.onRememberMeChange(!uiState.rememberMe) },
+                    ) {
+                        Checkbox(checked = uiState.rememberMe, onCheckedChange = actions::onRememberMeChange)
+                        Text(
+                            stringResource(R.string.auth_remember_me),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    TextButton(onClick = actions::onForgotPasswordClick) {
+                        Text(stringResource(R.string.auth_forgot_password))
+                    }
                 }
             }
 
@@ -229,6 +239,65 @@ fun AuthScreen(
             }
         }
     }
+
+    if (uiState.forgotPasswordVisible) {
+        ForgotPasswordDialog(uiState = uiState, actions = actions)
+    }
+}
+
+@Composable
+private fun ForgotPasswordDialog(uiState: AuthUiState, actions: AuthActions) {
+    AlertDialog(
+        onDismissRequest = actions::onDismissForgotPassword,
+        title = { Text(stringResource(R.string.auth_forgot_password_title)) },
+        text = {
+            if (uiState.forgotPasswordSent) {
+                Text(stringResource(R.string.auth_forgot_password_sent))
+            } else {
+                OutlinedTextField(
+                    value = uiState.forgotPasswordEmail,
+                    onValueChange = actions::onForgotPasswordEmailChange,
+                    label = { Text(stringResource(R.string.auth_email)) },
+                    singleLine = true,
+                    isError = uiState.forgotPasswordEmail.isNotEmpty() && !uiState.forgotPasswordEmailValid,
+                    enabled = !uiState.forgotPasswordSubmitting,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { actions.onForgotPasswordSubmit() }),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            if (uiState.forgotPasswordSent) {
+                TextButton(onClick = actions::onDismissForgotPassword) {
+                    Text(stringResource(R.string.auth_forgot_password_done))
+                }
+            } else {
+                TextButton(
+                    onClick = actions::onForgotPasswordSubmit,
+                    enabled = uiState.forgotPasswordEmailValid && !uiState.forgotPasswordSubmitting,
+                ) {
+                    if (uiState.forgotPasswordSubmitting) {
+                        CircularProgressIndicator(modifier = Modifier.height(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.auth_forgot_password_submit))
+                    }
+                }
+            }
+        },
+        dismissButton = if (uiState.forgotPasswordSent) {
+            null
+        } else {
+            {
+                TextButton(onClick = actions::onDismissForgotPassword) {
+                    Text(stringResource(R.string.auth_forgot_password_cancel))
+                }
+            }
+        },
+    )
 }
 
 /**
@@ -294,4 +363,8 @@ private object NoopAuthActions : AuthActions {
     override fun onGoogleIdToken(idToken: String) = Unit
     override fun onGoogleSignInStarted() = Unit
     override fun onGoogleSignInFailed(message: String?) = Unit
+    override fun onForgotPasswordClick() = Unit
+    override fun onForgotPasswordEmailChange(value: String) = Unit
+    override fun onForgotPasswordSubmit() = Unit
+    override fun onDismissForgotPassword() = Unit
 }

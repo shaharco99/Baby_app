@@ -17,10 +17,24 @@
     <string name="auth_or_divider">או</string>
     <string name="auth_continue_with_google">המשיכו עם Google</string>
 
+    <string name="auth_forgot_password">שכחתם סיסמה?</string>
+    <string name="auth_forgot_password_title">איפוס סיסמה</string>
+    <string name="auth_forgot_password_submit">שליחת קישור לאיפוס</string>
+    <string name="auth_forgot_password_cancel">ביטול</string>
+    <string name="auth_forgot_password_done">סיום</string>
+    <string name="auth_forgot_password_sent">אם לאימייל הזה יש חשבון, קישור לאיפוס בדרך אליו. יש לפתוח אותו במכשיר הזה כדי לקבוע סיסמה חדשה.</string>
+
     <string name="auth_error_credentials">האימייל או הסיסמה אינם נכונים.</string>
     <string name="auth_error_offline">אין חיבור. בדקו את האינטרנט ונסו שוב.</string>
     <string name="auth_error_timeout">השרת לא הגיב בזמן. נסו שוב.</string>
     <string name="auth_error_already_registered">לאימייל הזה כבר יש חשבון.</string>
     <string name="auth_error_generic">משהו השתבש. נסו שוב.</string>
     <string name="auth_error_google_failed">ההתחברות עם Google לא הושלמה. נסו שוב.</string>
+
+    <string name="reset_password_title">קביעת סיסמה חדשה</string>
+    <string name="reset_password_subtitle">בחרו סיסמה חדשה לחשבון שלכם.</string>
+    <string name="reset_password_new_password">סיסמה חדשה</string>
+    <string name="reset_password_confirm_password">אימות סיסמה</string>
+    <string name="reset_password_mismatch">הסיסמאות אינן תואמות.</string>
+    <string name="reset_password_submit">שמירת סיסמה חדשה</string>
 </resources>
