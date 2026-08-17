@@ -41,6 +41,7 @@ import com.oryareach.core.update.UpdateInstaller
 import com.oryareach.core.update.UpdateState
 import com.oryareach.core.update.VersionManager
 import com.oryareach.feature.auth.AuthViewModel
+import com.oryareach.feature.auth.ResetPasswordViewModel
 import com.oryareach.feature.pairing.PairingViewModel
 import com.oryareach.feature.tasks.TasksViewModel
 import com.oryareach.feature.cycle.CycleViewModel
@@ -139,10 +140,14 @@ val appModule = module {
     single { ConflictRepository(database = get(), codec = get()) }
 
     viewModel { AuthViewModel(auth = get()) }
+    viewModel { ResetPasswordViewModel(auth = get()) }
     viewModel {
         PairingViewModel(
             workspaces = get(),
             identity = get(),
+            auth = get(),
+            session = get(),
+            localDataWiper = get(),
             onWorkspaceOpened = { workspaceId, key ->
                 get<SessionState>().open(workspaceId, key)
                 get<SyncTrigger>().syncNow()

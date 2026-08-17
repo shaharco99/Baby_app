@@ -43,4 +43,8 @@
     <string name="pairing_error_key_mismatch">This phone could not open the key it was given.</string>
     <string name="pairing_error_invalid_phrase">That phrase is not valid. Check the words and try again.</string>
     <string name="pairing_error_generic">Something went wrong. Try again.</string>
+
+    <string name="pairing_sign_out">Sign out</string>
+    <string name="pairing_sign_out_title">Sign out?</string>
+    <string name="pairing_sign_out_body">You will need to sign in again to try a different account.</string>
 </resources>

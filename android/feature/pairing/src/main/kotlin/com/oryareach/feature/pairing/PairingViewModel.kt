@@ -9,9 +9,12 @@ import com.oryareach.core.common.AppResult
 import com.oryareach.core.crypto.KeyWrap
 import com.oryareach.core.crypto.RecoveryPhrase
 import com.oryareach.core.crypto.WorkspaceKey
+import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.network.workspace.WorkspaceRepository
 import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.security.InvitationToken
+import com.oryareach.core.security.LocalDataWiper
+import com.oryareach.core.security.SessionController
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +39,14 @@ interface PairingActions {
     fun onRecoveryPhraseInputChange(value: String)
     fun onSubmitRecoveryPhrase()
     fun onRefresh()
+
+    /** Backs out of pairing entirely to try a different account — the wrong-workspace escape
+     * hatch [PairingStage.allowsSignOut]'s doc comment describes. Same sequence as Settings'
+     * own sign-out (`SettingsViewModel.onSignOutClick`), which this can't just call into
+     * instead: `:feature:*` modules never depend on each other, and Settings itself is
+     * unreachable until a workspace is unlocked — exactly the state a stuck pairing leaves the
+     * user in. */
+    fun onSignOut()
 }
 
 /**
@@ -48,6 +59,9 @@ interface PairingActions {
 class PairingViewModel(
     private val workspaces: WorkspaceRepository,
     private val identity: DeviceIdentity,
+    private val auth: AuthRepository,
+    private val session: SessionController,
+    private val localDataWiper: LocalDataWiper,
     private val keyWrap: KeyWrap = KeyWrap(),
     private val onWorkspaceOpened: (String, WorkspaceKey) -> Unit,
 ) : ViewModel(), PairingActions {
@@ -371,6 +385,20 @@ class PairingViewModel(
                     ),
                 )
             }
+        }
+    }
+
+    override fun onSignOut() {
+        if (_uiState.value.busy) return
+        busy(true)
+
+        viewModelScope.launch {
+            auth.signOut()
+            identity.forget()
+            session.signOut()
+            // Restarts the process — nothing after this point runs; see LocalDataWiper's doc
+            // comment for why the database can't just be swapped out in place.
+            localDataWiper.wipeAndRestart()
         }
     }
 

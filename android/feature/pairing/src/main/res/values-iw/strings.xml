@@ -43,4 +43,8 @@
     <string name="pairing_error_key_mismatch">הטלפון הזה לא הצליח לפתוח את המפתח שקיבל.</string>
     <string name="pairing_error_invalid_phrase">המשפט אינו תקף. בדקו את המילים ונסו שוב.</string>
     <string name="pairing_error_generic">משהו השתבש. נסו שוב.</string>
+
+    <string name="pairing_sign_out">התנתקות</string>
+    <string name="pairing_sign_out_title">להתנתק?</string>
+    <string name="pairing_sign_out_body">יהיה עליכם להתחבר מחדש כדי לנסות חשבון אחר.</string>
 </resources>

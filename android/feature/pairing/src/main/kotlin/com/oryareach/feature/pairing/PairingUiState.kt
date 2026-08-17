@@ -75,6 +75,20 @@ data class PairingUiState(
     }
 }
 
+/** Whether [PairingScreen] should offer a way to sign out and try a different account from
+ * this stage — every stage before the workspace is actually opened, where getting stuck on the
+ * wrong account with no way back would otherwise strand the user (see [PairingActions.onSignOut]
+ * doc comment). Excludes [PairingStage.Loading] (nothing to back out of yet) and
+ * [PairingStage.ShowRecoveryPhrase]/[PairingStage.Ready] (the workspace is already this
+ * device's; Settings' own sign-out, reachable once inside the app, is one tap away for the
+ * `Ready` case, and backing out mid-`ShowRecoveryPhrase` would abandon a just-created workspace
+ * without the one chance to write its phrase down). */
+val PairingStage.allowsSignOut: Boolean
+    get() = this is PairingStage.Choose ||
+        this is PairingStage.EnterCode ||
+        this is PairingStage.AwaitingKey ||
+        this is PairingStage.EnterRecoveryPhrase
+
 sealed interface PairingEffect {
     /** The device now has a workspace and a key: the app proper can open. */
     data object Completed : PairingEffect

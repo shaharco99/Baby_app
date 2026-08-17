@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,7 +24,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -46,6 +52,9 @@ fun PairingScreen(
     actions: PairingActions,
     modifier: Modifier = Modifier,
 ) {
+    var confirmSignOut by remember { mutableStateOf(false) }
+    val stage = uiState.stage
+
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier
@@ -56,7 +65,7 @@ fun PairingScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            when (val stage = uiState.stage) {
+            when (stage) {
                 PairingStage.Loading -> LoadingStage()
                 PairingStage.Choose -> ChooseStage(uiState, actions)
                 is PairingStage.ShowRecoveryPhrase -> RecoveryPhraseStage(stage, uiState, actions)
@@ -73,7 +82,35 @@ fun PairingScreen(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
+
+            // The wrong-account escape hatch — see `PairingStage.allowsSignOut`'s doc comment
+            // for exactly which stages this covers and why.
+            if (stage.allowsSignOut) {
+                TextButton(
+                    onClick = { confirmSignOut = true },
+                    enabled = !uiState.busy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.pairing_sign_out)) }
+            }
         }
+    }
+
+    if (confirmSignOut) {
+        AlertDialog(
+            onDismissRequest = { confirmSignOut = false },
+            title = { Text(stringResource(R.string.pairing_sign_out_title)) },
+            text = { Text(stringResource(R.string.pairing_sign_out_body)) },
+            confirmButton = {
+                TextButton(onClick = { confirmSignOut = false; actions.onSignOut() }) {
+                    Text(stringResource(R.string.pairing_sign_out))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSignOut = false }) {
+                    Text(stringResource(R.string.pairing_recovery_entry_cancel))
+                }
+            },
+        )
     }
 }
 
@@ -100,7 +137,7 @@ private fun ChooseStage(uiState: PairingUiState, actions: PairingActions) {
         modifier = Modifier.fillMaxWidth(),
     ) { Text(stringResource(R.string.pairing_join)) }
 
-    androidx.compose.material3.TextButton(
+    TextButton(
         onClick = actions::onShowRecoveryPhraseEntry,
         enabled = !uiState.busy,
         modifier = Modifier.fillMaxWidth(),
@@ -209,7 +246,7 @@ private fun AwaitingKeyStage(uiState: PairingUiState, actions: PairingActions) {
         modifier = Modifier.fillMaxWidth(),
     ) { Text(stringResource(R.string.pairing_check_again)) }
 
-    androidx.compose.material3.TextButton(
+    TextButton(
         onClick = actions::onShowRecoveryPhraseEntry,
         enabled = !uiState.busy,
         modifier = Modifier.fillMaxWidth(),
@@ -385,4 +422,5 @@ private object NoopPairingActions : PairingActions {
     override fun onRecoveryPhraseInputChange(value: String) = Unit
     override fun onSubmitRecoveryPhrase() = Unit
     override fun onRefresh() = Unit
+    override fun onSignOut() = Unit
 }
