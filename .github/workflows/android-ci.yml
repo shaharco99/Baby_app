@@ -27,6 +27,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # setup-gradle only caches ~/.gradle; Kotlin's own incremental-compile state
+      # lives under each module's build/ dir and is lost on every fresh runner,
+      # forcing a full (non-incremental) recompile every run.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/**/build/kotlin
+            android/**/build/tmp/kotlin-classes
+          key: kotlin-incremental-${{ runner.os }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            kotlin-incremental-${{ runner.os }}-${{ github.ref }}-
+            kotlin-incremental-${{ runner.os }}-
+
       - name: Test, lint, assemble
         working-directory: android
         run: ./gradlew test lint assembleDebug
