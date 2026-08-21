@@ -314,7 +314,7 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val options: List<Assignee?> = listOf(null, Assignee.PARTNER_ONE, Assignee.PARTNER_TWO, Assignee.BOTH)
+            val options: List<Assignee?> = listOf(Assignee.PARTNER_ONE, Assignee.PARTNER_TWO, Assignee.BOTH)
             options.forEach { option ->
                 FilterChip(
                     selected = uiState.formAssignee == option,

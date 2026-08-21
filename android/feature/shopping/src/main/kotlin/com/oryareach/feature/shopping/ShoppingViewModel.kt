@@ -101,7 +101,7 @@ class ShoppingViewModel(
             formCategory = ShoppingCategory.OTHER,
             formEstimatedPrice = "",
             formPriority = Priority.NORMAL,
-            formAssignee = null,
+            formAssignee = Assignee.PARTNER_ONE,
             formCustomAssigneeName = "",
             formNote = "",
             formLink = "",
