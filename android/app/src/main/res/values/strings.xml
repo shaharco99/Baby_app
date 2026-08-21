@@ -8,4 +8,5 @@
     <string name="lock_unlock">Unlock</string>
     <string name="lock_prompt_title">Unlock Takes Two of Us</string>
     <string name="app_back">Back</string>
+    <string name="settings_version">Version %1$s</string>
 </resources>

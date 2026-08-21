@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -476,11 +477,30 @@ private fun SettingsRoute(
         actions = viewModel,
         modifier = modifier,
         footer = {
-            androidx.compose.material3.OutlinedButton(
-                onClick = updateViewModel::onCheckNow,
+            androidx.compose.foundation.layout.Column(
                 modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
             ) {
-                Text(stringResource(com.oryareach.feature.update.R.string.settings_check_for_updates))
+                androidx.compose.material3.OutlinedButton(
+                    onClick = updateViewModel::onCheckNow,
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(com.oryareach.feature.update.R.string.settings_check_for_updates))
+                }
+
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val versionName = androidx.compose.runtime.remember {
+                    runCatching {
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    }.getOrNull() ?: "?"
+                }
+                Text(
+                    text = stringResource(R.string.settings_version, versionName),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                )
             }
         },
     )
