@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="update_available_title">גרסה %1$s זמינה</string>
-    <string name="update_mandatory_notice">עדכון זה נדרש כדי להמשיך להשתמש בסהר.</string>
+    <string name="update_mandatory_notice">עדכון זה נדרש כדי להמשיך להשתמש בשנינו ביחד.</string>
     <string name="update_downloading">מוריד…</string>
     <string name="update_installing">מתקין…</string>
     <string name="update_failed">העדכון נכשל: %1$s</string>

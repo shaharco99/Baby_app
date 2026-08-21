@@ -67,4 +67,9 @@ object NightPalette {
     val glowEnd = Color(0xFFC9793F)
     val text = Color(0xFFF3ECDD)
     val textMuted = Color(0xFFC9C2AE)
+
+    /** Split-world glitch easter egg (long-press the moon) — two contrasting "story world"
+     * tones that flicker across [sky] before settling back. */
+    val glitchWorldOne = Color(0xFF1B3A5C)
+    val glitchWorldTwo = Color(0xFF5C1B4A)
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="update_available_title">Version %1$s is available</string>
-    <string name="update_mandatory_notice">This update is required to keep using Sahar.</string>
+    <string name="update_mandatory_notice">This update is required to keep using Takes Two of Us.</string>
     <string name="update_downloading">Downloading…</string>
     <string name="update_installing">Installing…</string>
     <string name="update_failed">Update failed: %1$s</string>

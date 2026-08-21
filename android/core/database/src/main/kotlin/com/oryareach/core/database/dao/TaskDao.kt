@@ -35,6 +35,15 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun findById(id: String): TaskEntity?
 
+    /** Recency proxy for "is the partner around right now" — no live presence channel exists. */
+    @Query(
+        """
+        SELECT MAX(updated_at) FROM tasks
+        WHERE workspace_id = :workspaceId AND created_by != :selfUserId AND deleted_at IS NULL
+        """,
+    )
+    suspend fun lastActivityByOthers(workspaceId: String, selfUserId: String): Long?
+
     @Query(
         """
         SELECT COUNT(*) FROM tasks

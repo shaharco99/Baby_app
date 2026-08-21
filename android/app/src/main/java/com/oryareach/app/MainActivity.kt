@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                SaharApp(
+                TakesTwoApp(
                     authState = authState,
                     passwordRecoveryPending = passwordRecoveryPending,
                     onPasswordRecoveryHandled = { passwordRecoveryPending = false },

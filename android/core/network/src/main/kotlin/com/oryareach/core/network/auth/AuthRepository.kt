@@ -97,7 +97,7 @@ class SupabaseAuthRepository(
             // A failed background token refresh does not mean the cached session is gone —
             // the SDK keeps it in place and will retry. Treating this the same as
             // `Initializing` (mapped to Unknown below) would unmount the entire signed-in UI
-            // tree — see `SaharApp`'s routing `when`, which renders nothing for `Unknown` —
+            // tree — see `TakesTwoApp`'s routing `when`, which renders nothing for `Unknown` —
             // on a transient network hiccup, e.g. right as the app resumes from backgrounding
             // for a system file/document picker. That contradicts this app's offline-first
             // design (Room-first reads, background sync) and was the leading suspect for a

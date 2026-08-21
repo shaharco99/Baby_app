@@ -13,7 +13,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.logger.Level
 
-class SaharApplication : Application(), KoinComponent {
+class TakesTwoApplication : Application(), KoinComponent {
 
     private val autoLockController: AutoLockController by inject()
 
@@ -22,7 +22,7 @@ class SaharApplication : Application(), KoinComponent {
 
         startKoin {
             androidLogger(if (BuildConfig.DEBUG) Level.ERROR else Level.NONE)
-            androidContext(this@SaharApplication)
+            androidContext(this@TakesTwoApplication)
             modules(appModule, networkModule)
         }
 

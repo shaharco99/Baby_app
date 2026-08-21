@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
+    <string name="settings_easter_egg_message">Player 2 has joined. Inspired by It Takes Two &amp; Split Fiction — best played in co-op, always.</string>
 
     <string name="settings_security_title">Security</string>
     <string name="settings_biometric_unlock">Require biometric unlock</string>

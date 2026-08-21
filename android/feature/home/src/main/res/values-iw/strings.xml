@@ -31,6 +31,15 @@
     <string name="home_import_failed">לא הצלחנו לקרוא את הקובץ</string>
     <string name="home_import_failed_body">ודאו שזה קובץ JSON שיוצא מאתר אור ירח.</string>
     <string name="home_budget_spent_of_estimated">₪%1$.2f מתוך ₪%2$.2f הוצאו</string>
+    <string name="home_book_of_love_title">ספר האהבה</string>
+
+    <string-array name="home_book_of_love_tips">
+        <item>תגידו תודה על משהו קטן היום — מהדברים שקל להפסיק לשים לב אליהם.</item>
+        <item>שאלו איך באמת הולך, ואז חכו באמת לתשובה.</item>
+        <item>עשר דקות בלי טלפונים, רק שניכם.</item>
+        <item>ספרו לבן/בת הזוג על דבר אחד שאתם מצפים לו כשתהיו שלושה.</item>
+        <item>מה שאתם בונים עכשיו, אתם בונים ביחד. זה כל המשחק.</item>
+    </string-array>
 
     <string-array name="home_daily_messages">
         <item>עוד קצת, ותהיו שלושה.</item>

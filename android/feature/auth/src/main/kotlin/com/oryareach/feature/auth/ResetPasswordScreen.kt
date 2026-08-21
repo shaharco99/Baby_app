@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.oryareach.core.ui.theme.OrYareachTheme
 
 /** Shown instead of the normal signed-in app right after opening a password-recovery link —
- * see `SaharApp`'s routing `when` and `AuthRepository.consumePasswordRecoveryLink`'s doc
+ * see `TakesTwoApp`'s routing `when` and `AuthRepository.consumePasswordRecoveryLink`'s doc
  * comment for how the app decides to render this. */
 @Composable
 fun ResetPasswordScreen(

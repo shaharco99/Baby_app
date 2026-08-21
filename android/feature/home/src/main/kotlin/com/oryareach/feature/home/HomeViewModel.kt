@@ -40,6 +40,8 @@ interface HomeActions {
     fun onImportJson(json: String)
     fun onDismissImportResult()
     fun onRefresh()
+    fun onMoonLongPress()
+    fun onDismissBookOfLove()
 }
 
 /**
@@ -216,6 +218,30 @@ class HomeViewModel(
     override fun onDismissImportResult() = set { it.copy(importResult = null) }
 
     /**
+     * Book of Love easter egg: only surfaces when the partner looks "around right now". There's
+     * no live presence channel (see `[DAO].lastActivityByOthers` doc comment), so this is a
+     * recency proxy — the partner's most recent task/shopping edit within the last few minutes.
+     */
+    override fun onMoonLongPress() {
+        val workspace = workspaceId() ?: return
+        val selfUserId = auth.currentUserId() ?: return
+
+        viewModelScope.launch {
+            val lastActivity = maxOf(
+                taskRepository.lastActivityByOthers(workspace, selfUserId) ?: 0L,
+                shoppingRepository.lastActivityByOthers(workspace, selfUserId) ?: 0L,
+            )
+            val recentlyActive = lastActivity > 0L &&
+                System.currentTimeMillis() - lastActivity <= PARTNER_RECENTLY_ACTIVE_WINDOW_MS
+            if (recentlyActive) {
+                set { it.copy(bookOfLoveVisible = true) }
+            }
+        }
+    }
+
+    override fun onDismissBookOfLove() = set { it.copy(bookOfLoveVisible = false) }
+
+    /**
      * Pull-to-refresh: the app otherwise only syncs on a 6-hour periodic worker or right after
      * a local write, so there was no way to ask "check the partner's changes now" from the UI.
      * Calls SyncEngine directly rather than going through WorkManager/SyncTrigger, since this
@@ -243,5 +269,9 @@ class HomeViewModel(
 
     private fun set(block: (HomeUiState) -> HomeUiState) {
         _uiState.value = block(_uiState.value)
+    }
+
+    private companion object {
+        const val PARTNER_RECENTLY_ACTIVE_WINDOW_MS = 5 * 60 * 1000L
     }
 }

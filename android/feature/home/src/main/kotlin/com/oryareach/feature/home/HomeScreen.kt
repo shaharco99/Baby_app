@@ -2,8 +2,10 @@ package com.oryareach.feature.home
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,6 +39,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -57,6 +60,7 @@ import com.oryareach.core.ui.theme.NightPalette
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.coroutines.launch
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -98,7 +102,7 @@ fun HomeScreen(
                 if (!uiState.hasDueDate) {
                     NoDueDateCard(actions = actions)
                 } else {
-                    MoonCountdown(uiState = uiState)
+                    MoonCountdown(uiState = uiState, actions = actions)
 
                     Text(
                         text = dailyMessage(),
@@ -155,6 +159,18 @@ fun HomeScreen(
         )
     }
 
+    if (uiState.bookOfLoveVisible) {
+        val tips = androidx.compose.ui.res.stringArrayResource(R.array.home_book_of_love_tips)
+        AlertDialog(
+            onDismissRequest = actions::onDismissBookOfLove,
+            confirmButton = {
+                TextButton(onClick = actions::onDismissBookOfLove) { Text(stringResource(R.string.home_pick_confirm)) }
+            },
+            title = { Text(stringResource(R.string.home_book_of_love_title)) },
+            text = { Text(tips.random()) },
+        )
+    }
+
     if (uiState.sheetVisible) {
         val sheetState = rememberModalBottomSheetState()
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
@@ -205,13 +221,33 @@ private fun NoDueDateCard(actions: HomeActions) {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun MoonCountdown(uiState: HomeUiState) {
+private fun MoonCountdown(uiState: HomeUiState, actions: HomeActions) {
     val progress = uiState.progress ?: return
+    val backgroundColor = androidx.compose.runtime.remember {
+        androidx.compose.animation.Animatable(NightPalette.sky)
+    }
+    val scope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(NightPalette.sky, RoundedCornerShape(28.dp))
+            .background(backgroundColor.value, RoundedCornerShape(28.dp))
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    scope.launch {
+                        // Quick flicker between the two "story world" tones, then settle back —
+                        // a Split Fiction nod (the game's sci-fi/fantasy split-screen worlds).
+                        backgroundColor.animateTo(NightPalette.glitchWorldOne, tween(70))
+                        backgroundColor.animateTo(NightPalette.glitchWorldTwo, tween(70))
+                        backgroundColor.animateTo(NightPalette.glitchWorldOne, tween(70))
+                        backgroundColor.animateTo(NightPalette.sky, tween(150))
+                    }
+                    actions.onMoonLongPress()
+                },
+            )
             .padding(vertical = 28.dp, horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -436,4 +472,6 @@ private object NoopHomeActions : HomeActions {
     override fun onImportJson(json: String) = Unit
     override fun onDismissImportResult() = Unit
     override fun onRefresh() = Unit
+    override fun onMoonLongPress() = Unit
+    override fun onDismissBookOfLove() = Unit
 }

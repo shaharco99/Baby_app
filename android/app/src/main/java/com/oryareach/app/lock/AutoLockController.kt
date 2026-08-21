@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
  * Locks the session after the app has been backgrounded for the configured timeout, but only
  * when biometric unlock is on — see [SettingsPreferences]'s doc comment for why a lock with no
  * way back in would just strand the user. Registered against [androidx.lifecycle.ProcessLifecycleOwner]
- * in [com.oryareach.app.SaharApplication], not the Activity's own lifecycle: a rotation or a
+ * in [com.oryareach.app.TakesTwoApplication], not the Activity's own lifecycle: a rotation or a
  * transient multi-window state change stops and restarts an Activity without the app actually
  * leaving the foreground, and locking on those would be wrong.
  */

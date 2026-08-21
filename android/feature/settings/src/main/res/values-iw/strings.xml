@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">הגדרות</string>
+    <string name="settings_easter_egg_message">שחקן 2 הצטרף. בהשראת It Takes Two ו-Split Fiction — תמיד עדיף בקו-אופ.</string>
 
     <string name="settings_security_title">אבטחה</string>
     <string name="settings_biometric_unlock">דרישת פתיחה ביומטרית</string>

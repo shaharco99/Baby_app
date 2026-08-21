@@ -32,6 +32,9 @@ data class HomeUiState(
     val importing: Boolean = false,
     val importResult: ImportResult? = null,
     val refreshing: Boolean = false,
+    /** Easter egg: long-pressing the moon shows the "Book of Love" tip, but only when the
+     * partner has been active recently — see [HomeViewModel.onMoonLongPress]. */
+    val bookOfLoveVisible: Boolean = false,
 ) {
     val hasDueDate: Boolean get() = dueDate != null
     val canSubmitForm: Boolean get() = editingLastPeriodDate != null

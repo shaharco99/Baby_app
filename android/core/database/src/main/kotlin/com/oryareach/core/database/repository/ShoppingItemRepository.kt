@@ -35,6 +35,9 @@ class ShoppingItemRepository(
     fun observeAll(workspaceId: String): Flow<List<ShoppingItem>> =
         items.observeAll(workspaceId).map { list -> list.map { it.toShoppingItem() } }
 
+    suspend fun lastActivityByOthers(workspaceId: String, selfUserId: String): Long? =
+        items.lastActivityByOthers(workspaceId, selfUserId)
+
     suspend fun create(
         workspaceId: String,
         userId: String,

@@ -22,6 +22,15 @@ interface ShoppingItemDao {
     @Query("SELECT * FROM shopping_items WHERE id = :id")
     suspend fun findById(id: String): ShoppingItemEntity?
 
+    /** Recency proxy for "is the partner around right now" — no live presence channel exists. */
+    @Query(
+        """
+        SELECT MAX(updated_at) FROM shopping_items
+        WHERE workspace_id = :workspaceId AND created_by != :selfUserId AND deleted_at IS NULL
+        """,
+    )
+    suspend fun lastActivityByOthers(workspaceId: String, selfUserId: String): Long?
+
     @Upsert
     suspend fun upsert(item: ShoppingItemEntity)
 

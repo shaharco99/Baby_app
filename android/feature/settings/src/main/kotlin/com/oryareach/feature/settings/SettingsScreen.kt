@@ -1,6 +1,8 @@
 package com.oryareach.feature.settings
 
 import android.content.ClipData
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,6 +59,9 @@ fun SettingsScreen(
     footer: @Composable () -> Unit = {},
 ) {
     var confirmSignOut by remember { mutableStateOf(false) }
+    var titleTapCount by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+    val easterEggMessage = stringResource(R.string.settings_easter_egg_message)
 
     Surface(modifier = modifier.fillMaxSize().safeDrawingPadding(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(
@@ -69,7 +74,15 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_title),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.semantics { heading() },
+                    modifier = Modifier
+                        .semantics { heading() }
+                        .clickable {
+                            titleTapCount++
+                            if (titleTapCount >= 7) {
+                                titleTapCount = 0
+                                Toast.makeText(context, easterEggMessage, Toast.LENGTH_LONG).show()
+                            }
+                        },
                 )
             }
 

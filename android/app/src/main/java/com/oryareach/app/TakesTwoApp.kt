@@ -96,7 +96,7 @@ import org.koin.compose.koinInject
  * applies by pressing back, and a sign-out anywhere unwinds correctly on its own.
  */
 @Composable
-fun SaharApp(
+fun TakesTwoApp(
     authState: AuthState,
     passwordRecoveryPending: Boolean = false,
     onPasswordRecoveryHandled: () -> Unit = {},

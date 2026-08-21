@@ -31,6 +31,15 @@
     <string name="home_import_failed">Couldn\'t read the file</string>
     <string name="home_import_failed_body">Make sure it\'s a JSON file exported from the אור ירח website.</string>
     <string name="home_budget_spent_of_estimated">₪%1$.2f of ₪%2$.2f spent</string>
+    <string name="home_book_of_love_title">Book of Love</string>
+
+    <string-array name="home_book_of_love_tips">
+        <item>Say thank you for something small today — the kind of thing that\'s easy to stop noticing.</item>
+        <item>Ask how they\'re really doing, then actually wait for the answer.</item>
+        <item>Ten minutes, no phones, just the two of you.</item>
+        <item>Tell them one thing you\'re looking forward to about the three of you.</item>
+        <item>Whatever you\'re building right now, you\'re building it together. That\'s the whole game.</item>
+    </string-array>
 
     <string-array name="home_daily_messages">
         <item>A little longer, and you\'ll be three.</item>

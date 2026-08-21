@@ -38,6 +38,9 @@ class TaskRepository(
     fun observeAll(workspaceId: String): Flow<List<Task>> =
         tasks.observeAll(workspaceId).map { list -> list.map { it.toTask() } }
 
+    suspend fun lastActivityByOthers(workspaceId: String, selfUserId: String): Long? =
+        tasks.lastActivityByOthers(workspaceId, selfUserId)
+
     suspend fun create(
         workspaceId: String,
         userId: String,
