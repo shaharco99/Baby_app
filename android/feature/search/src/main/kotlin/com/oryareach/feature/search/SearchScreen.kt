@@ -39,6 +39,11 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize().safeDrawingPadding(), color = MaterialTheme.colorScheme.background) {
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = uiState.refreshing,
+            onRefresh = actions::onRefresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = stringResource(R.string.search_title),
@@ -95,6 +100,7 @@ fun SearchScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -147,4 +153,5 @@ private fun SearchPreview() {
 private object NoopSearchActions : SearchActions {
     override fun onQueryChange(value: String) = Unit
     override fun onResultClick(result: SearchResult) = Unit
+    override fun onRefresh() = Unit
 }

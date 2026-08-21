@@ -1,6 +1,9 @@
-# אור ירח (Or Yareach — "Moonlight") 🌙
+# Takes Two of Us (שנינו ביחד)
 
-A private app for a couple — Shahar & Topaz — getting ready for their daughter's arrival.
+A private app for a couple getting ready for their daughter's arrival — named after
+*It Takes Two*, the co-op game that inspired it: this is a two-player game too, just with
+higher stakes. A few small nods to it (and to *Split Fiction*) are hidden in the app —
+find them and you'll know.
 
 Think of it as one shared notebook on your phones that only the two of you hold the key
 to. Inside: tasks (including a hospital-bag checklist), a shopping list with budget
@@ -23,10 +26,10 @@ you vs. the outside world." Full details: `docs/architecture/005-data-privacy.md
 - **Home** — countdown to the full moon, weekly info, a daily message
 - **Tasks** — including a ready-made hospital-bag checklist preset
 - **Shopping** — with budget and priorities
-- **Dates** — important events and wishes
-- **Cycle** — tracking, predictions, statistics, calendar view
+- **Cycle** — tracking, predictions, statistics
+- **Calendar** — important dates and wishes, plus a read-only view of Google Calendar
 - **Folders & documents** — including document scanning straight from the camera
-- **Unified calendar**, **search**, **biometric lock**
+- **Search**, **biometric lock**
 
 ## Running locally (Android)
 

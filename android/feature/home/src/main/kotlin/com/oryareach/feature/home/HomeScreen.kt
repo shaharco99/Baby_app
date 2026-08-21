@@ -9,6 +9,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -26,6 +30,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.AlertDialog
@@ -39,14 +44,19 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -60,6 +70,7 @@ import com.oryareach.core.ui.theme.NightPalette
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
@@ -166,6 +177,21 @@ fun HomeScreen(
             confirmButton = {
                 TextButton(onClick = actions::onDismissBookOfLove) { Text(stringResource(R.string.home_pick_confirm)) }
             },
+            icon = {
+                Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.MenuBook,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp).align(Alignment.Bottom),
+                    )
+                }
+            },
             title = { Text(stringResource(R.string.home_book_of_love_title)) },
             text = { Text(tips.random()) },
         )
@@ -228,6 +254,7 @@ private fun MoonCountdown(uiState: HomeUiState, actions: HomeActions) {
     val backgroundColor = androidx.compose.runtime.remember {
         androidx.compose.animation.Animatable(NightPalette.sky)
     }
+    var glitchFrame by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
     Column(
@@ -245,13 +272,24 @@ private fun MoonCountdown(uiState: HomeUiState, actions: HomeActions) {
                         backgroundColor.animateTo(NightPalette.glitchWorldOne, tween(70))
                         backgroundColor.animateTo(NightPalette.sky, tween(150))
                     }
+                    scope.launch {
+                        // The moon itself glitches — sliced horizontal bands jittering
+                        // sideways plus an RGB channel split — before snapping back, the
+                        // same "reality tearing" look the game cuts between its two worlds
+                        // with, not just a color flicker.
+                        repeat(GLITCH_FRAME_COUNT) { frame ->
+                            glitchFrame = frame + 1
+                            delay(GLITCH_FRAME_MS)
+                        }
+                        glitchFrame = 0
+                    }
                     actions.onMoonLongPress()
                 },
             )
             .padding(vertical = 28.dp, horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MoonCanvas(moonFraction = progress.moonFraction, modifier = Modifier.size(160.dp))
+        MoonCanvas(moonFraction = progress.moonFraction, glitchFrame = glitchFrame, modifier = Modifier.size(160.dp))
 
         Spacer(Modifier.height(12.dp))
 
@@ -308,33 +346,62 @@ private fun WeeklyFruitAndAnimal(week: Int) {
 }
 
 @Composable
-private fun MoonCanvas(moonFraction: Float, modifier: Modifier = Modifier) {
+private fun MoonCanvas(moonFraction: Float, glitchFrame: Int = 0, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val scale = size.minDimension / 200f
         val center = Offset(100f, 100f) * scale
         val radius = 76f * scale
 
-        drawCircle(color = NightPalette.moonDim, radius = radius, center = center)
+        fun drawMoonBody(alpha: Float = 1f, tint: Color? = null) {
+            drawCircle(color = NightPalette.moonDim.copy(alpha = alpha), radius = radius, center = center)
 
-        val path = Path().apply {
-            addOval(androidx.compose.ui.geometry.Rect(center = center, radius = radius))
+            val path = Path().apply { addOval(androidx.compose.ui.geometry.Rect(center = center, radius = radius)) }
+            clipPath(path) {
+                val fillY = (200f - moonFraction * 200f) * scale
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(NightPalette.glowStart, NightPalette.glowMid, NightPalette.glowEnd),
+                        center = Offset(center.x, center.y * 0.85f),
+                        radius = radius * 1.3f,
+                    ),
+                    topLeft = Offset(0f, fillY),
+                    size = androidx.compose.ui.geometry.Size(size.width, (size.height - fillY).coerceAtLeast(0f)),
+                    alpha = alpha,
+                )
+                if (tint != null) {
+                    drawCircle(color = tint.copy(alpha = alpha * 0.4f), radius = radius, center = center, blendMode = BlendMode.Screen)
+                }
+            }
         }
-        clipPath(path) {
-            val fillY = (200f - moonFraction * 200f) * scale
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(NightPalette.glowStart, NightPalette.glowMid, NightPalette.glowEnd),
-                    center = Offset(center.x, center.y * 0.85f),
-                    radius = radius * 1.3f,
-                ),
-                topLeft = Offset(0f, fillY),
-                size = androidx.compose.ui.geometry.Size(size.width, (size.height - fillY).coerceAtLeast(0f)),
-            )
+
+        if (glitchFrame == 0) {
+            drawMoonBody()
+        } else {
+            val random = kotlin.random.Random(glitchFrame * GLITCH_SEED_MULTIPLIER)
+            val maxShift = 12.dp.toPx()
+
+            // Chromatic-aberration ghosts either side of the real moon.
+            translate(left = -maxShift * 0.6f) { drawMoonBody(alpha = 0.45f, tint = Color(0xFF00E5FF)) }
+            translate(left = maxShift * 0.6f) { drawMoonBody(alpha = 0.45f, tint = Color(0xFFFF2ECC)) }
+
+            // The real moon, torn into horizontal bands each jittering sideways.
+            val bandCount = 6
+            val bandHeight = size.height / bandCount
+            repeat(bandCount) { band ->
+                val dx = (random.nextFloat() - 0.5f) * maxShift * 2f
+                clipRect(top = band * bandHeight, bottom = (band + 1) * bandHeight) {
+                    translate(left = dx) { drawMoonBody() }
+                }
+            }
         }
 
         drawCircle(color = NightPalette.moonRim, radius = radius, center = center, style = Stroke(width = 1.5.dp.toPx()))
     }
 }
+
+private const val GLITCH_FRAME_COUNT = 9
+private const val GLITCH_FRAME_MS = 50L
+private const val GLITCH_SEED_MULTIPLIER = 7919
 
 @Composable
 private fun WeeklyInfoCard(progress: PregnancyProgress) {

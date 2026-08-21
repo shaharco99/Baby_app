@@ -7,6 +7,7 @@ import com.oryareach.core.database.repository.SearchResult
 data class SearchUiState(
     val query: String = "",
     val results: List<SearchResult> = emptyList(),
+    val refreshing: Boolean = false,
 ) {
     val hasQuery: Boolean get() = query.isNotBlank()
 }

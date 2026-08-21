@@ -12,4 +12,5 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:sync"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.compose.material.icons.extended)
 }

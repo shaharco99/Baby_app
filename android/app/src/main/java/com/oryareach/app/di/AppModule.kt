@@ -220,6 +220,7 @@ val appModule = module {
         SearchViewModel(
             repository = get(),
             workspaceId = { get<SessionState>().workspaceId },
+            syncEngine = get(),
         )
     }
     viewModel {

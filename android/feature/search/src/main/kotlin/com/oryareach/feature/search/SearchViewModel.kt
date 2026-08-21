@@ -21,12 +21,14 @@ import kotlinx.coroutines.launch
 interface SearchActions {
     fun onQueryChange(value: String)
     fun onResultClick(result: SearchResult)
+    fun onRefresh()
 }
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class SearchViewModel(
     private val repository: SearchRepository,
     private val workspaceId: () -> String?,
+    private val syncEngine: com.oryareach.core.sync.SyncEngine,
 ) : ViewModel(), SearchActions {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -53,6 +55,16 @@ class SearchViewModel(
 
     override fun onResultClick(result: SearchResult) {
         _effects.trySend(SearchEffect.OpenResult(result))
+    }
+
+    override fun onRefresh() {
+        if (_uiState.value.refreshing) return
+        set { it.copy(refreshing = true) }
+
+        viewModelScope.launch {
+            syncEngine.sync()
+            set { it.copy(refreshing = false) }
+        }
     }
 
     private fun set(block: (SearchUiState) -> SearchUiState) {
