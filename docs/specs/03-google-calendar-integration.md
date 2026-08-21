@@ -1,26 +1,21 @@
 # Google Calendar Integration — Spec
 
-Status: **phase 1 implemented, not yet functional.** All the code below is
-written and merged (`:core:calendar`, `:core:security`'s
+Status: **phase 1 implemented. "Sign in with Google" confirmed working
+end-to-end** (fixed 2026-08-17, a Cloud Console SHA-1 typo — see
+`docs/FOLLOWUP.md`). All the code below is written and merged
+(`:core:calendar`, `:core:security`'s
 `GoogleCalendarAuthManager`/`GoogleCalendarTokenStore`, the Room cache, the
 Calendar-screen picker UI), and along the way "Sign in with Google" was also
 added to the app's login screen (`:feature:auth`), reusing the same
-Credential Manager approach. **Neither works yet** — both are blocked on the
-same missing prerequisite:
+Credential Manager approach.
 
-- No Google Cloud OAuth client exists yet. Someone with access to the Google
-  Cloud project needs to create an OAuth 2.0 client (Android type, package
-  `com.oryareach.app`, debug + release SHA-1 fingerprints attached) and a
-  Web-application-type client (its client ID goes in
-  `android/local.properties` as `googleCalendarOauthClientId` for Calendar
-  and `googleWebClientId` for login — one client can cover both).
-- For "Sign in with Google" specifically, the Web client ID also needs to be
-  configured as the Google provider in the Supabase dashboard
-  (Authentication → Providers → Google) — Supabase verifies the ID token
-  server-side against whatever's configured there.
-- Until this exists, both features fail fast with a clear in-app error
-  instead of hanging or crashing — see the `TODO(app owner)` comments in
-  `core/security/build.gradle.kts`.
+- The OAuth client (Android + Web-application type, client ID in
+  `android/local.properties` as `googleCalendarOauthClientId`, wired in CI
+  via the `GOOGLE_WEB_CLIENT_ID` secret) now exists and is configured.
+- Google-Calendar-connect specifically shares the same client as login but
+  has **not yet been explicitly retested** end-to-end (only login has).
+- Both features fail fast with a clear in-app error if the client ID is
+  ever blank — see the doc comment in `core/security/build.gradle.kts`.
 
 The open questions section below is now resolved (see decisions inline);
 left in place as a record of what was decided and why.
@@ -34,7 +29,7 @@ two.
 ## Scope for phase 1
 
 - Remove Dates page/tab entirely. `:feature:dates` module deleted, its nav
-  entry removed from `SaharApp.kt` bottom-tab switch, its DI module removed
+  entry removed from `TakesTwoApp.kt` bottom-tab switch, its DI module removed
   from `AppModule.kt`.
 - Calendar page (`:feature:calendar`) shows events pulled from user's Google
   Calendar (read-only view).
@@ -81,11 +76,9 @@ push writes later once the pattern is proven.
   tested per repo convention (`:core:domain` pattern).
 - `:feature:calendar` — consumes `:core:calendar`, renders fetched events
   alongside locally-added ones in existing calendar view.
-- `:feature:dates` — **not yet deleted.** An earlier pass built this
-  deletion (module removed, nav/DI wiring stripped) but it was never
-  committed, and may not still exist anywhere. Dates and Calendar currently
-  coexist; removing Dates is a separate, deliberate follow-up (data-model
-  implications) not bundled into this pass.
+- `:feature:dates` — **deleted.** Important Dates CRUD moved into
+  `:feature:calendar`; the standalone module, its nav entry, and its DI
+  module are gone.
 
 ## Explicitly out of scope for phase 1 (do not build)
 

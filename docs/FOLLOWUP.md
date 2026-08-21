@@ -1,8 +1,8 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.3.1` (2026-08-17) — see `git log` for full history;
-this file only tracks what's still open plus enough context to act on it.
+Branch `feature/android-app`. Latest tag `v1.3.4` — see `git log` for full history; this file
+only tracks what's still open plus enough context to act on it.
 
 ## Resolved 2026-08-17 (this session, shipped in v1.3.1)
 
@@ -23,30 +23,6 @@ this file only tracks what's still open plus enough context to act on it.
   into a real text field, not just "no crash").
 - Full sweep of all 8 bottom-nav tabs on-device — no other crashes found. `grep` for `!!` and
   eager `getClient(` calls elsewhere in `feature/`/`core/` — clean.
-
-## Next up — Calendar redesign (Google Calendar look), not started
-
-`feature/calendar/.../CalendarScreen.kt`. Current: plain text month header, fixed-size (34dp)
-circular day cells in a `SpaceBetween` row (leaves uneven gaps at the edges), dot-legend below
-the grid. Plan, smallest-diff-first:
-
-1. **Grid fills the width.** Replace fixed `CELL_SIZE` + `SpaceBetween` with `Modifier.weight(1f)`
-   per day column (both `WeekdayHeaderRow` and `CalendarGrid`) — edge-to-edge like Google's, no
-   dead margin.
-2. **Header row.** Bigger/bolder month label (`titleLarge`), keep the prev/next chevrons; tonal
-   `IconButton` backgrounds instead of bare icons, closer to Google's month-nav chip look.
-3. **Day cell states.** Today = filled primary circle (already close, keep). Selected
-   (non-today) = switch the current 1dp outline to a `primaryContainer`-tinted filled circle —
-   Google uses a filled tonal circle for selection, not just a border.
-4. **Wrap header+weekdays+grid in one `Card`** for a defined "month card" surface instead of
-   loose items in the scroll column — matches Google's card-per-month feel.
-5. **Legend → horizontal chip row** instead of the current stacked bullet+label list — more
-   compact, still under the grid.
-6. Everything here is visual-only; `CalendarViewModel`/`CalendarActions` shouldn't need to
-   change. Re-verify `CalendarPreview` still renders after each step.
-
-Not planned unless asked: a "Today" quick-jump button — would need a new `CalendarActions`
-method (compute month delta or add `onJumpToToday`), out of scope for a visual pass.
 
 ## Open — Google OAuth (`Open item 1`, resolved-then-broken saga, condensed)
 
@@ -94,6 +70,10 @@ before touching.
 - CI: release builds now actually have Supabase configured (used to crash on launch).
 - Release versioning: fixed a same-commit-retag mislabeling bug.
 - Pairing "Sign out" escape hatch on `Choose`/`EnterCode`/`AwaitingKey`/`EnterRecoveryPhrase`.
+- Calendar redesign: Google Calendar-style month view (full-width grid, tonal selection, card
+  wrap, chip legend).
+- App renamed to "Takes Two of Us" (`SaharApp`/`SaharApplication` → `TakesTwoApp`/
+  `TakesTwoApplication`); "Shahar" the partner-name string is unrelated and untouched.
 
 ## Where to look for more context
 

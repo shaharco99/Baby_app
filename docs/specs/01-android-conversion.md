@@ -1,9 +1,10 @@
 # Android App Conversion — Original Spec (superseded)
 
 This was the original requirements/design spec that guided the Android conversion. Every
-requirement in it has been implemented — see `PROGRESS.md`'s "Done" section for what was
-built, `docs/architecture/` for the standing architecture decisions, and `CLAUDE.md` for the
-current, correct summary of how the app actually works.
+requirement in it has been implemented — see `git log` and the code itself for what was
+built (no separate progress doc is maintained), `docs/architecture/` for the standing
+architecture decisions, and `CLAUDE.md` for the current, correct summary of how the app
+actually works.
 
 One correction from this spec, kept here since it was a real early mistake, not just drift:
 this spec originally proposed a private-by-default / partner-vs-partner sharing model for
