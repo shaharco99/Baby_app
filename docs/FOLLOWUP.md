@@ -1,7 +1,7 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.3.4` — see `git log` for full history; this file
+Branch `feature/android-app`. Latest tag `v1.3.6` — see `git log` for full history; this file
 only tracks what's still open plus enough context to act on it.
 
 ## Resolved 2026-08-17 (this session, shipped in v1.3.1)
@@ -24,21 +24,25 @@ only tracks what's still open plus enough context to act on it.
 - Full sweep of all 8 bottom-nav tabs on-device — no other crashes found. `grep` for `!!` and
   eager `getClient(` calls elsewhere in `feature/`/`core/` — clean.
 
-## Open — Google OAuth (`Open item 1`, resolved-then-broken saga, condensed)
+## Resolved — Google OAuth (`Open item 1`, resolved-then-broken saga, condensed)
 
 Fixed 2026-08-17: the release Android OAuth client's SHA-1 had a one-character typo in Cloud
 Console vs the real release keystore fingerprint. Corrected, retested end-to-end on both the
 MIUI device and the Pixel — real success (reached consent screen, landed on pairing-pending).
-Google/Calendar-connect share the same client so should also work, not yet explicitly retested.
 Full debugging trail (API enablement, consent scopes, propagation-delay red herrings) is in
 `git log`/prior commits if the failure mode ever resembles `UNREGISTERED_ON_API_CONSOLE` again.
 
-## Open — Forgot password / link Google account (coded, untested end-to-end)
+Google Calendar-connect (same OAuth client) explicitly retested 2026-08-21 on both real devices:
+both show "Connected as [account]" in Settings, and the Calendar screen renders its month grid
+with the "Google Calendar" legend entry active on both — no error state. Google account linking
+is also confirmed live-connected on both devices already.
 
-Both shipped in `v1.3.0`. Neither has been run fully on-device: forgot-password needs a real
-inbox + tapping the emailed deep link (`com.oryareach.app://reset-password`) through to
-`ResetPasswordScreen`; Google-linking needs Settings → Account → "Connect Google account" tried
-on an email/password account. Build/lint/test all pass; just hasn't been clicked through.
+## Open — Forgot password (coded, untested end-to-end)
+
+Shipped in `v1.3.0`. Still not run fully on-device: needs a real inbox + tapping the emailed
+deep link (`com.oryareach.app://reset-password`) through to `ResetPasswordScreen`. Build/lint/
+test all pass; just hasn't been clicked through. (Google account linking, the other half of this
+item, is confirmed working — see OAuth section above.)
 
 ## Open — Pairing: partner/workspace identity display (not built)
 
@@ -74,6 +78,12 @@ before touching.
   wrap, chip legend).
 - App renamed to "Takes Two of Us" (`SaharApp`/`SaharApplication` → `TakesTwoApp`/
   `TakesTwoApplication`); "Shahar" the partner-name string is unrelated and untouched.
+- Co-op-game easter eggs (long-press moon → split-world glitch + "Book of Love" tip when the
+  partner's been active in the last 5 min; 7-tap Settings title → toast) — both verified live
+  on both real devices 2026-08-21 (create/sync/delete round-tripped between MIUI ↔ Pixel to
+  trigger the recency check).
+- Settings now shows the installed version string under "Check for updates" — added after this
+  session needed `adb`-only ways to confirm what was actually installed.
 
 ## Where to look for more context
 
