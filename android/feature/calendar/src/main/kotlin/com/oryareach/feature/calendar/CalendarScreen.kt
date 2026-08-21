@@ -1,7 +1,6 @@
 package com.oryareach.feature.calendar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -33,6 +33,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -107,29 +108,34 @@ fun CalendarScreen(
                 modifier = Modifier.semantics { heading() },
             )
 
-            Row(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
-                IconButton(onClick = actions::onPreviousMonth) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
-                }
-                Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleMedium)
-                IconButton(onClick = actions::onNextMonth) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FilledTonalIconButton(onClick = actions::onPreviousMonth) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
+                        }
+                        Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleLarge)
+                        FilledTonalIconButton(onClick = actions::onNextMonth) {
+                            Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+                        }
+                    }
+
+                    WeekdayHeaderRow()
+                    CalendarGrid(uiState = uiState, onSelectDate = actions::onSelectDate)
                 }
             }
 
-            WeekdayHeaderRow()
-            CalendarGrid(uiState = uiState, onSelectDate = actions::onSelectDate)
-
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                LegendRow(color = MaterialTheme.colorScheme.primary, label = stringResource(R.string.calendar_legend_task))
-                LegendRow(color = MaterialTheme.colorScheme.tertiary, label = stringResource(R.string.calendar_legend_important_date))
-                LegendRow(color = MaterialTheme.colorScheme.error, label = stringResource(R.string.calendar_legend_period))
-                LegendRow(color = MaterialTheme.colorScheme.secondary, label = stringResource(R.string.calendar_legend_google))
-            }
+            LegendChipRow()
         }
       }
     }
@@ -237,8 +243,28 @@ private fun Long.toLocalDate(): LocalDate =
     Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
 
 @Composable
-private fun LegendRow(color: Color, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun LegendChipRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LegendChip(color = MaterialTheme.colorScheme.primary, label = stringResource(R.string.calendar_legend_task))
+        LegendChip(color = MaterialTheme.colorScheme.tertiary, label = stringResource(R.string.calendar_legend_important_date))
+        LegendChip(color = MaterialTheme.colorScheme.error, label = stringResource(R.string.calendar_legend_period))
+        LegendChip(color = MaterialTheme.colorScheme.secondary, label = stringResource(R.string.calendar_legend_google))
+    }
+}
+
+@Composable
+private fun LegendChip(color: Color, label: String) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -254,9 +280,9 @@ private fun WeekdayHeaderRow() {
             java.time.DayOfWeek.of(it).getDisplayName(java.time.format.TextStyle.NARROW, locale)
         }
     }
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(modifier = Modifier.fillMaxWidth()) {
         labels.forEach { label ->
-            Box(modifier = Modifier.size(CELL_SIZE), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
@@ -280,12 +306,12 @@ private fun CalendarGrid(uiState: CalendarUiState, onSelectDate: (LocalDate) -> 
 
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         for (row in 0 until rows) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0 until 7) {
                     val cellIndex = row * 7 + col
                     val dayNumber = cellIndex - leadingBlanks + 1
                     if (dayNumber < 1 || dayNumber > dayCount) {
-                        Box(modifier = Modifier.minimumInteractiveComponentSize().size(CELL_SIZE))
+                        Box(modifier = Modifier.weight(1f).minimumInteractiveComponentSize())
                     } else {
                         val date = LocalDate(month.year, month.month, dayNumber)
                         DayCell(
@@ -294,6 +320,7 @@ private fun CalendarGrid(uiState: CalendarUiState, onSelectDate: (LocalDate) -> 
                             isToday = date == today,
                             isSelected = date == uiState.selectedDate,
                             onClick = { onSelectDate(date) },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -309,8 +336,9 @@ private fun DayCell(
     isToday: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Box(
             modifier = Modifier
                 .minimumInteractiveComponentSize()
@@ -319,7 +347,7 @@ private fun DayCell(
                 .let {
                     when {
                         isToday -> it.background(MaterialTheme.colorScheme.primary)
-                        isSelected -> it.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        isSelected -> it.background(MaterialTheme.colorScheme.primaryContainer)
                         else -> it
                     }
                 }
@@ -329,8 +357,12 @@ private fun DayCell(
             Text(
                 text = day.toString(),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = when {
+                    isToday -> MaterialTheme.colorScheme.onPrimary
+                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.size(width = CELL_SIZE, height = 6.dp)) {
