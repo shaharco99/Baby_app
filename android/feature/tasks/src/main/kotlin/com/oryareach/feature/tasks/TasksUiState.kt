@@ -14,6 +14,8 @@ import kotlinx.datetime.LocalDate
 data class TasksUiState(
     // Persisted snapshot: the live list from Room, already decrypted.
     val tasks: List<Task> = emptyList(),
+    val partnerOneName: String? = null,
+    val partnerTwoName: String? = null,
 
     // Editable input: the add/edit sheet's form.
     val editingId: String? = null,

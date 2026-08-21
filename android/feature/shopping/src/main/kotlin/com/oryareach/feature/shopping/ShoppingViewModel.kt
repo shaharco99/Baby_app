@@ -3,6 +3,7 @@ package com.oryareach.feature.shopping
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.DocumentRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.model.Assignee
@@ -34,6 +35,7 @@ interface ShoppingActions {
     fun onEstimatedPriceChange(value: String)
     fun onPriorityChange(value: Priority)
     fun onAssigneeChange(value: Assignee?)
+    fun onCustomAssigneeNameChange(value: String)
     fun onNoteChange(value: String)
     fun onLinkChange(value: String)
     fun onAltNameChange(value: String)
@@ -55,6 +57,7 @@ interface ShoppingActions {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShoppingViewModel(
     private val repository: ShoppingItemRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val documents: DocumentRepository,
     private val auth: AuthRepository,
     private val syncEngine: com.oryareach.core.sync.SyncEngine,
@@ -77,6 +80,11 @@ class ShoppingViewModel(
                 repository.observeAll(id).collect { items -> set { it.copy(items = items) } }
             }
             viewModelScope.launch {
+                settingsRepository.observe(id).collect { settings ->
+                    set { it.copy(partnerOneName = settings?.partnerOneName, partnerTwoName = settings?.partnerTwoName) }
+                }
+            }
+            viewModelScope.launch {
                 editingItemId.flatMapLatest { itemId ->
                     if (itemId == null) emptyFlow() else documents.observeForShoppingItem(id, itemId)
                 }.collect { list -> set { it.copy(attachments = list) } }
@@ -94,6 +102,7 @@ class ShoppingViewModel(
             formEstimatedPrice = "",
             formPriority = Priority.NORMAL,
             formAssignee = null,
+            formCustomAssigneeName = "",
             formNote = "",
             formLink = "",
             formAlternatives = emptyList(),
@@ -112,6 +121,7 @@ class ShoppingViewModel(
             formEstimatedPrice = item.estimatedPrice?.toString().orEmpty(),
             formPriority = item.priority,
             formAssignee = item.assignee,
+            formCustomAssigneeName = item.customAssigneeName.orEmpty(),
             formNote = item.note.orEmpty(),
             formLink = item.link.orEmpty(),
             formAlternatives = item.alternatives,
@@ -133,6 +143,7 @@ class ShoppingViewModel(
     }
     override fun onPriorityChange(value: Priority) = set { it.copy(formPriority = value) }
     override fun onAssigneeChange(value: Assignee?) = set { it.copy(formAssignee = value) }
+    override fun onCustomAssigneeNameChange(value: String) = set { it.copy(formCustomAssigneeName = value) }
     override fun onNoteChange(value: String) = set { it.copy(formNote = value) }
     override fun onLinkChange(value: String) = set { it.copy(formLink = value) }
 
@@ -177,6 +188,7 @@ class ShoppingViewModel(
                     estimatedPrice = price,
                     priority = state.formPriority,
                     assignee = state.formAssignee,
+                    customAssigneeName = state.formCustomAssigneeName.ifBlank { null },
                     note = state.formNote.ifBlank { null },
                     link = state.formLink.ifBlank { null },
                 )
@@ -190,6 +202,7 @@ class ShoppingViewModel(
                     actualPrice = existing.actualPrice,
                     priority = state.formPriority,
                     assignee = state.formAssignee,
+                    customAssigneeName = state.formCustomAssigneeName.ifBlank { null },
                     note = state.formNote.ifBlank { null },
                     link = state.formLink.ifBlank { null },
                     alternatives = state.formAlternatives,

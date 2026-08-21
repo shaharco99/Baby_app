@@ -370,6 +370,24 @@ private fun DueDateForm(uiState: HomeUiState, actions: HomeActions) {
             modifier = Modifier.fillMaxWidth(),
         )
 
+        OutlinedTextField(
+            value = uiState.editingPartnerOneName,
+            onValueChange = actions::onPartnerOneNameChange,
+            label = { Text(stringResource(R.string.home_partner_one_name_field)) },
+            placeholder = { Text(stringResource(R.string.home_partner_one_name_default)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        OutlinedTextField(
+            value = uiState.editingPartnerTwoName,
+            onValueChange = actions::onPartnerTwoNameChange,
+            label = { Text(stringResource(R.string.home_partner_two_name_field)) },
+            placeholder = { Text(stringResource(R.string.home_partner_two_name_default)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         Button(
             onClick = actions::onSubmit,
             enabled = uiState.canSubmitForm,
@@ -412,6 +430,8 @@ private object NoopHomeActions : HomeActions {
     override fun onDismissDatePicker() = Unit
     override fun onLastPeriodChange(value: LocalDate) = Unit
     override fun onBabyNameChange(value: String) = Unit
+    override fun onPartnerOneNameChange(value: String) = Unit
+    override fun onPartnerTwoNameChange(value: String) = Unit
     override fun onSubmit() = Unit
     override fun onImportJson(json: String) = Unit
     override fun onDismissImportResult() = Unit

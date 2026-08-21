@@ -37,6 +37,9 @@ data class ShoppingItem(
     val priority: Priority = Priority.NORMAL,
     val status: ShoppingStatus = ShoppingStatus.NEED,
     val assignee: Assignee? = null,
+    /** Only meaningful when [assignee] is [Assignee.BOTH] — shopping's "other" option can
+     * optionally be given a name instead of the generic "Other" label. */
+    val customAssigneeName: String? = null,
     val note: String? = null,
     val link: String? = null,
     val alternatives: List<ShoppingAlternative> = emptyList(),

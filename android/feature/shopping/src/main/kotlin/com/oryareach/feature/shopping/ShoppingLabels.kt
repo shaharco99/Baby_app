@@ -1,6 +1,8 @@
 package com.oryareach.feature.shopping
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.oryareach.core.model.Assignee
 import com.oryareach.core.model.Priority
 import com.oryareach.core.model.ShoppingCategory
@@ -23,10 +25,19 @@ internal fun Priority.labelRes(): Int = when (this) {
     Priority.HIGH -> R.string.priority_high
 }
 
-@StringRes
-internal fun Assignee?.labelRes(): Int = when (this) {
-    Assignee.PARTNER_ONE -> R.string.assignee_partner_one
-    Assignee.PARTNER_TWO -> R.string.assignee_partner_two
-    Assignee.BOTH -> R.string.assignee_both
-    null -> R.string.assignee_unassigned
+/**
+ * [partnerOneName]/[partnerTwoName] fall back to the default names (settings-editable, see
+ * `HomeUiState`) when the couple hasn't customized them; [customName] only applies to
+ * [Assignee.BOTH] — shopping's repurposed "other" option, see [Assignee]'s doc comment.
+ */
+@Composable
+internal fun Assignee?.assigneeLabel(
+    partnerOneName: String?,
+    partnerTwoName: String?,
+    customName: String?,
+): String = when (this) {
+    Assignee.PARTNER_ONE -> partnerOneName?.ifBlank { null } ?: stringResource(R.string.default_partner_one_name)
+    Assignee.PARTNER_TWO -> partnerTwoName?.ifBlank { null } ?: stringResource(R.string.default_partner_two_name)
+    Assignee.BOTH -> customName?.ifBlank { null } ?: stringResource(R.string.assignee_other)
+    null -> stringResource(R.string.assignee_unassigned)
 }

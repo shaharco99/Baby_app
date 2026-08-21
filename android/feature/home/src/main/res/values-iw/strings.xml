@@ -17,6 +17,10 @@
     <string name="home_no_due_date_body">הספירה לאחור והמידע השבועי צריכים את היום הראשון של הווסת האחרונה כדי לחשב תאריך משוער — מדויק יותר מהזנת תאריך משוער ישירות.</string>
     <string name="home_due_date_field">היום הראשון של הווסת האחרונה</string>
     <string name="home_baby_name_field">שם התינוקת (אופציונלי)</string>
+    <string name="home_partner_one_name_field">שם בן/בת הזוג 1</string>
+    <string name="home_partner_one_name_default">טופז</string>
+    <string name="home_partner_two_name_field">שם בן/בת הזוג 2</string>
+    <string name="home_partner_two_name_default">שחר</string>
     <string name="home_save">שמור</string>
     <string name="home_pick_confirm">אישור</string>
     <string name="home_pick_cancel">ביטול</string>

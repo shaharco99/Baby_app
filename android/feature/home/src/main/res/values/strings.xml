@@ -17,6 +17,10 @@
     <string name="home_no_due_date_body">The countdown and weekly info need the first day of your last period to estimate a due date — more accurate than entering a due date directly.</string>
     <string name="home_due_date_field">First day of last period</string>
     <string name="home_baby_name_field">Baby\'s name (optional)</string>
+    <string name="home_partner_one_name_field">Partner 1\'s name</string>
+    <string name="home_partner_one_name_default">Topaz</string>
+    <string name="home_partner_two_name_field">Partner 2\'s name</string>
+    <string name="home_partner_two_name_default">Shahar</string>
     <string name="home_save">Save</string>
     <string name="home_pick_confirm">OK</string>
     <string name="home_pick_cancel">Cancel</string>

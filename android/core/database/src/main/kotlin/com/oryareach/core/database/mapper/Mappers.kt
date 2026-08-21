@@ -50,6 +50,7 @@ fun ShoppingItemEntity.toShoppingItem() = ShoppingItem(
     priority = priority,
     status = status,
     assignee = assignee,
+    customAssigneeName = customAssigneeName,
     note = note,
     link = link,
     alternatives = alternatives,
@@ -60,6 +61,8 @@ fun AppSettingsEntity.toAppSettings() = AppSettings(
     id = id,
     dueDate = LocalDate.parse(dueDate),
     babyName = babyName,
+    partnerOneName = partnerOneName,
+    partnerTwoName = partnerTwoName,
 )
 
 fun FolderEntity.toFolder() = Folder(id = id, name = name, parentId = parentId, path = path)
@@ -126,6 +129,7 @@ fun ShoppingItem.toEntity(workspaceId: String, record: RemoteRecord, now: Long) 
     priority = priority,
     status = status,
     assignee = assignee,
+    customAssigneeName = customAssigneeName,
     note = note,
     link = link,
     alternatives = alternatives,
@@ -137,6 +141,8 @@ fun AppSettings.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     id = id,
     dueDate = dueDate.toString(),
     babyName = babyName,
+    partnerOneName = partnerOneName,
+    partnerTwoName = partnerTwoName,
     sync = record.toSyncMeta(workspaceId, now),
 )
 

@@ -34,6 +34,8 @@ interface HomeActions {
     fun onDismissDatePicker()
     fun onLastPeriodChange(value: LocalDate)
     fun onBabyNameChange(value: String)
+    fun onPartnerOneNameChange(value: String)
+    fun onPartnerTwoNameChange(value: String)
     fun onSubmit()
     fun onImportJson(json: String)
     fun onDismissImportResult()
@@ -71,6 +73,8 @@ class HomeViewModel(
                     HomeUiState(
                         dueDate = settings?.dueDate,
                         babyName = settings?.babyName,
+                        partnerOneName = settings?.partnerOneName,
+                        partnerTwoName = settings?.partnerTwoName,
                         openTaskCount = tasks.count { !it.done },
                         budgetEstimated = budget.estimatedTotal,
                         budgetSpent = budget.spentTotal,
@@ -83,6 +87,8 @@ class HomeViewModel(
                             datePickerVisible = current.datePickerVisible,
                             editingLastPeriodDate = current.editingLastPeriodDate,
                             editingBabyName = current.editingBabyName,
+                            editingPartnerOneName = current.editingPartnerOneName,
+                            editingPartnerTwoName = current.editingPartnerTwoName,
                         )
                     }
                 }
@@ -95,6 +101,8 @@ class HomeViewModel(
             sheetVisible = true,
             editingLastPeriodDate = it.dueDate?.let(::lastPeriodFromDueDate),
             editingBabyName = it.babyName.orEmpty(),
+            editingPartnerOneName = it.partnerOneName.orEmpty(),
+            editingPartnerTwoName = it.partnerTwoName.orEmpty(),
         )
     }
 
@@ -105,6 +113,8 @@ class HomeViewModel(
         it.copy(editingLastPeriodDate = value, datePickerVisible = false)
     }
     override fun onBabyNameChange(value: String) = set { it.copy(editingBabyName = value) }
+    override fun onPartnerOneNameChange(value: String) = set { it.copy(editingPartnerOneName = value) }
+    override fun onPartnerTwoNameChange(value: String) = set { it.copy(editingPartnerTwoName = value) }
 
     override fun onSubmit() {
         val state = _uiState.value
@@ -117,6 +127,8 @@ class HomeViewModel(
                 userId = auth.currentUserId().orEmpty(),
                 dueDate = dueDateFromLastPeriod(lastPeriodDate),
                 babyName = state.editingBabyName.ifBlank { null },
+                partnerOneName = state.editingPartnerOneName.ifBlank { null },
+                partnerTwoName = state.editingPartnerTwoName.ifBlank { null },
             )
             set { it.copy(sheetVisible = false) }
         }
@@ -143,7 +155,14 @@ class HomeViewModel(
             val imported = snapshot.toImportedSnapshot(newId)
             val userId = auth.currentUserId().orEmpty()
 
-            settingsRepository.save(workspace, userId, imported.settings.dueDate, imported.settings.babyName)
+            settingsRepository.save(
+                workspaceId = workspace,
+                userId = userId,
+                dueDate = imported.settings.dueDate,
+                babyName = imported.settings.babyName,
+                partnerOneName = _uiState.value.partnerOneName,
+                partnerTwoName = _uiState.value.partnerTwoName,
+            )
 
             val existingTasks = taskTitlesSnapshot(workspace)
             var taskCount = 0

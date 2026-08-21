@@ -32,7 +32,14 @@ class AppSettingsRepository(
     fun observe(workspaceId: String): Flow<AppSettings?> =
         settings.observe(workspaceId).map { it?.toAppSettings() }
 
-    suspend fun save(workspaceId: String, userId: String, dueDate: LocalDate, babyName: String?) {
+    suspend fun save(
+        workspaceId: String,
+        userId: String,
+        dueDate: LocalDate,
+        babyName: String?,
+        partnerOneName: String? = null,
+        partnerTwoName: String? = null,
+    ) {
         val timestamp = now()
         val existing = settings.find(workspaceId)
 
@@ -40,6 +47,8 @@ class AppSettingsRepository(
             existing.copy(
                 dueDate = dueDate.toString(),
                 babyName = babyName,
+                partnerOneName = partnerOneName,
+                partnerTwoName = partnerTwoName,
                 sync = existing.sync.copy(
                     updatedAt = timestamp,
                     syncStatus = SyncStatus.PENDING_UPDATE,
@@ -51,6 +60,8 @@ class AppSettingsRepository(
                 id = newId(),
                 dueDate = dueDate.toString(),
                 babyName = babyName,
+                partnerOneName = partnerOneName,
+                partnerTwoName = partnerTwoName,
                 sync = SyncMetaEntity(
                     workspaceId = workspaceId,
                     createdBy = userId,

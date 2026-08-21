@@ -1,6 +1,8 @@
 package com.oryareach.feature.tasks
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.oryareach.core.model.Assignee
 import com.oryareach.core.model.Priority
 import com.oryareach.core.model.RecurrenceFrequency
@@ -30,10 +32,12 @@ internal fun RecurrenceFrequency?.recurrenceLabelRes(): Int = when (this) {
     RecurrenceFrequency.MONTHLY -> R.string.tasks_recurrence_monthly
 }
 
-@StringRes
-internal fun Assignee?.labelRes(): Int = when (this) {
-    Assignee.PARTNER_ONE -> R.string.assignee_partner_one
-    Assignee.PARTNER_TWO -> R.string.assignee_partner_two
-    Assignee.BOTH -> R.string.assignee_both
-    null -> R.string.assignee_unassigned
+/** [partnerOneName]/[partnerTwoName] fall back to the default names (settings-editable) when
+ * the couple hasn't customized them — see `HomeUiState`. */
+@Composable
+internal fun Assignee?.assigneeLabel(partnerOneName: String?, partnerTwoName: String?): String = when (this) {
+    Assignee.PARTNER_ONE -> partnerOneName?.ifBlank { null } ?: stringResource(R.string.default_partner_one_name)
+    Assignee.PARTNER_TWO -> partnerTwoName?.ifBlank { null } ?: stringResource(R.string.default_partner_two_name)
+    Assignee.BOTH -> stringResource(R.string.assignee_both)
+    null -> stringResource(R.string.assignee_unassigned)
 }

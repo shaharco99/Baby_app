@@ -429,3 +429,14 @@ val MIGRATION_13_14 = object : Migration(13, 14) {
         )
     }
 }
+
+/** Lets the couple name themselves (`app_settings`) instead of seeing "Partner 1"/"Partner 2",
+ * and lets a shopping item's "other" assignee carry an optional name instead of the generic
+ * label (`shopping_items`) — see [Assignee]'s doc comment. */
+val MIGRATION_14_15 = object : Migration(14, 15) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `partner_one_name` TEXT")
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `partner_two_name` TEXT")
+        db.execSQL("ALTER TABLE `shopping_items` ADD COLUMN `custom_assignee_name` TEXT")
+    }
+}

@@ -319,9 +319,27 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
                 FilterChip(
                     selected = uiState.formAssignee == option,
                     onClick = { actions.onAssigneeChange(option) },
-                    label = { Text(stringResource(option.labelRes())) },
+                    label = {
+                        Text(
+                            option.assigneeLabel(
+                                partnerOneName = uiState.partnerOneName,
+                                partnerTwoName = uiState.partnerTwoName,
+                                customName = null,
+                            ),
+                        )
+                    },
                 )
             }
+        }
+
+        if (uiState.formAssignee == Assignee.BOTH) {
+            OutlinedTextField(
+                value = uiState.formCustomAssigneeName,
+                onValueChange = actions::onCustomAssigneeNameChange,
+                label = { Text(stringResource(R.string.shopping_field_custom_assignee_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         OutlinedTextField(
@@ -525,6 +543,7 @@ private object NoopShoppingActions : ShoppingActions {
     override fun onEstimatedPriceChange(value: String) = Unit
     override fun onPriorityChange(value: Priority) = Unit
     override fun onAssigneeChange(value: Assignee?) = Unit
+    override fun onCustomAssigneeNameChange(value: String) = Unit
     override fun onNoteChange(value: String) = Unit
     override fun onLinkChange(value: String) = Unit
     override fun onAltNameChange(value: String) = Unit

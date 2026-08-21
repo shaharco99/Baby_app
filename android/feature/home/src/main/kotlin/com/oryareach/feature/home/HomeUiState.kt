@@ -9,6 +9,8 @@ data class HomeUiState(
     // Persisted snapshot: what's actually stored.
     val dueDate: LocalDate? = null,
     val babyName: String? = null,
+    val partnerOneName: String? = null,
+    val partnerTwoName: String? = null,
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,
@@ -21,6 +23,8 @@ data class HomeUiState(
     // `PregnancyProgress.kt`'s doc comment for why that's the more accurate starting point.
     val editingLastPeriodDate: LocalDate? = null,
     val editingBabyName: String = "",
+    val editingPartnerOneName: String = "",
+    val editingPartnerTwoName: String = "",
 
     // Transient UI-only.
     val sheetVisible: Boolean = false,

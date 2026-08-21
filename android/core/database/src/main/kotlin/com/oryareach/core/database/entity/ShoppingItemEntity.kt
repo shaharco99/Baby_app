@@ -28,6 +28,7 @@ data class ShoppingItemEntity(
     val priority: Priority,
     val status: ShoppingStatus,
     val assignee: Assignee?,
+    @ColumnInfo(name = "custom_assignee_name") val customAssigneeName: String?,
     val note: String?,
     val link: String?,
     /** Serialized as JSON — a handful of nested alternatives per item, not a queryable list. */

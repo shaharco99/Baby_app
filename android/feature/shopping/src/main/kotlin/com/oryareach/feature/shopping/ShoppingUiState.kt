@@ -15,6 +15,8 @@ import com.oryareach.core.model.ShoppingStatus
 data class ShoppingUiState(
     // Persisted snapshot: the live list from Room, already decrypted.
     val items: List<ShoppingItem> = emptyList(),
+    val partnerOneName: String? = null,
+    val partnerTwoName: String? = null,
 
     // Editable input: the add/edit sheet's form.
     val editingId: String? = null,
@@ -23,6 +25,7 @@ data class ShoppingUiState(
     val formEstimatedPrice: String = "",
     val formPriority: Priority = Priority.NORMAL,
     val formAssignee: Assignee? = null,
+    val formCustomAssigneeName: String = "",
     val formNote: String = "",
     val formLink: String = "",
     val formAlternatives: List<ShoppingAlternative> = emptyList(),

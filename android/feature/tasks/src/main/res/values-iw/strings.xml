@@ -42,10 +42,10 @@
     <string name="priority_normal">רגילה</string>
     <string name="priority_high">גבוהה</string>
 
-    <string name="assignee_partner_one">בן/בת זוג 1</string>
-    <string name="assignee_partner_two">בן/בת זוג 2</string>
     <string name="assignee_both">שנינו</string>
     <string name="assignee_unassigned">לא משויך</string>
+    <string name="default_partner_one_name">טופז</string>
+    <string name="default_partner_two_name">שחר</string>
     <string name="tasks_field_attachments">קבצים מצורפים</string>
     <string name="tasks_attach_document">צירוף מסמך</string>
     <string name="tasks_scan_document">סריקת מסמך</string>

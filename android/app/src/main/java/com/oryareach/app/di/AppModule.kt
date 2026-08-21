@@ -157,6 +157,7 @@ val appModule = module {
     viewModel {
         TasksViewModel(
             repository = get(),
+            settingsRepository = get(),
             documents = get(),
             auth = get(),
             syncEngine = get(),
@@ -176,6 +177,7 @@ val appModule = module {
     viewModel {
         ShoppingViewModel(
             repository = get(),
+            settingsRepository = get(),
             documents = get(),
             auth = get(),
             syncEngine = get(),

@@ -46,8 +46,9 @@
     <string name="priority_normal">רגיל</string>
     <string name="priority_high">חשוב</string>
 
-    <string name="assignee_partner_one">בן/בת זוג 1</string>
-    <string name="assignee_partner_two">בן/בת זוג 2</string>
-    <string name="assignee_both">שניהם</string>
     <string name="assignee_unassigned">לא משויך</string>
+    <string name="assignee_other">אחר</string>
+    <string name="default_partner_one_name">טופז</string>
+    <string name="default_partner_two_name">שחר</string>
+    <string name="shopping_field_custom_assignee_name">שם (אופציונלי)</string>
 </resources>

@@ -45,7 +45,7 @@ import com.oryareach.core.database.entity.TaskEntity
         SyncConflictEntity::class,
         CachedCalendarEventEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)

@@ -167,7 +167,7 @@ fun TasksScreen(
                     FilterChip(
                         selected = uiState.activeAssigneeFilter == assignee,
                         onClick = { actions.onAssigneeFilterChange(assignee) },
-                        label = { Text(stringResource(assignee.labelRes())) },
+                        label = { Text(assignee.assigneeLabel(uiState.partnerOneName, uiState.partnerTwoName)) },
                     )
                 }
             }
@@ -348,7 +348,7 @@ private fun TaskForm(uiState: TasksUiState, actions: TasksActions) {
                 FilterChip(
                     selected = uiState.formAssignee == option,
                     onClick = { actions.onAssigneeChange(option) },
-                    label = { Text(stringResource(option.labelRes())) },
+                    label = { Text(option.assigneeLabel(uiState.partnerOneName, uiState.partnerTwoName)) },
                 )
             }
         }

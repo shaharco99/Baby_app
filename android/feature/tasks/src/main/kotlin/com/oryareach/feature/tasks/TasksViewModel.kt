@@ -3,6 +3,7 @@ package com.oryareach.feature.tasks
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.DocumentRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.task.nextDueDate
@@ -59,6 +60,7 @@ interface TasksActions {
 @OptIn(ExperimentalCoroutinesApi::class)
 class TasksViewModel(
     private val repository: TaskRepository,
+    private val settingsRepository: AppSettingsRepository,
     private val documents: DocumentRepository,
     private val auth: AuthRepository,
     private val syncEngine: com.oryareach.core.sync.SyncEngine,
@@ -80,6 +82,13 @@ class TasksViewModel(
             viewModelScope.launch {
                 repository.observeAll(id).collect { list ->
                     _uiState.update { it.copy(tasks = list) }
+                }
+            }
+            viewModelScope.launch {
+                settingsRepository.observe(id).collect { settings ->
+                    _uiState.update {
+                        it.copy(partnerOneName = settings?.partnerOneName, partnerTwoName = settings?.partnerTwoName)
+                    }
                 }
             }
             viewModelScope.launch {

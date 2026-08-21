@@ -46,8 +46,9 @@
     <string name="priority_normal">Normal</string>
     <string name="priority_high">High</string>
 
-    <string name="assignee_partner_one">Partner 1</string>
-    <string name="assignee_partner_two">Partner 2</string>
-    <string name="assignee_both">Both</string>
     <string name="assignee_unassigned">Unassigned</string>
+    <string name="assignee_other">Other</string>
+    <string name="default_partner_one_name">Topaz</string>
+    <string name="default_partner_two_name">Shahar</string>
+    <string name="shopping_field_custom_assignee_name">Name (optional)</string>
 </resources>
