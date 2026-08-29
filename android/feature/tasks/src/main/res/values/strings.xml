@@ -36,6 +36,7 @@
     <string name="task_category_documents_and_insurance">Documents &amp; insurance</string>
     <string name="task_category_medical">Medical</string>
     <string name="task_category_hospital_bag">Hospital bag</string>
+    <string name="task_category_for_the_baby">For the baby</string>
     <string name="task_category_other">Other</string>
 
     <string name="priority_low">Low</string>

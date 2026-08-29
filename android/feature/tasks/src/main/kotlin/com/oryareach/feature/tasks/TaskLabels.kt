@@ -14,6 +14,7 @@ internal fun TaskCategory.labelRes(): Int = when (this) {
     TaskCategory.DOCUMENTS_AND_INSURANCE -> R.string.task_category_documents_and_insurance
     TaskCategory.MEDICAL -> R.string.task_category_medical
     TaskCategory.HOSPITAL_BAG -> R.string.task_category_hospital_bag
+    TaskCategory.FOR_THE_BABY -> R.string.task_category_for_the_baby
     TaskCategory.OTHER -> R.string.task_category_other
 }
 

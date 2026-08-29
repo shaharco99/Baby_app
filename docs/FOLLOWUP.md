@@ -1,8 +1,24 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.3.6` — see `git log` for full history; this file
+Branch `feature/android-app`. Latest tag `v1.3.7` — see `git log` for full history; this file
 only tracks what's still open plus enough context to act on it.
+
+## Resolved 2026-08-22 — v1.3.7 on-device verification (MIUI done; Pixel two-device check done, rest still open)
+
+MIUI phone (`b6d8682a049d`) was already on v1.3.7 (no update needed). Verified live:
+- Search tab pull-to-refresh: swiped down over search results, app survived, no crash.
+- Book of Love dialog icon pair: confirmed in source (`HomeScreen.kt` — overlapping
+  `Icons.AutoMirrored.Filled.MenuBook` + `Icons.Filled.Favorite`) and by user's own manual check.
+- Moon long-press glitch + Book-of-Love-on-partner-activity fire: confirmed manually by user,
+  no crash.
+
+Pixel updated to v1.3.7 same session. Two-device Book-of-Love recency check (one phone acts,
+other long-presses moon within 5 min) confirmed by user — works across the pair, including
+across MIUI's Hebrew locale and Pixel's English-only locale.
+
+**Still open: rest of the Pixel-solo pass** — Search pull-to-refresh and Book-of-Love icon pair
+haven't been separately confirmed on the Pixel itself (only the two-device interaction was).
 
 ## Resolved 2026-08-17 (this session, shipped in v1.3.1)
 

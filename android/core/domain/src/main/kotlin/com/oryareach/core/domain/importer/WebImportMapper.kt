@@ -34,6 +34,7 @@ private val taskCategoryByHebrew = mapOf(
     "מסמכים וביטוח" to TaskCategory.DOCUMENTS_AND_INSURANCE,
     "רפואי" to TaskCategory.MEDICAL,
     "תיק ליולדת" to TaskCategory.HOSPITAL_BAG,
+    "לתינוק" to TaskCategory.FOR_THE_BABY,
     "אחר" to TaskCategory.OTHER,
 )
 

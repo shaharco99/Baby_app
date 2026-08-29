@@ -8,6 +8,7 @@ enum class TaskCategory {
     DOCUMENTS_AND_INSURANCE,
     MEDICAL,
     HOSPITAL_BAG,
+    FOR_THE_BABY,
     OTHER,
 }
 

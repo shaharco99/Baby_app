@@ -36,6 +36,7 @@
     <string name="task_category_documents_and_insurance">מסמכים וביטוח</string>
     <string name="task_category_medical">רפואי</string>
     <string name="task_category_hospital_bag">תיק לבית החולים</string>
+    <string name="task_category_for_the_baby">לתינוק</string>
     <string name="task_category_other">אחר</string>
 
     <string name="priority_low">נמוכה</string>
