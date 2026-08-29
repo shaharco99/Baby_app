@@ -17,6 +17,7 @@ import com.oryareach.core.model.ShoppingStatus
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.sync.SyncTrigger
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -49,6 +50,8 @@ class ShoppingItemRepository(
         customAssigneeName: String? = null,
         note: String? = null,
         link: String? = null,
+        purchaseDate: LocalDate? = null,
+        warrantyMonths: Int? = null,
     ) {
         val timestamp = now()
         val entity = ShoppingItemEntity(
@@ -65,6 +68,8 @@ class ShoppingItemRepository(
             link = link,
             alternatives = emptyList(),
             chosenAlternativeId = null,
+            purchaseDate = purchaseDate?.toString(),
+            warrantyMonths = warrantyMonths,
             sync = SyncMetaEntity(
                 workspaceId = workspaceId,
                 createdBy = userId,
@@ -90,6 +95,8 @@ class ShoppingItemRepository(
         link: String?,
         alternatives: List<ShoppingAlternative>,
         chosenAlternativeId: String?,
+        purchaseDate: LocalDate?,
+        warrantyMonths: Int?,
     ) {
         val existing = items.findById(id) ?: return
         val updated = existing.copy(
@@ -104,6 +111,8 @@ class ShoppingItemRepository(
             link = link,
             alternatives = alternatives,
             chosenAlternativeId = chosenAlternativeId,
+            purchaseDate = purchaseDate?.toString(),
+            warrantyMonths = warrantyMonths,
         )
         enqueue(withBumpedSync(updated), SyncOperationType.UPDATE)
     }

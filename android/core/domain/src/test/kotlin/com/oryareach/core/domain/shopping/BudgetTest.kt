@@ -15,6 +15,7 @@ private fun item(
     status: ShoppingStatus = ShoppingStatus.NEED,
     alternatives: List<ShoppingAlternative> = emptyList(),
     chosenAlternativeId: String? = null,
+    assignee: com.oryareach.core.model.Assignee? = null,
 ) = ShoppingItem(
     id = "id",
     name = "item",
@@ -23,6 +24,7 @@ private fun item(
     actualPrice = actualPrice,
     priority = Priority.NORMAL,
     status = status,
+    assignee = assignee,
     alternatives = alternatives,
     chosenAlternativeId = chosenAlternativeId,
 )
@@ -71,6 +73,28 @@ class BudgetTest {
         totals.estimatedTotal shouldBe 140.0
         totals.boughtCount shouldBe 1
         totals.totalCount shouldBe 2
+    }
+
+    @Test
+    fun `calculateBudget splits spent into what the couple paid and gifts from others`() {
+        val totals = calculateBudget(
+            listOf(
+                item(status = ShoppingStatus.BOUGHT, actualPrice = 100.0),
+                item(
+                    status = ShoppingStatus.BOUGHT,
+                    actualPrice = 60.0,
+                    assignee = com.oryareach.core.model.Assignee.BOTH,
+                ),
+                item(
+                    status = ShoppingStatus.BOUGHT,
+                    actualPrice = 30.0,
+                    assignee = com.oryareach.core.model.Assignee.PARTNER_ONE,
+                ),
+            ),
+        )
+        totals.spentTotal shouldBe 190.0
+        totals.spentByUs shouldBe 130.0
+        totals.spentByOthers shouldBe 60.0
     }
 
     @Test

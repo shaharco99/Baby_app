@@ -12,6 +12,12 @@
     <string name="shopping_field_assignee">באחריות</string>
     <string name="shopping_field_link">קישור (אופציונלי)</string>
     <string name="shopping_field_note">הערה (אופציונלי)</string>
+    <string name="shopping_field_purchase_date">תאריך קנייה (אופציונלי)</string>
+    <string name="shopping_field_warranty_months">תקופת אחריות בחודשים (אופציונלי)</string>
+    <string name="shopping_warranty_ends">האחריות מסתיימת ב-%1$s</string>
+    <string name="shopping_purchase_date_clear">נקה תאריך קנייה</string>
+    <string name="shopping_purchase_date_confirm">אישור</string>
+    <string name="shopping_purchase_date_cancel">ביטול</string>
     <string name="shopping_field_alternatives">חלופות</string>
     <string name="shopping_alternative_name">שם החלופה</string>
     <string name="shopping_alternative_add">הוספת חלופה</string>

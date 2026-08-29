@@ -1,5 +1,6 @@
 package com.oryareach.core.model
 
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
 enum class ShoppingCategory {
@@ -44,4 +45,8 @@ data class ShoppingItem(
     val link: String? = null,
     val alternatives: List<ShoppingAlternative> = emptyList(),
     val chosenAlternativeId: String? = null,
+    /** Optional — the day the item was actually bought. */
+    val purchaseDate: LocalDate? = null,
+    /** Optional warranty length in months, counted from [purchaseDate]. */
+    val warrantyMonths: Int? = null,
 )

@@ -14,6 +14,7 @@ import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
 import com.oryareach.core.network.auth.AuthRepository
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,8 @@ interface ShoppingActions {
     fun onCustomAssigneeNameChange(value: String)
     fun onNoteChange(value: String)
     fun onLinkChange(value: String)
+    fun onPurchaseDateChange(value: LocalDate?)
+    fun onWarrantyMonthsChange(value: String)
     fun onAltNameChange(value: String)
     fun onAltPriceChange(value: String)
     fun onAddAlternative()
@@ -108,6 +111,8 @@ class ShoppingViewModel(
             formAlternatives = emptyList(),
             formAltName = "",
             formAltPrice = "",
+            formPurchaseDate = null,
+            formWarrantyMonths = "",
         )
     }
 
@@ -127,6 +132,8 @@ class ShoppingViewModel(
             formAlternatives = item.alternatives,
             formAltName = "",
             formAltPrice = "",
+            formPurchaseDate = item.purchaseDate,
+            formWarrantyMonths = item.warrantyMonths?.toString().orEmpty(),
         )
     }
 
@@ -146,6 +153,10 @@ class ShoppingViewModel(
     override fun onCustomAssigneeNameChange(value: String) = set { it.copy(formCustomAssigneeName = value) }
     override fun onNoteChange(value: String) = set { it.copy(formNote = value) }
     override fun onLinkChange(value: String) = set { it.copy(formLink = value) }
+    override fun onPurchaseDateChange(value: LocalDate?) = set { it.copy(formPurchaseDate = value) }
+    override fun onWarrantyMonthsChange(value: String) = set {
+        it.copy(formWarrantyMonths = value.filter { char -> char.isDigit() })
+    }
 
     override fun onAltNameChange(value: String) = set { it.copy(formAltName = value) }
     override fun onAltPriceChange(value: String) = set {
@@ -178,6 +189,7 @@ class ShoppingViewModel(
 
         viewModelScope.launch {
             val price = state.formEstimatedPrice.toDoubleOrNull()
+            val warrantyMonths = state.formWarrantyMonths.toIntOrNull()?.takeIf { it > 0 }
             val editingId = state.editingId
             if (editingId == null) {
                 repository.create(
@@ -191,6 +203,8 @@ class ShoppingViewModel(
                     customAssigneeName = state.formCustomAssigneeName.ifBlank { null },
                     note = state.formNote.ifBlank { null },
                     link = state.formLink.ifBlank { null },
+                    purchaseDate = state.formPurchaseDate,
+                    warrantyMonths = warrantyMonths,
                 )
             } else {
                 val existing = state.items.first { it.id == editingId }
@@ -208,6 +222,8 @@ class ShoppingViewModel(
                     alternatives = state.formAlternatives,
                     chosenAlternativeId = existing.chosenAlternativeId
                         ?.takeIf { chosenId -> state.formAlternatives.any { it.id == chosenId } },
+                    purchaseDate = state.formPurchaseDate,
+                    warrantyMonths = warrantyMonths,
                 )
             }
             editingItemId.value = null

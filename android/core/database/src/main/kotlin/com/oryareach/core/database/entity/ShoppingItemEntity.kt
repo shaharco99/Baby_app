@@ -34,5 +34,8 @@ data class ShoppingItemEntity(
     /** Serialized as JSON — a handful of nested alternatives per item, not a queryable list. */
     val alternatives: List<ShoppingAlternative>,
     @ColumnInfo(name = "chosen_alternative_id") val chosenAlternativeId: String?,
+    /** ISO-8601 `yyyy-MM-dd`, same as other stored dates. Null when not recorded. */
+    @ColumnInfo(name = "purchase_date") val purchaseDate: String?,
+    @ColumnInfo(name = "warranty_months") val warrantyMonths: Int?,
     @Embedded val sync: SyncMetaEntity,
 )

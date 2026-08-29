@@ -83,6 +83,8 @@ fun HomeScreen(
     uiState: HomeUiState,
     actions: HomeActions,
     modifier: Modifier = Modifier,
+    onNavigateToShopping: () -> Unit = {},
+    onNavigateToTasks: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -125,10 +127,10 @@ fun HomeScreen(
 
                     uiState.progress?.let { progress -> WeeklyInfoCard(progress = progress) }
 
-                    BudgetSummaryCard(uiState = uiState)
+                    BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
 
                     if (uiState.openTaskCount > 0) {
-                        OpenTasksCard(count = uiState.openTaskCount)
+                        OpenTasksCard(count = uiState.openTaskCount, onClick = onNavigateToTasks)
                     }
 
                     TextButton(onClick = actions::onEditDueDate, modifier = Modifier.fillMaxWidth()) {
@@ -427,13 +429,15 @@ private fun WeeklyInfoCard(progress: PregnancyProgress) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BudgetSummaryCard(uiState: HomeUiState) {
+private fun BudgetSummaryCard(uiState: HomeUiState, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stringResource(
                     R.string.home_budget_spent_of_estimated,
@@ -442,13 +446,24 @@ private fun BudgetSummaryCard(uiState: HomeUiState) {
                 ),
                 style = MaterialTheme.typography.titleMedium,
             )
+            Text(
+                text = stringResource(R.string.home_budget_paid_by_us, uiState.budgetSpentByUs),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(R.string.home_budget_gifts, uiState.budgetSpentByOthers),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun OpenTasksCard(count: Int) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun OpenTasksCard(count: Int, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.home_open_tasks, count), style = MaterialTheme.typography.bodyMedium)
         }

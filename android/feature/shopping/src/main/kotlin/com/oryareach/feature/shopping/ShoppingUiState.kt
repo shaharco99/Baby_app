@@ -10,6 +10,7 @@ import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingAlternative
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
+import kotlinx.datetime.LocalDate
 
 @Immutable
 data class ShoppingUiState(
@@ -31,6 +32,8 @@ data class ShoppingUiState(
     val formAlternatives: List<ShoppingAlternative> = emptyList(),
     val formAltName: String = "",
     val formAltPrice: String = "",
+    val formPurchaseDate: LocalDate? = null,
+    val formWarrantyMonths: String = "",
 
     // Attachments — only meaningful while editing an existing item (an item must exist before
     // anything, like a receipt, can be attached to it).

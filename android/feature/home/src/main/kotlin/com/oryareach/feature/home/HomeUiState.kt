@@ -14,6 +14,9 @@ data class HomeUiState(
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,
+    /** Of [budgetSpent], what the couple paid vs. what came as gifts (assignee "other"). */
+    val budgetSpentByUs: Double = 0.0,
+    val budgetSpentByOthers: Double = 0.0,
 
     // Derived from dueDate — a getter, never stored, so it can never go stale.
     val progress: PregnancyProgress? = null,

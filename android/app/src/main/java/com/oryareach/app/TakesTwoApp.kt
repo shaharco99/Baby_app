@@ -269,7 +269,11 @@ private fun HomeRoute() {
         },
     ) { padding ->
         when (tab) {
-            HomeTab.Home -> HomeTabRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
+            HomeTab.Home -> HomeTabRoute(
+                modifier = androidx.compose.ui.Modifier.padding(padding),
+                onNavigateToShopping = { tab = HomeTab.Shopping },
+                onNavigateToTasks = { tab = HomeTab.Tasks },
+            )
             HomeTab.Tasks -> TasksRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
                 highlightId = highlightId,
@@ -326,10 +330,18 @@ private fun TasksRoute(
 @Composable
 private fun HomeTabRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    onNavigateToShopping: () -> Unit = {},
+    onNavigateToTasks: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    HomeScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+    HomeScreen(
+        uiState = uiState,
+        actions = viewModel,
+        modifier = modifier,
+        onNavigateToShopping = onNavigateToShopping,
+        onNavigateToTasks = onNavigateToTasks,
+    )
 }
 
 @Composable

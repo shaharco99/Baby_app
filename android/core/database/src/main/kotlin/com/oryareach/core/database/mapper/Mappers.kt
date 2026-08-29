@@ -55,6 +55,8 @@ fun ShoppingItemEntity.toShoppingItem() = ShoppingItem(
     link = link,
     alternatives = alternatives,
     chosenAlternativeId = chosenAlternativeId,
+    purchaseDate = purchaseDate?.let(LocalDate::parse),
+    warrantyMonths = warrantyMonths,
 )
 
 fun AppSettingsEntity.toAppSettings() = AppSettings(
@@ -134,6 +136,8 @@ fun ShoppingItem.toEntity(workspaceId: String, record: RemoteRecord, now: Long) 
     link = link,
     alternatives = alternatives,
     chosenAlternativeId = chosenAlternativeId,
+    purchaseDate = purchaseDate?.toString(),
+    warrantyMonths = warrantyMonths,
     sync = record.toSyncMeta(workspaceId, now),
 )
 

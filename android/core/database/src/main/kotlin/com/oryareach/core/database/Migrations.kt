@@ -440,3 +440,12 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
         db.execSQL("ALTER TABLE `shopping_items` ADD COLUMN `custom_assignee_name` TEXT")
     }
 }
+
+/** Lets a shopping item record when it was bought (`purchase_date`) and how many months of
+ * warranty it carries (`warranty_months`); the warranty-end date is derived, never stored. */
+val MIGRATION_15_16 = object : Migration(15, 16) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `shopping_items` ADD COLUMN `purchase_date` TEXT")
+        db.execSQL("ALTER TABLE `shopping_items` ADD COLUMN `warranty_months` INTEGER")
+    }
+}

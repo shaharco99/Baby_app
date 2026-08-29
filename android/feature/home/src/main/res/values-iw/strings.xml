@@ -31,6 +31,8 @@
     <string name="home_import_failed">לא הצלחנו לקרוא את הקובץ</string>
     <string name="home_import_failed_body">ודאו שזה קובץ JSON שיוצא מאתר אור ירח.</string>
     <string name="home_budget_spent_of_estimated">₪%1$.2f מתוך ₪%2$.2f הוצאו</string>
+    <string name="home_budget_paid_by_us">₪%1$.2f שילמנו</string>
+    <string name="home_budget_gifts">₪%1$.2f קיבלנו במתנה</string>
     <string name="home_book_of_love_title">ספר האהבה</string>
 
     <string-array name="home_book_of_love_tips">

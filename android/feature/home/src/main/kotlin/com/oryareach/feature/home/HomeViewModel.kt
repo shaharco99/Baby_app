@@ -80,6 +80,8 @@ class HomeViewModel(
                         openTaskCount = tasks.count { !it.done },
                         budgetEstimated = budget.estimatedTotal,
                         budgetSpent = budget.spentTotal,
+                        budgetSpentByUs = budget.spentByUs,
+                        budgetSpentByOthers = budget.spentByOthers,
                         progress = settings?.dueDate?.let { getPregnancyProgress(it, today()) },
                     )
                 }.collect { computed ->

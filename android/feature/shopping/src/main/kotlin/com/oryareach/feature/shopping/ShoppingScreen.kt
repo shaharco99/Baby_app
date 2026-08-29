@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DocumentScanner
@@ -31,6 +32,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +51,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,7 +72,12 @@ import com.oryareach.core.model.Priority
 import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
+import com.oryareach.core.domain.shopping.warrantyEndDate
 import com.oryareach.core.ui.theme.OrYareachTheme
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,6 +247,13 @@ private fun ShoppingRow(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    item.warrantyEndDate()?.let { end ->
+                        Text(
+                            text = stringResource(R.string.shopping_warranty_ends, end.toString()),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 IconButton(onClick = onDeleteClick) {
                     Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.shopping_delete))
@@ -357,6 +373,26 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
             modifier = Modifier.fillMaxWidth(),
         )
 
+        PurchaseDateField(value = uiState.formPurchaseDate, onChange = actions::onPurchaseDateChange)
+
+        OutlinedTextField(
+            value = uiState.formWarrantyMonths,
+            onValueChange = actions::onWarrantyMonthsChange,
+            label = { Text(stringResource(R.string.shopping_field_warranty_months)) },
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        val warrantyEnd = warrantyEndDate(uiState.formPurchaseDate, uiState.formWarrantyMonths.toIntOrNull())
+        if (warrantyEnd != null) {
+            Text(
+                text = stringResource(R.string.shopping_warranty_ends, warrantyEnd.toString()),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
         if (uiState.isEditing) {
             AlternativesSection(uiState = uiState, actions = actions)
             AttachmentsSection(uiState = uiState, actions = actions)
@@ -375,6 +411,48 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
         Spacer(Modifier.height(8.dp))
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PurchaseDateField(value: LocalDate?, onChange: (LocalDate?) -> Unit) {
+    var pickerVisible by remember { mutableStateOf(false) }
+
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { pickerVisible = true }, modifier = Modifier.weight(1f)) {
+            Text(value?.toString() ?: stringResource(R.string.shopping_field_purchase_date))
+        }
+        if (value != null) {
+            IconButton(onClick = { onChange(null) }) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.shopping_purchase_date_clear))
+            }
+        }
+    }
+
+    if (pickerVisible) {
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = value?.toUtcMillis())
+        DatePickerDialog(
+            onDismissRequest = { pickerVisible = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { onChange(it.toLocalDate()) }
+                    pickerVisible = false
+                }) { Text(stringResource(R.string.shopping_purchase_date_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pickerVisible = false }) {
+                    Text(stringResource(R.string.shopping_purchase_date_cancel))
+                }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+}
+
+private fun LocalDate.toUtcMillis(): Long = Instant.parse("${this}T00:00:00Z").toEpochMilliseconds()
+
+private fun Long.toLocalDate(): LocalDate =
+    Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
 
 @Composable
 private fun AlternativesSection(uiState: ShoppingUiState, actions: ShoppingActions) {
@@ -546,6 +624,8 @@ private object NoopShoppingActions : ShoppingActions {
     override fun onCustomAssigneeNameChange(value: String) = Unit
     override fun onNoteChange(value: String) = Unit
     override fun onLinkChange(value: String) = Unit
+    override fun onPurchaseDateChange(value: LocalDate?) = Unit
+    override fun onWarrantyMonthsChange(value: String) = Unit
     override fun onAltNameChange(value: String) = Unit
     override fun onAltPriceChange(value: String) = Unit
     override fun onAddAlternative() = Unit

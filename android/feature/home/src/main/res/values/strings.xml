@@ -31,6 +31,8 @@
     <string name="home_import_failed">Couldn\'t read the file</string>
     <string name="home_import_failed_body">Make sure it\'s a JSON file exported from the אור ירח website.</string>
     <string name="home_budget_spent_of_estimated">₪%1$.2f of ₪%2$.2f spent</string>
+    <string name="home_budget_paid_by_us">₪%1$.2f paid by us</string>
+    <string name="home_budget_gifts">₪%1$.2f received as gifts</string>
     <string name="home_book_of_love_title">Book of Love</string>
 
     <string-array name="home_book_of_love_tips">

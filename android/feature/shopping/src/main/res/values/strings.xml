@@ -12,6 +12,12 @@
     <string name="shopping_field_assignee">Assigned to</string>
     <string name="shopping_field_link">Link (optional)</string>
     <string name="shopping_field_note">Note (optional)</string>
+    <string name="shopping_field_purchase_date">Purchase date (optional)</string>
+    <string name="shopping_field_warranty_months">Warranty period in months (optional)</string>
+    <string name="shopping_warranty_ends">Warranty ends %1$s</string>
+    <string name="shopping_purchase_date_clear">Clear purchase date</string>
+    <string name="shopping_purchase_date_confirm">OK</string>
+    <string name="shopping_purchase_date_cancel">Cancel</string>
     <string name="shopping_field_alternatives">Alternatives</string>
     <string name="shopping_alternative_name">Alternative name</string>
     <string name="shopping_alternative_add">Add alternative</string>
