@@ -3,6 +3,8 @@ package com.oryareach.app
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
@@ -29,14 +31,17 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,6 +50,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.oryareach.app.R
 import com.oryareach.app.di.SessionState
 import com.oryareach.app.lock.LockRoute
 import com.oryareach.core.ui.nav.MoonNavItem
@@ -189,8 +195,57 @@ private fun HomeRoute() {
     var tab by rememberSaveable { mutableStateOf(HomeTab.Home) }
     var highlightId by rememberSaveable { mutableStateOf<String?>(null) }
     var showDeviceManagement by rememberSaveable { mutableStateOf(false) }
+    var showExitConfirm by rememberSaveable { mutableStateOf(false) }
     val drawerState = androidx.compose.material3.rememberDrawerState(androidx.compose.material3.DrawerValue.Closed)
     val drawerScope = androidx.compose.runtime.rememberCoroutineScope()
+    val activity = LocalActivity.current
+
+    // A plain visited-tab history so the system back button walks back through the tabs the user
+    // actually opened, then to Home, before it ever leaves the app — still not a NavHost, just a
+    // stack of enum values (see [HomeTab] / [HomeRoute]'s doc comment).
+    val backStack = rememberSaveable(
+        saver = listSaver<MutableList<HomeTab>, String>(
+            save = { it.map(HomeTab::name) },
+            restore = { it.map(HomeTab::valueOf).toMutableList() },
+        ),
+    ) { mutableListOf() }
+
+    fun navigateTo(destination: HomeTab) {
+        if (destination == tab) return
+        backStack.remove(destination)
+        backStack.add(tab)
+        if (backStack.size > 16) backStack.removeAt(0)
+        tab = destination
+    }
+
+    BackHandler {
+        when {
+            drawerState.isOpen -> drawerScope.launch { drawerState.close() }
+            showDeviceManagement -> showDeviceManagement = false
+            backStack.isNotEmpty() -> tab = backStack.removeAt(backStack.lastIndex)
+            tab != HomeTab.Home -> tab = HomeTab.Home
+            else -> showExitConfirm = true
+        }
+    }
+
+    if (showExitConfirm) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirm = false },
+            title = { Text(stringResource(R.string.app_exit_title)) },
+            text = { Text(stringResource(R.string.app_exit_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showExitConfirm = false
+                    activity?.finish()
+                }) { Text(stringResource(R.string.app_exit_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirm = false }) {
+                    Text(stringResource(R.string.app_exit_cancel))
+                }
+            },
+        )
+    }
 
     androidx.compose.material3.ModalNavigationDrawer(
         drawerState = drawerState,
@@ -204,56 +259,56 @@ private fun HomeRoute() {
                         selectedIcon = Icons.Filled.Home,
                         unselectedIcon = Icons.Outlined.Home,
                         selected = tab == HomeTab.Home,
-                        onClick = { tab = HomeTab.Home; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Home); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.tasks.R.string.tasks_title),
                         selectedIcon = Icons.Filled.CheckCircle,
                         unselectedIcon = Icons.Outlined.CheckCircle,
                         selected = tab == HomeTab.Tasks,
-                        onClick = { tab = HomeTab.Tasks; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Tasks); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.shopping.R.string.shopping_title),
                         selectedIcon = Icons.Filled.ShoppingCart,
                         unselectedIcon = Icons.Outlined.ShoppingCart,
                         selected = tab == HomeTab.Shopping,
-                        onClick = { tab = HomeTab.Shopping; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Shopping); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.folders.R.string.folders_title),
                         selectedIcon = Icons.Filled.Folder,
                         unselectedIcon = Icons.Outlined.Folder,
                         selected = tab == HomeTab.Folders,
-                        onClick = { tab = HomeTab.Folders; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Folders); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.cycle.R.string.cycle_title),
                         selectedIcon = Icons.Filled.WaterDrop,
                         unselectedIcon = Icons.Outlined.WaterDrop,
                         selected = tab == HomeTab.Cycle,
-                        onClick = { tab = HomeTab.Cycle; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Cycle); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.calendar.R.string.calendar_title),
                         selectedIcon = Icons.Filled.DateRange,
                         unselectedIcon = Icons.Outlined.DateRange,
                         selected = tab == HomeTab.Calendar,
-                        onClick = { tab = HomeTab.Calendar; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Calendar); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.search.R.string.search_title),
                         selectedIcon = Icons.Filled.Search,
                         unselectedIcon = Icons.Outlined.Search,
                         selected = tab == HomeTab.Search,
-                        onClick = { tab = HomeTab.Search; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Search); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.settings.R.string.settings_title),
                         selectedIcon = Icons.Filled.Settings,
                         unselectedIcon = Icons.Outlined.Settings,
                         selected = tab == HomeTab.Settings,
-                        onClick = { tab = HomeTab.Settings; drawerScope.launch { drawerState.close() } },
+                        onClick = { navigateTo(HomeTab.Settings); drawerScope.launch { drawerState.close() } },
                     ),
                 ),
             )
@@ -271,8 +326,8 @@ private fun HomeRoute() {
         when (tab) {
             HomeTab.Home -> HomeTabRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
-                onNavigateToShopping = { tab = HomeTab.Shopping },
-                onNavigateToTasks = { tab = HomeTab.Tasks },
+                onNavigateToShopping = { navigateTo(HomeTab.Shopping) },
+                onNavigateToTasks = { navigateTo(HomeTab.Tasks) },
             )
             HomeTab.Tasks -> TasksRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
@@ -288,11 +343,11 @@ private fun HomeRoute() {
             HomeTab.Cycle -> CycleRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
             HomeTab.Calendar -> CalendarRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
-                onNavigateToTab = { destination, recordId -> tab = destination; highlightId = recordId },
+                onNavigateToTab = { destination, recordId -> navigateTo(destination); highlightId = recordId },
             )
             HomeTab.Search -> SearchRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
-                onNavigateToTab = { destination, recordId -> tab = destination; highlightId = recordId },
+                onNavigateToTab = { destination, recordId -> navigateTo(destination); highlightId = recordId },
             )
             HomeTab.Settings -> if (showDeviceManagement) {
                 DeviceManagementRoute(

@@ -9,4 +9,8 @@
     <string name="lock_prompt_title">פתיחת נעילה של שנינו ביחד</string>
     <string name="app_back">חזרה</string>
     <string name="settings_version">גרסה %1$s</string>
+    <string name="app_exit_title">לסגור את האפליקציה?</string>
+    <string name="app_exit_message">את/ה במסך הבית. לחיצה נוספת על חזרה או אישור תסגור את שנינו ביחד.</string>
+    <string name="app_exit_confirm">סגירה</string>
+    <string name="app_exit_cancel">להישאר</string>
 </resources>

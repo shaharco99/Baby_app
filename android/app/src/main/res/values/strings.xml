@@ -9,4 +9,8 @@
     <string name="lock_prompt_title">Unlock Takes Two of Us</string>
     <string name="app_back">Back</string>
     <string name="settings_version">Version %1$s</string>
+    <string name="app_exit_title">Close the app?</string>
+    <string name="app_exit_message">You\'re on the home screen. Press back again or confirm to close Takes Two of Us.</string>
+    <string name="app_exit_confirm">Close</string>
+    <string name="app_exit_cancel">Stay</string>
 </resources>
