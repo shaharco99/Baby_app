@@ -67,3 +67,42 @@ fun formatCountdown(millis: Long): String {
 }
 
 private const val MILLIS_PER_MINUTE = 60_000L
+
+/**
+ * What the night shift actually added up to.
+ *
+ * [nightFeeds] counts feeds whose local hour falls in [NIGHT_START_HOUR, NIGHT_END_HOUR) — the
+ * stretch nobody volunteers for. [longestStretchMillis] is the longest gap between consecutive
+ * feeds, which is the closest thing to "the longest you got to sleep" the log can know.
+ */
+data class FeedingTally(
+    val totalFeeds: Int,
+    val nightFeeds: Int,
+    val totalMl: Int?,
+    val longestStretchMillis: Long?,
+)
+
+fun feedingTally(entries: List<FeedingEntry>, timeZone: TimeZone): FeedingTally {
+    val byTime = entries.sortedBy { it.fedAtEpochMillis }
+    val measured = byTime.mapNotNull { it.amountMl }
+
+    val nightFeeds = byTime.count { entry ->
+        val hour = Instant.fromEpochMilliseconds(entry.fedAtEpochMillis)
+            .toLocalDateTime(timeZone).hour
+        hour in NIGHT_START_HOUR until NIGHT_END_HOUR
+    }
+
+    val longestStretch = byTime
+        .zipWithNext { earlier, later -> later.fedAtEpochMillis - earlier.fedAtEpochMillis }
+        .maxOrNull()
+
+    return FeedingTally(
+        totalFeeds = byTime.size,
+        nightFeeds = nightFeeds,
+        totalMl = measured.takeIf { it.isNotEmpty() }?.sum(),
+        longestStretchMillis = longestStretch,
+    )
+}
+
+private const val NIGHT_START_HOUR = 0
+private const val NIGHT_END_HOUR = 6

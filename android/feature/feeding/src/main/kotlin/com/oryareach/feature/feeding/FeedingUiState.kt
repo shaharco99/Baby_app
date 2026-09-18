@@ -3,6 +3,7 @@ package com.oryareach.feature.feeding
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.feeding.FeedingDay
+import com.oryareach.core.domain.feeding.FeedingTally
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
@@ -31,6 +32,11 @@ data class FeedingUiState(
 
     // Transient UI-only.
     val historyView: HistoryView = HistoryView.LIST,
+    /**
+     * Easter egg: long-pressing the countdown shows what the night shift added up to. Only
+     * earned once a night feed has actually been logged — see [FeedingViewModel.onCountdownLongPress].
+     */
+    val nightWatchTally: FeedingTally? = null,
     val busy: Boolean = false,
     val refreshing: Boolean = false,
 ) {

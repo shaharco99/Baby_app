@@ -1,7 +1,7 @@
 package com.oryareach.feature.feeding
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.feeding.FeedingDay
+import com.oryareach.core.domain.feeding.FeedingTally
 import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
@@ -87,7 +88,7 @@ fun FeedingScreen(
                     return@Column
                 }
 
-                CountdownCard(countdown = uiState.countdown)
+                CountdownCard(countdown = uiState.countdown, actions = actions)
 
                 Button(onClick = actions::onLogFeedClick, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.feeding_log_feed))
@@ -103,12 +104,65 @@ fun FeedingScreen(
         }
     }
 
+    uiState.nightWatchTally?.let { tally ->
+        NightWatchDialog(tally = tally, onDismiss = actions::onDismissNightWatch)
+    }
+
     if (uiState.sheetVisible) {
         val sheetState = rememberModalBottomSheetState()
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             LogFeedForm(uiState = uiState, actions = actions)
         }
     }
+}
+
+/**
+ * The night-watch easter egg: what the small hours actually came to. Warm rather than clinical
+ * — the numbers are real, the framing is a medal for whoever was awake.
+ */
+@Composable
+private fun NightWatchDialog(tally: FeedingTally, onDismiss: () -> Unit) {
+    val lines = androidx.compose.ui.res.stringArrayResource(R.array.feeding_night_watch_praise)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.feeding_night_watch_close)) } },
+        title = { Text(stringResource(R.string.feeding_night_watch_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = stringResource(R.string.feeding_night_watch_count, tally.nightFeeds),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(R.string.feeding_night_watch_total, tally.totalFeeds),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                tally.longestStretchMillis?.let { stretch ->
+                    Text(
+                        text = stringResource(R.string.feeding_night_watch_stretch, formatCountdown(stretch)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                tally.totalMl?.let { ml ->
+                    Text(
+                        text = stringResource(R.string.feeding_night_watch_ml, ml),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                // Keyed to the tally, so the line changes as the log grows rather than on
+                // every recomposition — a message that reshuffles mid-read is just noise.
+                Text(
+                    text = lines[tally.nightFeeds % lines.size],
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -129,9 +183,17 @@ private fun NoBabyCard() {
  * The one number the screen exists for. Turns red once it passes zero and counts *up* from
  * there, because at that point "how late is this feed" is the question being asked.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun CountdownCard(countdown: FeedCountdown?) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun CountdownCard(countdown: FeedCountdown?, actions: FeedingActions) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = actions::onCountdownLongPress,
+            ),
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -279,56 +341,72 @@ private fun FeedingTable(days: List<FeedingDay>) {
         return
     }
 
-    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-        RowLabels()
-        days.forEach { day ->
-            VerticalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outline)
-            DayColumnGroup(day = day)
-        }
-    }
-}
+    Column(modifier = Modifier.fillMaxWidth()) {
+        TableHeaderRow()
+        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outline)
 
-@Composable
-private fun RowLabels() {
-    Column(modifier = Modifier.width(96.dp)) {
-        TableCell(text = "", header = true)
-        TableRowLabels.forEach { label ->
-            HorizontalDivider()
-            TableCell(text = stringResource(label), header = true)
-        }
-    }
-}
-
-@Composable
-private fun DayColumnGroup(day: FeedingDay) {
-    Column {
-        TableCell(
-            text = day.date.toString(),
-            header = true,
-            modifier = Modifier.width((FEED_COLUMN_WIDTH_DP * day.feeds.size).dp),
-        )
-        Row {
-            day.feeds.forEachIndexed { index, feed ->
-                if (index > 0) VerticalDivider()
-                FeedColumn(feed = feed)
+        LazyColumn {
+            days.forEach { day ->
+                item(key = "day-${day.date}") { DayTitleRow(day = day) }
+                items(day.feeds, key = { it.id }) { feed ->
+                    HorizontalDivider()
+                    FeedCellsRow(feed = feed)
+                }
             }
         }
     }
 }
 
+/** The column titles, once at the top — every feed below reads against these. */
 @Composable
-private fun FeedColumn(feed: FeedingEntry) {
-    Column(modifier = Modifier.width(FEED_COLUMN_WIDTH_DP.dp)) {
-        HorizontalDivider()
-        TableCell(text = formatClock(feed.fedAtEpochMillis))
-        HorizontalDivider()
-        TableCell(text = stringResource(feed.feedType.labelRes()))
-        HorizontalDivider()
-        TableCell(text = feed.amountMl?.toString().orEmpty())
-        HorizontalDivider()
-        TableCell(text = if (feed.hadUrine) MARK else "")
-        HorizontalDivider()
-        TableCell(text = if (feed.hadStool) MARK else "")
+private fun TableHeaderRow() {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        TableRowLabels.forEachIndexed { index, label ->
+            if (index > 0) VerticalDivider()
+            TableCell(
+                text = stringResource(label),
+                header = true,
+                modifier = Modifier.weight(ColumnWeights[index]),
+            )
+        }
+    }
+}
+
+/** Separates one calendar day's feeds from the next, the thick divider on the paper sheet. */
+@Composable
+private fun DayTitleRow(day: FeedingDay) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = day.totalMl
+                ?.let { stringResource(R.string.feeding_day_header_with_total, day.date.toString(), it) }
+                ?: day.date.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FeedCellsRow(feed: FeedingEntry) {
+    val cells = listOf(
+        formatClock(feed.fedAtEpochMillis),
+        stringResource(feed.feedType.labelRes()),
+        feed.amountMl?.toString().orEmpty(),
+        if (feed.hadUrine) MARK else "",
+        if (feed.hadStool) MARK else "",
+    )
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        cells.forEachIndexed { index, text ->
+            if (index > 0) VerticalDivider()
+            TableCell(text = text, modifier = Modifier.weight(ColumnWeights[index]))
+        }
     }
 }
 
@@ -417,8 +495,10 @@ private fun formatClock(epochMillis: Long): String {
     return "%02d:%02d".format(time.hour, time.minute)
 }
 
-private const val FEED_COLUMN_WIDTH_DP = 64
 private const val MARK = "✓"
+
+/** Time and type carry the most text; the two marks are a tick or nothing. */
+private val ColumnWeights = listOf(1.1f, 1.6f, 1f, 0.7f, 0.7f)
 
 private val TableRowLabels = listOf(
     R.string.feeding_row_time,
@@ -469,5 +549,7 @@ private object NoopFeedingActions : FeedingActions {
     override fun onLogFeed() = Unit
     override fun onDeleteFeed(id: String) = Unit
     override fun onHistoryViewChange(value: HistoryView) = Unit
+    override fun onCountdownLongPress() = Unit
+    override fun onDismissNightWatch() = Unit
     override fun onRefresh() = Unit
 }

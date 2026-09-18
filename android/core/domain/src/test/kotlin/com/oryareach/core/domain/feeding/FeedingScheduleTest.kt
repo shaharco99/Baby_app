@@ -88,6 +88,55 @@ class FeedingScheduleTest {
         formatCountdown(5_000L) shouldBe "0:00:05"
     }
 
+    @Test
+    fun `tallies the night shift by local hour, not UTC`() {
+        // 22:00 and 01:00 UTC are 01:00 and 04:00 in Jerusalem — both night feeds there.
+        val tally = feedingTally(
+            listOf(
+                feed("a", "2026-09-17T22:00:00Z"),
+                feed("b", "2026-09-18T01:00:00Z"),
+                feed("c", "2026-09-18T09:00:00Z"),
+            ),
+            TimeZone.of("Asia/Jerusalem"),
+        )
+
+        tally.totalFeeds shouldBe 3
+        tally.nightFeeds shouldBe 2
+    }
+
+    @Test
+    fun `the longest stretch is the widest gap between consecutive feeds`() {
+        val tally = feedingTally(
+            listOf(
+                feed("a", "2026-09-18T00:00:00Z"),
+                feed("c", "2026-09-18T08:00:00Z"),
+                feed("b", "2026-09-18T02:00:00Z"),
+            ),
+            TimeZone.UTC,
+        )
+
+        // Sorted by time first, so the gaps are 2h then 6h regardless of input order.
+        tally.longestStretchMillis shouldBe 6 * 60 * 60_000L
+    }
+
+    @Test
+    fun `a single feed has no stretch to measure`() {
+        val tally = feedingTally(listOf(feed("a", "2026-09-18T00:00:00Z")), TimeZone.UTC)
+
+        tally.longestStretchMillis shouldBe null
+        tally.totalFeeds shouldBe 1
+    }
+
+    @Test
+    fun `an empty log tallies to nothing rather than zeroes it cannot know`() {
+        val tally = feedingTally(emptyList(), TimeZone.UTC)
+
+        tally.totalFeeds shouldBe 0
+        tally.nightFeeds shouldBe 0
+        tally.totalMl shouldBe null
+        tally.longestStretchMillis shouldBe null
+    }
+
     private fun at(iso: String): Long = Instant.parse(iso).toEpochMilliseconds()
 
     private fun feed(id: String, iso: String, amountMl: Int? = null) = FeedingEntry(

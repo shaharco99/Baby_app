@@ -7,6 +7,7 @@ import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.domain.feeding.FeedingDay
+import com.oryareach.core.domain.feeding.feedingTally
 import com.oryareach.core.domain.feeding.groupFeedsByDay
 import com.oryareach.core.domain.feeding.nextFeedCountdown
 import com.oryareach.core.model.AppSettings
@@ -41,6 +42,8 @@ interface FeedingActions {
     fun onLogFeed()
     fun onDeleteFeed(id: String)
     fun onHistoryViewChange(value: HistoryView)
+    fun onCountdownLongPress()
+    fun onDismissNightWatch()
     fun onRefresh()
 }
 
@@ -154,6 +157,22 @@ class FeedingViewModel(
     }
 
     /** Same pull-to-refresh contract as Home: await the sync so the spinner stops when it's done. */
+    /**
+     * Night-watch easter egg. Deliberately silent until at least one feed has been logged
+     * between midnight and 6am: a medal for a night nobody sat up through would be a joke at
+     * the wrong person's expense.
+     */
+    override fun onCountdownLongPress() {
+        val days = _uiState.value.days
+        if (days.isEmpty()) return
+
+        val tally = feedingTally(days.flatMap { it.feeds }, timeZone())
+        if (tally.nightFeeds == 0) return
+        set { it.copy(nightWatchTally = tally) }
+    }
+
+    override fun onDismissNightWatch() = set { it.copy(nightWatchTally = null) }
+
     override fun onRefresh() {
         if (_uiState.value.refreshing) return
         set { it.copy(refreshing = true) }
