@@ -8,6 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.oryareach.core.calendar.GoogleCalendarSyncRepository
 import com.oryareach.core.common.AppResult
 import com.oryareach.core.crypto.RecoveryPhrase
+import com.oryareach.core.database.reminder.FeedingReminderRefresher
+import com.oryareach.core.database.repository.AppSettingsRepository
+import com.oryareach.core.database.repository.BabyRepository
+import com.oryareach.core.model.Baby
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.security.GoogleCalendarAuthManager
@@ -23,8 +27,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 
 @Stable
 interface SettingsActions {
@@ -45,6 +52,22 @@ interface SettingsActions {
     fun onDismissCalendarPicker()
     fun onToggleCalendarSelection(calendarId: String)
     fun onDisconnectGoogleCalendarClick()
+    fun onSetActiveChild(babyId: String)
+    fun onAddChildClick()
+    fun onDismissAddChild()
+    fun onAddChild(name: String, dueDate: LocalDate?, makeActive: Boolean)
+    fun onEditChildClick(baby: Baby)
+    fun onDismissEditChild()
+    fun onUpdateChildBirthDetails(
+        babyId: String,
+        name: String,
+        dueDate: LocalDate?,
+        birthDate: LocalDate?,
+        birthTime: LocalTime?,
+        birthWeightGrams: Int?,
+        birthPlace: String?,
+    )
+    fun onFeedIntervalChange(minutes: Int)
 }
 
 class SettingsViewModel(
@@ -56,6 +79,10 @@ class SettingsViewModel(
     private val localDataWiper: LocalDataWiper,
     private val googleCalendarAuth: GoogleCalendarAuthManager,
     private val googleCalendarSync: GoogleCalendarSyncRepository,
+    private val babies: BabyRepository,
+    private val appSettings: AppSettingsRepository,
+    private val feedingReminders: FeedingReminderRefresher,
+    private val workspaceId: () -> String?,
 ) : ViewModel(), SettingsActions {
 
     private val _uiState = MutableStateFlow(
@@ -94,6 +121,22 @@ class SettingsViewModel(
         }
         viewModelScope.launch {
             preferences.selectedGoogleCalendarIds.collect { ids -> selectedCalendarIds = ids }
+        }
+        workspaceId()?.let { id ->
+            viewModelScope.launch {
+                combine(babies.observeAll(id), appSettings.observe(id)) { children, settings ->
+                    children to settings
+                }.collect { (children, settings) ->
+                    set {
+                        it.copy(
+                            children = children,
+                            activeBabyId = settings?.activeBabyId,
+                            feedIntervalMinutes = settings?.feedIntervalMinutes
+                                ?: it.feedIntervalMinutes,
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -288,6 +331,77 @@ class SettingsViewModel(
         viewModelScope.launch {
             preferences.setSelectedGoogleCalendarIds(emptySet())
             googleCalendarSync.refresh(emptyList())
+        }
+    }
+
+    override fun onSetActiveChild(babyId: String) {
+        val workspace = workspaceId() ?: return
+        viewModelScope.launch {
+            babies.setActive(workspace, babyId)
+            // Switching child changes whose feeds the reminder is counting from.
+            feedingReminders.refresh()
+        }
+    }
+
+    override fun onAddChildClick() = set { it.copy(addChildVisible = true) }
+    override fun onDismissAddChild() = set { it.copy(addChildVisible = false) }
+
+    override fun onAddChild(name: String, dueDate: LocalDate?, makeActive: Boolean) {
+        val workspace = workspaceId() ?: return
+        viewModelScope.launch {
+            babies.create(
+                workspaceId = workspace,
+                userId = auth.currentUserId().orEmpty(),
+                name = name.ifBlank { null },
+                dueDate = dueDate,
+                makeActive = makeActive,
+            )
+            if (makeActive) feedingReminders.refresh()
+            set { it.copy(addChildVisible = false) }
+        }
+    }
+
+    override fun onEditChildClick(baby: Baby) = set { it.copy(editingChild = baby) }
+    override fun onDismissEditChild() = set { it.copy(editingChild = null) }
+
+    override fun onUpdateChildBirthDetails(
+        babyId: String,
+        name: String,
+        dueDate: LocalDate?,
+        birthDate: LocalDate?,
+        birthTime: LocalTime?,
+        birthWeightGrams: Int?,
+        birthPlace: String?,
+    ) {
+        viewModelScope.launch {
+            babies.update(
+                id = babyId,
+                name = name.ifBlank { null },
+                dueDate = dueDate,
+                birthDate = birthDate,
+                birthTime = birthTime,
+                birthWeightGrams = birthWeightGrams,
+                birthPlace = birthPlace,
+            )
+            set { it.copy(editingChild = null) }
+        }
+    }
+
+    /** Changing the cadence invalidates the pending reminder, so it is re-derived right after. */
+    override fun onFeedIntervalChange(minutes: Int) {
+        val workspace = workspaceId() ?: return
+        viewModelScope.launch {
+            val current = appSettings.observe(workspace).first() ?: return@launch
+            appSettings.save(
+                workspaceId = workspace,
+                userId = auth.currentUserId().orEmpty(),
+                dueDate = current.dueDate,
+                babyName = current.babyName,
+                partnerOneName = current.partnerOneName,
+                partnerTwoName = current.partnerTwoName,
+                feedIntervalMinutes = minutes,
+            )
+            feedingReminders.refresh()
         }
     }
 

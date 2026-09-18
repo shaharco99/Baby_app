@@ -44,4 +44,23 @@
 
     <string name="settings_close">Close</string>
     <string name="settings_cancel">Cancel</string>
+    <string name="settings_children_title">Children and feeding</string>
+    <string name="settings_children_empty">No children yet.</string>
+    <string name="settings_child_unnamed">Baby</string>
+    <string name="settings_child_active_born">Active · born</string>
+    <string name="settings_child_active_expected">Active · expected</string>
+    <string name="settings_child_born">Born %1$s</string>
+    <string name="settings_child_expected">Expected</string>
+    <string name="settings_child_edit">Edit</string>
+    <string name="settings_child_edit_title">Child details</string>
+    <string name="settings_add_child">+ Add another child</string>
+    <string name="settings_child_name">Name</string>
+    <string name="settings_child_due_date">Due date</string>
+    <string name="settings_child_birth_date">Date of birth</string>
+    <string name="settings_child_birth_weight">Birth weight (grams)</string>
+    <string name="settings_child_birth_place">Place of birth</string>
+    <string name="settings_child_make_active">Switch to this child now</string>
+    <string name="settings_child_save">Save</string>
+    <string name="settings_feed_interval">Feeding reminder every</string>
+    <string name="settings_feed_interval_value">%1$d min</string>
 </resources>

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,14 +21,21 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +54,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.oryareach.core.model.Baby
 import com.oryareach.core.ui.theme.OrYareachTheme
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 import kotlinx.coroutines.launch
 
 @Composable
@@ -88,6 +103,7 @@ fun SettingsScreen(
 
             item { AccountSection(uiState = uiState, actions = actions) }
             item { SecuritySection(uiState = uiState, actions = actions) }
+            item { ChildrenSection(uiState = uiState, actions = actions) }
             item { NotificationsSection(uiState = uiState, actions = actions) }
             item { RecoverySection(actions = actions) }
             item { DevicesSection(actions = actions) }
@@ -138,6 +154,26 @@ fun SettingsScreen(
         )
     }
 
+    if (uiState.addChildVisible) {
+        ChildFormDialog(
+            baby = null,
+            onDismiss = actions::onDismissAddChild,
+            onSubmit = { name, dueDate, _, _, _, _, makeActive ->
+                actions.onAddChild(name, dueDate, makeActive)
+            },
+        )
+    }
+
+    uiState.editingChild?.let { child ->
+        ChildFormDialog(
+            baby = child,
+            onDismiss = actions::onDismissEditChild,
+            onSubmit = { name, dueDate, birthDate, birthTime, weight, place, _ ->
+                actions.onUpdateChildBirthDetails(child.id, name, dueDate, birthDate, birthTime, weight, place)
+            },
+        )
+    }
+
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
@@ -152,6 +188,217 @@ fun SettingsScreen(
                 TextButton(onClick = { confirmSignOut = false }) { Text(stringResource(R.string.settings_cancel)) }
             },
         )
+    }
+}
+
+/**
+ * The couple's children and how often the baby feeds. Adding a child lives here rather than on
+ * the home page so a stray tap can't start a new pregnancy record by accident.
+ */
+@Composable
+private fun ChildrenSection(uiState: SettingsUiState, actions: SettingsActions) {
+    SectionCard(title = stringResource(R.string.settings_children_title)) {
+        if (uiState.children.isEmpty()) {
+            Text(
+                text = stringResource(R.string.settings_children_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        uiState.children.forEach { child ->
+            ChildRow(
+                child = child,
+                active = child.id == uiState.activeBabyId,
+                onSetActive = { actions.onSetActiveChild(child.id) },
+                onEdit = { actions.onEditChildClick(child) },
+            )
+        }
+
+        OutlinedButton(onClick = actions::onAddChildClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.settings_add_child))
+        }
+
+        FeedIntervalRow(uiState = uiState, actions = actions)
+    }
+}
+
+@Composable
+private fun ChildRow(child: Baby, active: Boolean, onSetActive: () -> Unit, onEdit: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onSetActive).padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = child.name ?: stringResource(R.string.settings_child_unnamed),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = when {
+                    active && child.isBorn -> stringResource(R.string.settings_child_active_born)
+                    active -> stringResource(R.string.settings_child_active_expected)
+                    child.isBorn -> stringResource(R.string.settings_child_born, child.birthDate.toString())
+                    else -> stringResource(R.string.settings_child_expected)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = onEdit) { Text(stringResource(R.string.settings_child_edit)) }
+    }
+}
+
+@Composable
+private fun FeedIntervalRow(uiState: SettingsUiState, actions: SettingsActions) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = stringResource(R.string.settings_feed_interval),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Box {
+            TextButton(onClick = { expanded = true }) {
+                Text(stringResource(R.string.settings_feed_interval_value, uiState.feedIntervalMinutes))
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                uiState.feedIntervalOptionMinutes.forEach { minutes ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.settings_feed_interval_value, minutes)) },
+                        onClick = { expanded = false; actions.onFeedIntervalChange(minutes) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One dialog for both "add a child" and "edit this child's details" — the fields are the same
+ * set, and a child added before the birth simply leaves the birth half empty.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChildFormDialog(
+    baby: Baby?,
+    onDismiss: () -> Unit,
+    onSubmit: (
+        name: String,
+        dueDate: LocalDate?,
+        birthDate: LocalDate?,
+        birthTime: kotlinx.datetime.LocalTime?,
+        birthWeightGrams: Int?,
+        birthPlace: String?,
+        makeActive: Boolean,
+    ) -> Unit,
+) {
+    var name by remember { mutableStateOf(baby?.name.orEmpty()) }
+    var dueDate by remember { mutableStateOf(baby?.dueDate) }
+    var birthDate by remember { mutableStateOf(baby?.birthDate) }
+    var weight by remember { mutableStateOf(baby?.birthWeightGrams?.toString().orEmpty()) }
+    var place by remember { mutableStateOf(baby?.birthPlace.orEmpty()) }
+    var makeActive by remember { mutableStateOf(baby == null) }
+    var pickingDueDate by remember { mutableStateOf(false) }
+    var pickingBirthDate by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(
+                    if (baby == null) R.string.settings_add_child else R.string.settings_child_edit_title,
+                ),
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.settings_child_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedButton(onClick = { pickingDueDate = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(dueDate?.toString() ?: stringResource(R.string.settings_child_due_date))
+                }
+                if (baby != null) {
+                    OutlinedButton(onClick = { pickingBirthDate = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(birthDate?.toString() ?: stringResource(R.string.settings_child_birth_date))
+                    }
+                    OutlinedTextField(
+                        value = weight,
+                        onValueChange = { value -> weight = value.filter(Char::isDigit).take(5) },
+                        label = { Text(stringResource(R.string.settings_child_birth_weight)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = place,
+                        onValueChange = { place = it },
+                        label = { Text(stringResource(R.string.settings_child_birth_place)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (baby == null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = makeActive, onCheckedChange = { makeActive = it })
+                        Text(stringResource(R.string.settings_child_make_active))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                // The birth time is edited on the home page's birth sheet, which has a time
+                // picker; this dialog leaves whatever is already stored alone.
+                onSubmit(name, dueDate, birthDate, baby?.birthTime, weight.toIntOrNull(), place.ifBlank { null }, makeActive)
+            }) { Text(stringResource(R.string.settings_child_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) }
+        },
+    )
+
+    if (pickingDueDate) {
+        DatePickerDialogFor(
+            initial = dueDate,
+            onDismiss = { pickingDueDate = false },
+            onPicked = { dueDate = it; pickingDueDate = false },
+        )
+    }
+
+    if (pickingBirthDate) {
+        DatePickerDialogFor(
+            initial = birthDate,
+            onDismiss = { pickingBirthDate = false },
+            onPicked = { birthDate = it; pickingBirthDate = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickerDialogFor(initial: LocalDate?, onDismiss: () -> Unit, onPicked: (LocalDate) -> Unit) {
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initial?.let { Instant.parse("${it}T00:00:00Z").toEpochMilliseconds() },
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                pickerState.selectedDateMillis?.let { millis ->
+                    onPicked(Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date)
+                }
+            }) { Text(stringResource(R.string.settings_child_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } },
+    ) {
+        DatePicker(state = pickerState)
     }
 }
 
@@ -427,4 +674,20 @@ private object NoopSettingsActions : SettingsActions {
     override fun onDismissCalendarPicker() = Unit
     override fun onToggleCalendarSelection(calendarId: String) = Unit
     override fun onDisconnectGoogleCalendarClick() = Unit
+    override fun onSetActiveChild(babyId: String) = Unit
+    override fun onAddChildClick() = Unit
+    override fun onDismissAddChild() = Unit
+    override fun onAddChild(name: String, dueDate: LocalDate?, makeActive: Boolean) = Unit
+    override fun onEditChildClick(baby: Baby) = Unit
+    override fun onDismissEditChild() = Unit
+    override fun onUpdateChildBirthDetails(
+        babyId: String,
+        name: String,
+        dueDate: LocalDate?,
+        birthDate: LocalDate?,
+        birthTime: kotlinx.datetime.LocalTime?,
+        birthWeightGrams: Int?,
+        birthPlace: String?,
+    ) = Unit
+    override fun onFeedIntervalChange(minutes: Int) = Unit
 }

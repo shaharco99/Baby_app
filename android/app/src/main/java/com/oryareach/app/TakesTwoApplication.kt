@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.oryareach.app.di.appModule
 import com.oryareach.app.lock.AutoLockController
-import com.oryareach.app.notifications.FeedingReminderRefresher
+import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.app.sync.SyncWorker
 import com.oryareach.core.network.di.networkModule
 import org.koin.android.ext.koin.androidContext

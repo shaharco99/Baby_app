@@ -1,7 +1,6 @@
 package com.oryareach.app.di
 
 import com.oryareach.app.lock.AutoLockController
-import com.oryareach.app.notifications.FeedingReminderRefresher
 import com.oryareach.app.notifications.WorkManagerFeedingReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.sync.WorkManagerSyncTrigger
@@ -19,6 +18,7 @@ import com.oryareach.core.database.DatabaseFactory
 import com.oryareach.core.database.DatabasePassphrase
 import com.oryareach.core.database.OrYareachDatabase
 import com.oryareach.core.database.repository.AppSettingsRepository
+import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.CycleEntryRepository
 import com.oryareach.core.database.repository.CycleRepository
@@ -244,6 +244,10 @@ val appModule = module {
             localDataWiper = get(),
             googleCalendarAuth = get(),
             googleCalendarSync = get(),
+            babies = get(),
+            appSettings = get(),
+            feedingReminders = get(),
+            workspaceId = { get<SessionState>().workspaceId },
         )
     }
     viewModel {

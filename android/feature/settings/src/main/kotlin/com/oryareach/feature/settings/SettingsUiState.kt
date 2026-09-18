@@ -2,6 +2,8 @@ package com.oryareach.feature.settings
 
 import android.content.IntentSender
 import androidx.compose.runtime.Immutable
+import com.oryareach.core.model.AppSettings
+import com.oryareach.core.model.Baby
 
 /** One entry in the "choose which calendars to show" picker — a Google calendar plus whether
  * this device currently shows it on the Calendar page. */
@@ -28,8 +30,21 @@ data class SettingsUiState(
     val googleAccountLinked: Boolean = false,
     val googleAccountLinkBusy: Boolean = false,
     val googleAccountLinkError: Boolean = false,
+
+    // The couple's children, and the feeding cadence that drives the reminder. Shared
+    // workspace state rather than per-device preferences, so these come from Room, not
+    // [com.oryareach.core.settings.SettingsPreferences].
+    val children: List<Baby> = emptyList(),
+    val activeBabyId: String? = null,
+    val feedIntervalMinutes: Int = AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
+    /** The child whose birth details are open for editing, if any. */
+    val editingChild: Baby? = null,
+    val addChildVisible: Boolean = false,
 ) {
     val autoLockOptionMinutes: List<Int> get() = listOf(1, 5, 15, 30)
+
+    /** Two hours to four, the range a newborn's feeds actually fall in. */
+    val feedIntervalOptionMinutes: List<Int> get() = listOf(120, 150, 180, 210, 240)
 }
 
 sealed interface SettingsEffect {

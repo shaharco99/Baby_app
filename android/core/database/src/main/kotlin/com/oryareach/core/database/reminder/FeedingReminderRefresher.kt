@@ -1,4 +1,4 @@
-package com.oryareach.app.notifications
+package com.oryareach.core.database.reminder
 
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository

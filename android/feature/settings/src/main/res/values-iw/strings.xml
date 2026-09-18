@@ -44,4 +44,23 @@
 
     <string name="settings_close">סגור</string>
     <string name="settings_cancel">ביטול</string>
+    <string name="settings_children_title">ילדים והאכלה</string>
+    <string name="settings_children_empty">עדיין אין ילדים.</string>
+    <string name="settings_child_unnamed">תינוק/ת</string>
+    <string name="settings_child_active_born">פעיל/ה · נולד/ה</string>
+    <string name="settings_child_active_expected">פעיל/ה · בהיריון</string>
+    <string name="settings_child_born">נולד/ה ב-%1$s</string>
+    <string name="settings_child_expected">בהיריון</string>
+    <string name="settings_child_edit">עריכה</string>
+    <string name="settings_child_edit_title">פרטי הילד/ה</string>
+    <string name="settings_add_child">+ הוספת ילד/ה</string>
+    <string name="settings_child_name">שם</string>
+    <string name="settings_child_due_date">תאריך לידה משוער</string>
+    <string name="settings_child_birth_date">תאריך לידה</string>
+    <string name="settings_child_birth_weight">משקל לידה (גרם)</string>
+    <string name="settings_child_birth_place">מקום הלידה</string>
+    <string name="settings_child_make_active">מעבר לילד/ה הזה/זו עכשיו</string>
+    <string name="settings_child_save">שמירה</string>
+    <string name="settings_feed_interval">תזכורת האכלה כל</string>
+    <string name="settings_feed_interval_value">%1$d דק׳</string>
 </resources>
