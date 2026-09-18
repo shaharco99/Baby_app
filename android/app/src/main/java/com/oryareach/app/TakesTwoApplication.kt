@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.oryareach.app.di.appModule
 import com.oryareach.app.lock.AutoLockController
+import com.oryareach.app.notifications.FeedingReminderRefresher
 import com.oryareach.app.sync.SyncWorker
 import com.oryareach.core.network.di.networkModule
 import org.koin.android.ext.koin.androidContext
@@ -12,10 +13,15 @@ import org.koin.core.context.startKoin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.logger.Level
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class TakesTwoApplication : Application(), KoinComponent {
 
     private val autoLockController: AutoLockController by inject()
+    private val feedingReminders: FeedingReminderRefresher by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -34,5 +40,9 @@ class TakesTwoApplication : Application(), KoinComponent {
         // rotation or multi-window change stops/restarts an Activity without the app actually
         // leaving the foreground.
         ProcessLifecycleOwner.get().lifecycle.addObserver(autoLockController)
+
+        // Off the main thread and not awaited: nothing on screen depends on it, and a device
+        // with no workspace open yet is a no-op that the next launch redoes.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { feedingReminders.refresh() }
     }
 }

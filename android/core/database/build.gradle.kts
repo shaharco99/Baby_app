@@ -15,6 +15,7 @@ dependencies {
     api(project(":core:model"))
     api(project(":core:sync"))
     implementation(project(":core:common"))
+    implementation(project(":core:settings"))
     implementation(project(":core:crypto"))
     implementation(libs.kotlinx.serialization.json)
 

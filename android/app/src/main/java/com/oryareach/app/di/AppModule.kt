@@ -1,6 +1,8 @@
 package com.oryareach.app.di
 
 import com.oryareach.app.lock.AutoLockController
+import com.oryareach.app.notifications.FeedingReminderRefresher
+import com.oryareach.app.notifications.WorkManagerFeedingReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.sync.WorkManagerSyncTrigger
 import com.oryareach.core.calendar.CalendarEventSource
@@ -10,6 +12,7 @@ import com.oryareach.core.calendar.GoogleCalendarSyncRepository
 import com.oryareach.core.security.GoogleCalendarAuthManager
 import com.oryareach.core.security.GoogleCalendarAuthManagerImpl
 import com.oryareach.core.security.GoogleCalendarTokenStore
+import com.oryareach.core.settings.FeedingReminderScheduler
 import com.oryareach.core.settings.ReminderScheduler
 import com.oryareach.core.settings.SettingsPreferences
 import com.oryareach.core.database.DatabaseFactory
@@ -77,6 +80,7 @@ val appModule = module {
     single { SettingsPreferences(androidContext()) }
     single { AutoLockController(session = get(), preferences = get()) }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }
+    single<FeedingReminderScheduler> { WorkManagerFeedingReminderScheduler(androidContext()) }
 
     // Consumed by :core:network, which must not depend on the session type.
     single(workspaceIdQualifier) { { get<SessionState>().workspaceId } }
@@ -135,13 +139,22 @@ val appModule = module {
     single { CycleRepository(database = get(), syncTrigger = get()) }
     single { CycleEntryRepository(database = get(), syncTrigger = get()) }
     single { BabyRepository(database = get(), syncTrigger = get()) }
-    single { FeedingEntryRepository(database = get(), syncTrigger = get()) }
+    single { FeedingEntryRepository(database = get(), syncTrigger = get(), reminders = get()) }
     single { ShoppingItemRepository(database = get(), syncTrigger = get()) }
     single { ImportantDateRepository(database = get(), syncTrigger = get()) }
     single { AppSettingsRepository(database = get(), syncTrigger = get()) }
     single { FolderRepository(database = get(), syncTrigger = get()) }
     single { DocumentRepository(database = get(), syncTrigger = get(), blobStore = get(), keys = get()) }
     single { SearchRepository(database = get()) }
+    single {
+        FeedingReminderRefresher(
+            babies = get(),
+            feeds = get(),
+            settings = get(),
+            scheduler = get(),
+            workspaceId = { get<SessionState>().workspaceId },
+        )
+    }
     single { ConflictRepository(database = get(), codec = get()) }
 
     viewModel { AuthViewModel(auth = get()) }

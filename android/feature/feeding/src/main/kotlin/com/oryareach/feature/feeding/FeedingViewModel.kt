@@ -86,15 +86,18 @@ class FeedingViewModel(
                     }
                     .let { latestFeed ->
                         combine(latestFeed, settingsRepository.observe(id), ticker()) { feed, settings, _ ->
-                            nextFeedCountdown(
+                            val interval = settings?.feedIntervalMinutes
+                                ?: AppSettings.DEFAULT_FEED_INTERVAL_MINUTES
+                            interval to nextFeedCountdown(
                                 lastFedAtEpochMillis = feed?.fedAtEpochMillis,
-                                intervalMinutes = settings?.feedIntervalMinutes
-                                    ?: AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
+                                intervalMinutes = interval,
                                 nowEpochMillis = now(),
                             )
                         }
                     }
-                    .collect { countdown -> set { it.copy(countdown = countdown) } }
+                    .collect { (interval, countdown) ->
+                        set { it.copy(countdown = countdown, intervalMinutes = interval) }
+                    }
             }
         }
     }
@@ -140,6 +143,7 @@ class FeedingViewModel(
                 hadUrine = state.formHadUrine,
                 hadStool = state.formHadStool,
                 note = state.formNote.ifBlank { null },
+                intervalMinutes = state.intervalMinutes,
             )
             set { it.copy(busy = false, sheetVisible = false) }
         }

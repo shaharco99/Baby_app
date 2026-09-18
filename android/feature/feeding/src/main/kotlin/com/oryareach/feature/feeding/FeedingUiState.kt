@@ -3,6 +3,7 @@ package com.oryareach.feature.feeding
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.feeding.FeedingDay
+import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 
@@ -17,6 +18,8 @@ data class FeedingUiState(
 
     // Derived from the last feed and the workspace's interval, recomputed on every tick.
     val countdown: FeedCountdown? = null,
+    /** Shared setting, kept here so logging a feed can schedule the reminder off it. */
+    val intervalMinutes: Int = AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
 
     // The log-a-feed sheet.
     val sheetVisible: Boolean = false,

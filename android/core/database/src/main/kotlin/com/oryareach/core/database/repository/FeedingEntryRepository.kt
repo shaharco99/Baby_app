@@ -12,6 +12,7 @@ import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
+import com.oryareach.core.settings.FeedingReminderScheduler
 import com.oryareach.core.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -24,6 +25,7 @@ import java.util.UUID
 class FeedingEntryRepository(
     private val database: OrYareachDatabase,
     private val syncTrigger: SyncTrigger,
+    private val reminders: FeedingReminderScheduler,
     private val now: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -55,6 +57,7 @@ class FeedingEntryRepository(
         hadUrine: Boolean,
         hadStool: Boolean,
         note: String?,
+        intervalMinutes: Int,
         fedAt: Long = now(),
     ): String {
         val timestamp = now()
@@ -82,6 +85,9 @@ class FeedingEntryRepository(
             search.index(EntityType.FEEDING_ENTRY, entity.id, workspaceId, "", entity.note.orEmpty())
             enqueue(entity.id, SyncOperationType.CREATE, entity.sync.clientMutationId, timestamp)
         }
+        // Scheduled off the feed's own time, not "now": a feed logged late still puts the next
+        // reminder an interval after it actually happened.
+        reminders.scheduleNext(fedAt, intervalMinutes)
         syncTrigger.syncNow()
         return entity.id
     }
