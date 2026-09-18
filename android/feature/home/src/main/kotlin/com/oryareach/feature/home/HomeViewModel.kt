@@ -4,6 +4,7 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
+import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
@@ -42,6 +44,18 @@ interface HomeActions {
     fun onRefresh()
     fun onMoonLongPress()
     fun onDismissBookOfLove()
+    fun onSelectChild(babyId: String)
+    fun onEditBirthDetails()
+    fun onDismissBirthSheet()
+    fun onOpenBirthDatePicker()
+    fun onDismissBirthDatePicker()
+    fun onOpenBirthTimePicker()
+    fun onDismissBirthTimePicker()
+    fun onBirthDateChange(value: LocalDate)
+    fun onBirthTimeChange(value: LocalTime)
+    fun onBirthWeightChange(value: String)
+    fun onBirthPlaceChange(value: String)
+    fun onSubmitBirthDetails()
 }
 
 /**
@@ -50,6 +64,7 @@ interface HomeActions {
  */
 class HomeViewModel(
     private val settingsRepository: AppSettingsRepository,
+    private val babyRepository: BabyRepository,
     private val taskRepository: TaskRepository,
     private val shoppingRepository: ShoppingItemRepository,
     private val importantDateRepository: ImportantDateRepository,
@@ -68,15 +83,19 @@ class HomeViewModel(
             viewModelScope.launch {
                 combine(
                     settingsRepository.observe(id),
+                    babyRepository.observeAll(id),
+                    babyRepository.observeActive(id),
                     taskRepository.observeAll(id),
                     shoppingRepository.observeAll(id),
-                ) { settings, tasks, items ->
+                ) { settings, children, activeBaby, tasks, items ->
                     val budget = calculateBudget(items)
                     HomeUiState(
                         dueDate = settings?.dueDate,
                         babyName = settings?.babyName,
                         partnerOneName = settings?.partnerOneName,
                         partnerTwoName = settings?.partnerTwoName,
+                        children = children,
+                        activeBaby = activeBaby,
                         openTaskCount = tasks.count { !it.done },
                         budgetEstimated = budget.estimatedTotal,
                         budgetSpent = budget.spentTotal,
@@ -93,9 +112,25 @@ class HomeViewModel(
                             editingBabyName = current.editingBabyName,
                             editingPartnerOneName = current.editingPartnerOneName,
                             editingPartnerTwoName = current.editingPartnerTwoName,
+                            birthSheetVisible = current.birthSheetVisible,
+                            birthDatePickerVisible = current.birthDatePickerVisible,
+                            birthTimePickerVisible = current.birthTimePickerVisible,
+                            editingBirthDate = current.editingBirthDate,
+                            editingBirthTime = current.editingBirthTime,
+                            editingBirthWeightGrams = current.editingBirthWeightGrams,
+                            editingBirthPlace = current.editingBirthPlace,
                         )
                     }
                 }
+            }
+
+            // An install that predates per-child records has its pregnancy on `app_settings`
+            // and no child at all. The seed needs those settings, which arrive asynchronously
+            // (locally or by sync), so it waits for the first non-null emission rather than
+            // running once against an empty database and giving up.
+            viewModelScope.launch {
+                settingsRepository.observe(id).first { it != null }
+                babyRepository.seedFromSettingsIfNeeded(id, auth.currentUserId().orEmpty())
             }
         }
     }
@@ -134,7 +169,77 @@ class HomeViewModel(
                 partnerOneName = state.editingPartnerOneName.ifBlank { null },
                 partnerTwoName = state.editingPartnerTwoName.ifBlank { null },
             )
+            // The due date and name live on the active child too, and the moon page reads the
+            // settings row — writing only one of the two would leave them disagreeing.
+            state.activeBaby?.let { baby ->
+                babyRepository.update(
+                    id = baby.id,
+                    name = state.editingBabyName.ifBlank { null },
+                    dueDate = dueDateFromLastPeriod(lastPeriodDate),
+                    birthDate = baby.birthDate,
+                    birthTime = baby.birthTime,
+                    birthWeightGrams = baby.birthWeightGrams,
+                    birthPlace = baby.birthPlace,
+                )
+            }
             set { it.copy(sheetVisible = false) }
+        }
+    }
+
+    override fun onSelectChild(babyId: String) {
+        val workspace = workspaceId() ?: return
+        viewModelScope.launch { babyRepository.setActive(workspace, babyId) }
+    }
+
+    override fun onEditBirthDetails() = set {
+        val baby = it.activeBaby
+        it.copy(
+            birthSheetVisible = true,
+            editingBirthDate = baby?.birthDate ?: today(),
+            editingBirthTime = baby?.birthTime,
+            editingBirthWeightGrams = baby?.birthWeightGrams?.toString().orEmpty(),
+            editingBirthPlace = baby?.birthPlace.orEmpty(),
+        )
+    }
+
+    override fun onDismissBirthSheet() = set { it.copy(birthSheetVisible = false) }
+    override fun onOpenBirthDatePicker() = set { it.copy(birthDatePickerVisible = true) }
+    override fun onDismissBirthDatePicker() = set { it.copy(birthDatePickerVisible = false) }
+    override fun onOpenBirthTimePicker() = set { it.copy(birthTimePickerVisible = true) }
+    override fun onDismissBirthTimePicker() = set { it.copy(birthTimePickerVisible = false) }
+
+    override fun onBirthDateChange(value: LocalDate) = set {
+        it.copy(editingBirthDate = value, birthDatePickerVisible = false)
+    }
+
+    override fun onBirthTimeChange(value: LocalTime) = set {
+        it.copy(editingBirthTime = value, birthTimePickerVisible = false)
+    }
+
+    /** Digits only: the field feeds an Int, and a stray character would silently drop the weight. */
+    override fun onBirthWeightChange(value: String) = set {
+        it.copy(editingBirthWeightGrams = value.filter(Char::isDigit).take(MAX_WEIGHT_DIGITS))
+    }
+
+    override fun onBirthPlaceChange(value: String) = set { it.copy(editingBirthPlace = value) }
+
+    /** Writing a birth date is what moves the home page from the moon countdown to baby mode. */
+    override fun onSubmitBirthDetails() {
+        val state = _uiState.value
+        val baby = state.activeBaby ?: return
+        val birthDate = state.editingBirthDate ?: return
+
+        viewModelScope.launch {
+            babyRepository.update(
+                id = baby.id,
+                name = baby.name,
+                dueDate = baby.dueDate,
+                birthDate = birthDate,
+                birthTime = state.editingBirthTime,
+                birthWeightGrams = state.editingBirthWeightGrams.toIntOrNull(),
+                birthPlace = state.editingBirthPlace.ifBlank { null },
+            )
+            set { it.copy(birthSheetVisible = false) }
         }
     }
 
@@ -275,5 +380,6 @@ class HomeViewModel(
 
     private companion object {
         const val PARTNER_RECENTLY_ACTIVE_WINDOW_MS = 5 * 60 * 1000L
+        const val MAX_WEIGHT_DIGITS = 5
     }
 }

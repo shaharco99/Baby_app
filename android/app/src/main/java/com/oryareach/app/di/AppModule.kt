@@ -191,6 +191,7 @@ val appModule = module {
     viewModel {
         HomeViewModel(
             settingsRepository = get(),
+            babyRepository = get(),
             taskRepository = get(),
             shoppingRepository = get(),
             importantDateRepository = get(),

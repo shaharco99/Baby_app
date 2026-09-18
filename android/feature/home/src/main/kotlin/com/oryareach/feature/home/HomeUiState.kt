@@ -2,7 +2,9 @@ package com.oryareach.feature.home
 
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
+import com.oryareach.core.model.Baby
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 
 @Immutable
 data class HomeUiState(
@@ -11,6 +13,10 @@ data class HomeUiState(
     val babyName: String? = null,
     val partnerOneName: String? = null,
     val partnerTwoName: String? = null,
+    /** Every child of the workspace, newest first — the switcher's list. */
+    val children: List<Baby> = emptyList(),
+    /** The child everything currently points at. Null only before the one-time seed runs. */
+    val activeBaby: Baby? = null,
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,
@@ -29,9 +35,18 @@ data class HomeUiState(
     val editingPartnerOneName: String = "",
     val editingPartnerTwoName: String = "",
 
+    // Editable input: the birth-details sheet, which is what flips this screen into baby mode.
+    val editingBirthDate: LocalDate? = null,
+    val editingBirthTime: LocalTime? = null,
+    val editingBirthWeightGrams: String = "",
+    val editingBirthPlace: String = "",
+
     // Transient UI-only.
     val sheetVisible: Boolean = false,
     val datePickerVisible: Boolean = false,
+    val birthSheetVisible: Boolean = false,
+    val birthDatePickerVisible: Boolean = false,
+    val birthTimePickerVisible: Boolean = false,
     val importing: Boolean = false,
     val importResult: ImportResult? = null,
     val refreshing: Boolean = false,
@@ -40,7 +55,19 @@ data class HomeUiState(
     val bookOfLoveVisible: Boolean = false,
 ) {
     val hasDueDate: Boolean get() = dueDate != null
+
+    /**
+     * Which home page shows. Derived from the active child having been born, never a stored
+     * flag: there is nothing to remember to toggle, and switching to an older sibling shows
+     * their page without any further state changing.
+     */
+    val isBabyMode: Boolean get() = activeBaby?.isBorn == true
+
+    /** The switcher is pointless with a single child, and misleading before the seed runs. */
+    val showChildSwitcher: Boolean get() = children.size > 1
+
     val canSubmitForm: Boolean get() = editingLastPeriodDate != null
+    val canSubmitBirthDetails: Boolean get() = editingBirthDate != null
 }
 
 sealed interface ImportResult {

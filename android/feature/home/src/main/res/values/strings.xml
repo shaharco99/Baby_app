@@ -34,6 +34,17 @@
     <string name="home_budget_paid_by_us">₪%1$.2f paid by us</string>
     <string name="home_budget_gifts">₪%1$.2f received as gifts</string>
     <string name="home_book_of_love_title">Book of Love</string>
+    <string name="home_child_unnamed">Baby</string>
+    <string name="home_baby_was_born">The baby is here — add the birth details</string>
+    <string name="home_edit_birth_details">Edit birth details</string>
+    <string name="home_birth_details_title">Birth details</string>
+    <string name="home_birth_date_field">Date of birth</string>
+    <string name="home_birth_time_field">Time of birth</string>
+    <string name="home_birth_weight_field">Birth weight (grams)</string>
+    <string name="home_birth_place_field">Place of birth</string>
+    <string name="home_birth_date">Born on %1$s</string>
+    <string name="home_birth_date_and_time">Born on %1$s at %2$s</string>
+    <string name="home_birth_weight">%1$d grams</string>
 
     <string-array name="home_book_of_love_tips">
         <item>Say thank you for something small today — the kind of thing that\'s easy to stop noticing.</item>

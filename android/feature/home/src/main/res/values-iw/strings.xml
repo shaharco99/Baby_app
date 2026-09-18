@@ -34,6 +34,17 @@
     <string name="home_budget_paid_by_us">₪%1$.2f שילמנו</string>
     <string name="home_budget_gifts">₪%1$.2f קיבלנו במתנה</string>
     <string name="home_book_of_love_title">ספר האהבה</string>
+    <string name="home_child_unnamed">תינוק/ת</string>
+    <string name="home_baby_was_born">התינוק/ת כאן — הוספת פרטי הלידה</string>
+    <string name="home_edit_birth_details">עריכת פרטי הלידה</string>
+    <string name="home_birth_details_title">פרטי הלידה</string>
+    <string name="home_birth_date_field">תאריך לידה</string>
+    <string name="home_birth_time_field">שעת לידה</string>
+    <string name="home_birth_weight_field">משקל לידה (גרם)</string>
+    <string name="home_birth_place_field">מקום הלידה</string>
+    <string name="home_birth_date">נולד/ה ב-%1$s</string>
+    <string name="home_birth_date_and_time">נולד/ה ב-%1$s בשעה %2$s</string>
+    <string name="home_birth_weight">%1$d גרם</string>
 
     <string-array name="home_book_of_love_tips">
         <item>תגידו תודה על משהו קטן היום — מהדברים שקל להפסיק לשים לב אליהם.</item>

@@ -42,6 +42,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -66,9 +72,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.oryareach.core.domain.home.dailyMessageIndex
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
+import com.oryareach.core.model.Baby
 import com.oryareach.core.ui.theme.NightPalette
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -112,7 +120,19 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.semantics { heading() },
                 )
-                if (!uiState.hasDueDate) {
+                if (uiState.showChildSwitcher) {
+                    ChildSwitcher(uiState = uiState, actions = actions)
+                }
+
+                if (uiState.isBabyMode) {
+                    BirthStatsCard(baby = requireNotNull(uiState.activeBaby), actions = actions)
+
+                    BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
+
+                    if (uiState.openTaskCount > 0) {
+                        OpenTasksCard(count = uiState.openTaskCount, onClick = onNavigateToTasks)
+                    }
+                } else if (!uiState.hasDueDate) {
                     NoDueDateCard(actions = actions)
                 } else {
                     MoonCountdown(uiState = uiState, actions = actions)
@@ -135,6 +155,12 @@ fun HomeScreen(
 
                     TextButton(onClick = actions::onEditDueDate, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.home_edit_due_date))
+                    }
+
+                    if (uiState.activeBaby != null) {
+                        TextButton(onClick = actions::onEditBirthDetails, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.home_baby_was_born))
+                        }
                     }
                 }
 
@@ -204,6 +230,50 @@ fun HomeScreen(
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             DueDateForm(uiState = uiState, actions = actions)
         }
+    }
+
+    if (uiState.birthSheetVisible) {
+        val birthSheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(onDismissRequest = actions::onDismissBirthSheet, sheetState = birthSheetState) {
+            BirthDetailsForm(uiState = uiState, actions = actions)
+        }
+    }
+
+    if (uiState.birthDatePickerVisible) {
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = uiState.editingBirthDate?.toUtcMillis())
+        DatePickerDialog(
+            onDismissRequest = actions::onDismissBirthDatePicker,
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { actions.onBirthDateChange(it.toLocalDate()) }
+                }) { Text(stringResource(R.string.home_pick_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissBirthDatePicker) { Text(stringResource(R.string.home_pick_cancel)) }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+
+    if (uiState.birthTimePickerVisible) {
+        val timeState = rememberTimePickerState(
+            initialHour = uiState.editingBirthTime?.hour ?: 0,
+            initialMinute = uiState.editingBirthTime?.minute ?: 0,
+            is24Hour = true,
+        )
+        AlertDialog(
+            onDismissRequest = actions::onDismissBirthTimePicker,
+            confirmButton = {
+                TextButton(onClick = {
+                    actions.onBirthTimeChange(LocalTime(timeState.hour, timeState.minute))
+                }) { Text(stringResource(R.string.home_pick_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissBirthTimePicker) { Text(stringResource(R.string.home_pick_cancel)) }
+            },
+            text = { TimePicker(state = timeState) },
+        )
     }
 
     if (uiState.datePickerVisible) {
@@ -470,6 +540,112 @@ private fun OpenTasksCard(count: Int, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Picking a child re-derives the whole page from *that* child: an older sibling shows their
+ * birth stats, a still-unborn one shows the moon countdown. Scrolls sideways rather than
+ * wrapping, so a third child doesn't push the page's content down.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChildSwitcher(uiState: HomeUiState, actions: HomeActions) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        uiState.children.forEach { child ->
+            FilterChip(
+                selected = child.id == uiState.activeBaby?.id,
+                onClick = { actions.onSelectChild(child.id) },
+                label = { Text(child.name ?: stringResource(R.string.home_child_unnamed)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BirthStatsCard(baby: Baby, actions: HomeActions) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = baby.name?.let { stringResource(R.string.home_arrived_title_named, it) }
+                    ?: stringResource(R.string.home_arrived_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            baby.birthDate?.let { date ->
+                Text(
+                    text = baby.birthTime
+                        ?.let { stringResource(R.string.home_birth_date_and_time, date.toString(), it.toString()) }
+                        ?: stringResource(R.string.home_birth_date, date.toString()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            baby.birthWeightGrams?.let { grams ->
+                Text(
+                    text = stringResource(R.string.home_birth_weight, grams),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            baby.birthPlace?.let { place ->
+                Text(
+                    text = place,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = actions::onEditBirthDetails) {
+                Text(stringResource(R.string.home_edit_birth_details))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BirthDetailsForm(uiState: HomeUiState, actions: HomeActions) {
+    Column(
+        modifier = Modifier.fillMaxWidth().imePadding().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(stringResource(R.string.home_birth_details_title), style = MaterialTheme.typography.titleMedium)
+
+        OutlinedButton(onClick = actions::onOpenBirthDatePicker, modifier = Modifier.fillMaxWidth()) {
+            Text(uiState.editingBirthDate?.toString() ?: stringResource(R.string.home_birth_date_field))
+        }
+
+        OutlinedButton(onClick = actions::onOpenBirthTimePicker, modifier = Modifier.fillMaxWidth()) {
+            Text(uiState.editingBirthTime?.toString() ?: stringResource(R.string.home_birth_time_field))
+        }
+
+        OutlinedTextField(
+            value = uiState.editingBirthWeightGrams,
+            onValueChange = actions::onBirthWeightChange,
+            label = { Text(stringResource(R.string.home_birth_weight_field)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        OutlinedTextField(
+            value = uiState.editingBirthPlace,
+            onValueChange = actions::onBirthPlaceChange,
+            label = { Text(stringResource(R.string.home_birth_place_field)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Button(
+            onClick = actions::onSubmitBirthDetails,
+            enabled = uiState.canSubmitBirthDetails,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.home_save))
+        }
+
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
 @Composable
 private fun DueDateForm(uiState: HomeUiState, actions: HomeActions) {
     Column(
@@ -526,6 +702,40 @@ private fun Long.toLocalDate(): LocalDate =
 
 @Preview(showBackground = true)
 @Composable
+private fun BabyHomePreview() {
+    OrYareachTheme {
+        HomeScreen(
+            uiState = HomeUiState(
+                dueDate = LocalDate(2026, 12, 25),
+                children = listOf(
+                    Baby(
+                        id = "1",
+                        name = "Yarden",
+                        birthDate = LocalDate(2026, 12, 20),
+                        birthTime = LocalTime(4, 12),
+                        birthWeightGrams = 3240,
+                        birthPlace = "Ichilov",
+                    ),
+                ),
+                activeBaby = Baby(
+                    id = "1",
+                    name = "Yarden",
+                    birthDate = LocalDate(2026, 12, 20),
+                    birthTime = LocalTime(4, 12),
+                    birthWeightGrams = 3240,
+                    birthPlace = "Ichilov",
+                ),
+                openTaskCount = 3,
+                budgetEstimated = 4000.0,
+                budgetSpent = 1200.0,
+            ),
+            actions = NoopHomeActions,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
 private fun HomePreview() {
     OrYareachTheme {
         HomeScreen(
@@ -556,4 +766,16 @@ private object NoopHomeActions : HomeActions {
     override fun onRefresh() = Unit
     override fun onMoonLongPress() = Unit
     override fun onDismissBookOfLove() = Unit
+    override fun onSelectChild(babyId: String) = Unit
+    override fun onEditBirthDetails() = Unit
+    override fun onDismissBirthSheet() = Unit
+    override fun onOpenBirthDatePicker() = Unit
+    override fun onDismissBirthDatePicker() = Unit
+    override fun onOpenBirthTimePicker() = Unit
+    override fun onDismissBirthTimePicker() = Unit
+    override fun onBirthDateChange(value: LocalDate) = Unit
+    override fun onBirthTimeChange(value: LocalTime) = Unit
+    override fun onBirthWeightChange(value: String) = Unit
+    override fun onBirthPlaceChange(value: String) = Unit
+    override fun onSubmitBirthDetails() = Unit
 }
