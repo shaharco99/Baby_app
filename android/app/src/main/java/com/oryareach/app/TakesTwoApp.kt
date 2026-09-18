@@ -8,6 +8,8 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
@@ -117,7 +119,10 @@ fun TakesTwoApp(
     val locked by session.lockedFlow.collectAsStateWithLifecycle()
 
     when {
-        authState == AuthState.Unknown -> Unit
+        // Not `Unit`: the Supabase SDK restores the stored session from disk here, and refreshes
+        // it over the network when it is stale, so this state can last a visible moment on a
+        // cold start — rendering nothing showed a blank window for the whole of it.
+        authState == AuthState.Unknown -> StartupScreen()
 
         authState == AuthState.SignedOut -> AuthRoute()
 
@@ -141,7 +146,35 @@ fun TakesTwoApp(
         }
     }
 
-    UpdateHost()
+    // Not while the session is still resolving: the check hits the network, and nothing can be
+    // done about an update before there is even a screen behind the dialog.
+    if (authState != AuthState.Unknown) {
+        UpdateHost()
+    }
+}
+
+/**
+ * What the app shows for the moment between process start and knowing whether anyone is signed
+ * in. Deliberately the app's own name and nothing else — no spinner racing a check that usually
+ * resolves in well under a second, and nothing from the workspace, which is still encrypted.
+ */
+@Composable
+private fun StartupScreen() {
+    androidx.compose.material3.Surface(
+        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+        color = androidx.compose.material3.MaterialTheme.colorScheme.background,
+    ) {
+        Box(
+            modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(com.oryareach.core.ui.R.string.app_drawer_title),
+                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+            )
+        }
+    }
 }
 
 /** Not modal like [UpdateHost]'s mandatory case — a stuck conflict is important but never
