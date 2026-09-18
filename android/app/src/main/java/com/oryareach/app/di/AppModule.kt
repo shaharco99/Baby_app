@@ -16,9 +16,11 @@ import com.oryareach.core.database.DatabaseFactory
 import com.oryareach.core.database.DatabasePassphrase
 import com.oryareach.core.database.OrYareachDatabase
 import com.oryareach.core.database.repository.AppSettingsRepository
+import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.CycleEntryRepository
 import com.oryareach.core.database.repository.CycleRepository
 import com.oryareach.core.database.repository.DocumentRepository
+import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.database.repository.FolderRepository
 import com.oryareach.core.database.repository.ConflictRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
@@ -131,6 +133,8 @@ val appModule = module {
     single { TaskRepository(database = get(), syncTrigger = get()) }
     single { CycleRepository(database = get(), syncTrigger = get()) }
     single { CycleEntryRepository(database = get(), syncTrigger = get()) }
+    single { BabyRepository(database = get(), syncTrigger = get()) }
+    single { FeedingEntryRepository(database = get(), syncTrigger = get()) }
     single { ShoppingItemRepository(database = get(), syncTrigger = get()) }
     single { ImportantDateRepository(database = get(), syncTrigger = get()) }
     single { AppSettingsRepository(database = get(), syncTrigger = get()) }

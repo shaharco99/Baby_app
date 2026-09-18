@@ -7,9 +7,11 @@ import com.oryareach.core.database.SearchIndexer
 import com.oryareach.core.database.entity.SyncOperationEntity
 import com.oryareach.core.database.mapper.toEntity
 import com.oryareach.core.model.AppSettings
+import com.oryareach.core.model.Baby
 import com.oryareach.core.model.CycleEntry
 import com.oryareach.core.model.Document
 import com.oryareach.core.model.EntityType
+import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
@@ -149,6 +151,15 @@ class ConflictRepository(
                 database.cycleEntryDao().upsert(entry.toEntity(workspace, record, now()))
                 search.index(entityType, recordId(record), workspace, "", entry.note.orEmpty())
             }
+            EntityType.BABY -> {
+                val baby = runCatching { json.decodeFromString<Baby>(payload) }.getOrNull() ?: return
+                database.babyDao().upsert(baby.toEntity(workspace, record, now()))
+            }
+            EntityType.FEEDING_ENTRY -> {
+                val feed = runCatching { json.decodeFromString<FeedingEntry>(payload) }.getOrNull() ?: return
+                database.feedingEntryDao().upsert(feed.toEntity(workspace, record, now()))
+                search.index(entityType, recordId(record), workspace, "", feed.note.orEmpty())
+            }
         }
     }
 
@@ -180,6 +191,12 @@ class ConflictRepository(
             EntityType.CYCLE_ENTRY -> database.cycleEntryDao().findById(recordId)?.let {
                 database.cycleEntryDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
             }
+            EntityType.BABY -> database.babyDao().findById(recordId)?.let {
+                database.babyDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
+            }
+            EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let {
+                database.feedingEntryDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
+            }
         }
     }
 
@@ -192,6 +209,8 @@ class ConflictRepository(
         EntityType.DOCUMENT -> database.documentDao().findById(recordId)?.sync?.workspaceId
         EntityType.CYCLE -> database.menstrualCycleDao().findById(recordId)?.sync?.workspaceId
         EntityType.CYCLE_ENTRY -> database.cycleEntryDao().findById(recordId)?.sync?.workspaceId
+        EntityType.BABY -> database.babyDao().findById(recordId)?.sync?.workspaceId
+        EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.sync?.workspaceId
     }
 
     private suspend fun localTitleAndUpdatedAt(entityType: EntityType, recordId: String): Pair<String, Long>? = when (entityType) {
@@ -203,6 +222,10 @@ class ConflictRepository(
         EntityType.DOCUMENT -> database.documentDao().findById(recordId)?.let { it.name to it.sync.updatedAt }
         EntityType.CYCLE -> database.menstrualCycleDao().findById(recordId)?.let { it.startDate to it.sync.updatedAt }
         EntityType.CYCLE_ENTRY -> database.cycleEntryDao().findById(recordId)?.let { (it.note ?: it.date) to it.sync.updatedAt }
+        EntityType.BABY -> database.babyDao().findById(recordId)?.let { (it.name ?: it.id) to it.sync.updatedAt }
+        EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let {
+            (it.note ?: it.fedAt.toString()) to it.sync.updatedAt
+        }
     }
 
     private fun decodeTitle(entityType: EntityType, recordId: String, ciphertext: ByteArray): String? {
@@ -219,6 +242,10 @@ class ConflictRepository(
                 EntityType.DOCUMENT -> json.decodeFromString<Document>(payload).name
                 EntityType.CYCLE -> json.decodeFromString<MenstrualCycle>(payload).startDate.toString()
                 EntityType.CYCLE_ENTRY -> json.decodeFromString<CycleEntry>(payload).let { it.note ?: it.date.toString() }
+                EntityType.BABY -> json.decodeFromString<Baby>(payload).let { it.name ?: it.id }
+                EntityType.FEEDING_ENTRY -> json.decodeFromString<FeedingEntry>(payload).let {
+                    it.note ?: it.fedAtEpochMillis.toString()
+                }
             }
         }.getOrNull()
     }

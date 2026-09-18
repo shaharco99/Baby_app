@@ -18,4 +18,6 @@
     <string name="conflicts_type_cycle">וסת</string>
     <string name="conflicts_type_cycle_entry">רשומת מחזור</string>
     <string name="conflicts_type_settings">הגדרות</string>
+    <string name="conflicts_type_baby">ילד/ה</string>
+    <string name="conflicts_type_feeding_entry">רישום האכלה</string>
 </resources>

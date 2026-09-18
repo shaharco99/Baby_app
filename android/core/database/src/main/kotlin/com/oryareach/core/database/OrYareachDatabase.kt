@@ -4,9 +4,11 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.oryareach.core.database.dao.AppSettingsDao
+import com.oryareach.core.database.dao.BabyDao
 import com.oryareach.core.database.dao.CachedCalendarEventDao
 import com.oryareach.core.database.dao.CycleEntryDao
 import com.oryareach.core.database.dao.DocumentDao
+import com.oryareach.core.database.dao.FeedingEntryDao
 import com.oryareach.core.database.dao.FolderDao
 import com.oryareach.core.database.dao.ImportantDateDao
 import com.oryareach.core.database.dao.MenstrualCycleDao
@@ -16,9 +18,11 @@ import com.oryareach.core.database.dao.SyncOperationDao
 import com.oryareach.core.database.dao.SyncStateDao
 import com.oryareach.core.database.dao.TaskDao
 import com.oryareach.core.database.entity.AppSettingsEntity
+import com.oryareach.core.database.entity.BabyEntity
 import com.oryareach.core.database.entity.CachedCalendarEventEntity
 import com.oryareach.core.database.entity.CycleEntryEntity
 import com.oryareach.core.database.entity.DocumentEntity
+import com.oryareach.core.database.entity.FeedingEntryEntity
 import com.oryareach.core.database.entity.FolderEntity
 import com.oryareach.core.database.entity.ImportantDateEntity
 import com.oryareach.core.database.entity.MenstrualCycleEntity
@@ -39,13 +43,15 @@ import com.oryareach.core.database.entity.TaskEntity
         FolderEntity::class,
         DocumentEntity::class,
         CycleEntryEntity::class,
+        BabyEntity::class,
+        FeedingEntryEntity::class,
         SearchIndexEntity::class,
         SyncOperationEntity::class,
         SyncCursorEntity::class,
         SyncConflictEntity::class,
         CachedCalendarEventEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -53,6 +59,8 @@ abstract class OrYareachDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun menstrualCycleDao(): MenstrualCycleDao
     abstract fun cycleEntryDao(): CycleEntryDao
+    abstract fun babyDao(): BabyDao
+    abstract fun feedingEntryDao(): FeedingEntryDao
     abstract fun shoppingItemDao(): ShoppingItemDao
     abstract fun importantDateDao(): ImportantDateDao
     abstract fun appSettingsDao(): AppSettingsDao

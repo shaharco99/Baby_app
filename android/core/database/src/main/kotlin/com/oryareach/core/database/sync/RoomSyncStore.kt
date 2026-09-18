@@ -16,10 +16,14 @@ import com.oryareach.core.database.mapper.toAppSettings
 import com.oryareach.core.database.mapper.toFolder
 import com.oryareach.core.database.mapper.toDocument
 import com.oryareach.core.database.mapper.toCycleEntry
+import com.oryareach.core.database.mapper.toBaby
+import com.oryareach.core.database.mapper.toFeedingEntry
 import com.oryareach.core.model.AppSettings
+import com.oryareach.core.model.Baby
 import com.oryareach.core.model.CycleEntry
 import com.oryareach.core.model.Document
 import com.oryareach.core.model.EntityType
+import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
@@ -56,6 +60,8 @@ class RoomSyncStore(
     private val folders get() = database.folderDao()
     private val documents get() = database.documentDao()
     private val cycleEntries get() = database.cycleEntryDao()
+    private val babies get() = database.babyDao()
+    private val feedingEntries get() = database.feedingEntryDao()
     private val search = SearchIndexer(database)
     private val operations get() = database.syncOperationDao()
     private val state get() = database.syncStateDao()
@@ -88,6 +94,8 @@ class RoomSyncStore(
                 EntityType.FOLDER -> folders.markSynced(recordId, SyncStatus.SYNCED, version)
                 EntityType.DOCUMENT -> documents.markSynced(recordId, SyncStatus.SYNCED, version)
                 EntityType.CYCLE_ENTRY -> cycleEntries.markSynced(recordId, SyncStatus.SYNCED, version)
+                EntityType.BABY -> babies.markSynced(recordId, SyncStatus.SYNCED, version)
+                EntityType.FEEDING_ENTRY -> feedingEntries.markSynced(recordId, SyncStatus.SYNCED, version)
                 else -> tasks.markSynced(recordId, SyncStatus.SYNCED, version)
             }
             operations.removeByRecord(recordId)
@@ -115,6 +123,8 @@ class RoomSyncStore(
                 EntityType.FOLDER -> folders.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 EntityType.DOCUMENT -> documents.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 EntityType.CYCLE_ENTRY -> cycleEntries.markSynced(recordId, SyncStatus.CONFLICT, server.version)
+                EntityType.BABY -> babies.markSynced(recordId, SyncStatus.CONFLICT, server.version)
+                EntityType.FEEDING_ENTRY -> feedingEntries.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 else -> tasks.markSynced(recordId, SyncStatus.CONFLICT, server.version)
             }
             // The queued operation is dropped: replaying it would just conflict again. The
@@ -209,6 +219,21 @@ class RoomSyncStore(
                         cycleEntries.upsert(entry.toEntity(workspace, record, now()))
                         reindex(EntityType.CYCLE_ENTRY, record, workspace, "", entry.note.orEmpty())
                     }
+
+                    EntityType.BABY -> {
+                        val baby = runCatching {
+                            json.decodeFromString<Baby>(decoded.data)
+                        }.getOrNull() ?: continue
+                        babies.upsert(baby.toEntity(workspace, record, now()))
+                    }
+
+                    EntityType.FEEDING_ENTRY -> {
+                        val feed = runCatching {
+                            json.decodeFromString<FeedingEntry>(decoded.data)
+                        }.getOrNull() ?: continue
+                        feedingEntries.upsert(feed.toEntity(workspace, record, now()))
+                        reindex(EntityType.FEEDING_ENTRY, record, workspace, "", feed.note.orEmpty())
+                    }
                 }
             }
         }
@@ -265,6 +290,14 @@ class RoomSyncStore(
         EntityType.CYCLE_ENTRY -> cycleEntries.findById(recordId)?.let {
             Payload(json.encodeToString(it.toCycleEntry()), it.sync.version)
         }
+
+        EntityType.BABY -> babies.findById(recordId)?.let {
+            Payload(json.encodeToString(it.toBaby()), it.sync.version)
+        }
+
+        EntityType.FEEDING_ENTRY -> feedingEntries.findById(recordId)?.let {
+            Payload(json.encodeToString(it.toFeedingEntry()), it.sync.version)
+        }
     }
 
     /** Every syncable table is checked in turn; `TASK` is the fallback for a row not found
@@ -277,6 +310,8 @@ class RoomSyncStore(
         folders.findById(recordId) != null -> EntityType.FOLDER
         documents.findById(recordId) != null -> EntityType.DOCUMENT
         cycleEntries.findById(recordId) != null -> EntityType.CYCLE_ENTRY
+        babies.findById(recordId) != null -> EntityType.BABY
+        feedingEntries.findById(recordId) != null -> EntityType.FEEDING_ENTRY
         else -> EntityType.TASK
     }
 }

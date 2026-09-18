@@ -492,6 +492,9 @@ private fun com.oryareach.core.model.EntityType.toHomeTab(): HomeTab = when (thi
     com.oryareach.core.model.EntityType.FOLDER, com.oryareach.core.model.EntityType.DOCUMENT -> HomeTab.Folders
     com.oryareach.core.model.EntityType.CYCLE, com.oryareach.core.model.EntityType.CYCLE_ENTRY -> HomeTab.Cycle
     com.oryareach.core.model.EntityType.SETTINGS -> HomeTab.Settings
+    // Until the Feeding tab lands, a matched feed or child drops the user on Home, which is
+    // where the next-feed timer and the child switcher live.
+    com.oryareach.core.model.EntityType.BABY, com.oryareach.core.model.EntityType.FEEDING_ENTRY -> HomeTab.Home
 }
 
 @Composable

@@ -449,3 +449,82 @@ val MIGRATION_15_16 = object : Migration(15, 16) {
         db.execSQL("ALTER TABLE `shopping_items` ADD COLUMN `warranty_months` INTEGER")
     }
 }
+
+/** Adds `babies` and `feeding_entries`, plus the two `app_settings` columns that point at the
+ * active child and set how long after a feed the reminder fires. `app_settings.baby_name` and
+ * `due_date` stay where they are: the one-time seed of the first `babies` row reads them, so
+ * an existing install's current pregnancy is not lost. */
+val MIGRATION_16_17 = object : Migration(16, 17) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `babies` (
+                `id` TEXT NOT NULL,
+                `name` TEXT,
+                `due_date` TEXT,
+                `birth_date` TEXT,
+                `birth_time` TEXT,
+                `birth_weight_grams` INTEGER,
+                `birth_place` TEXT,
+                `workspace_id` TEXT NOT NULL,
+                `created_by` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `deleted_at` INTEGER,
+                `version` INTEGER NOT NULL,
+                `sync_status` TEXT NOT NULL,
+                `client_mutation_id` TEXT,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_babies_sync_status` ON `babies` (`sync_status`)")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_babies_workspace_id_updated_at` " +
+                "ON `babies` (`workspace_id`, `updated_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_babies_workspace_id_created_at` " +
+                "ON `babies` (`workspace_id`, `created_at`)",
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `feeding_entries` (
+                `id` TEXT NOT NULL,
+                `baby_id` TEXT NOT NULL,
+                `fed_at` INTEGER NOT NULL,
+                `feed_type` TEXT NOT NULL,
+                `amount_ml` INTEGER,
+                `had_urine` INTEGER NOT NULL,
+                `had_stool` INTEGER NOT NULL,
+                `note` TEXT,
+                `workspace_id` TEXT NOT NULL,
+                `created_by` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `deleted_at` INTEGER,
+                `version` INTEGER NOT NULL,
+                `sync_status` TEXT NOT NULL,
+                `client_mutation_id` TEXT,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_feeding_entries_sync_status` " +
+                "ON `feeding_entries` (`sync_status`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_feeding_entries_workspace_id_updated_at` " +
+                "ON `feeding_entries` (`workspace_id`, `updated_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_feeding_entries_workspace_id_baby_id_fed_at` " +
+                "ON `feeding_entries` (`workspace_id`, `baby_id`, `fed_at`)",
+        )
+
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `active_baby_id` TEXT")
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `feed_interval_minutes` INTEGER NOT NULL DEFAULT 180")
+    }
+}

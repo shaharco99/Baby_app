@@ -13,4 +13,6 @@ internal fun EntityType.labelRes(): Int = when (this) {
     EntityType.CYCLE -> R.string.conflicts_type_cycle
     EntityType.CYCLE_ENTRY -> R.string.conflicts_type_cycle_entry
     EntityType.SETTINGS -> R.string.conflicts_type_settings
+    EntityType.BABY -> R.string.conflicts_type_baby
+    EntityType.FEEDING_ENTRY -> R.string.conflicts_type_feeding_entry
 }

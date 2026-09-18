@@ -8,8 +8,24 @@ import kotlinx.serialization.Serializable
 data class AppSettings(
     val id: String,
     val dueDate: LocalDate,
+    /**
+     * Superseded by [Baby.name]. Kept, not dropped, so the one-time seed of the first [Baby]
+     * has something to read on an existing install; nothing writes it for a new child.
+     */
     val babyName: String? = null,
     /** Null means "use the default name" — resolved per feature/locale, not stored here. */
     val partnerOneName: String? = null,
     val partnerTwoName: String? = null,
-)
+    /**
+     * Which [Baby] the home page, feeding log and reminders currently point at. Shared between
+     * the partners on purpose: both should be looking at the same child. Null until the
+     * one-time seed runs on first launch after this version.
+     */
+    val activeBabyId: String? = null,
+    /** How long after a feed the reminder fires. */
+    val feedIntervalMinutes: Int = DEFAULT_FEED_INTERVAL_MINUTES,
+) {
+    companion object {
+        const val DEFAULT_FEED_INTERVAL_MINUTES = 180
+    }
+}

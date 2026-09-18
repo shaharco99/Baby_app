@@ -3,6 +3,7 @@ package com.oryareach.core.database
 import androidx.room.TypeConverter
 import com.oryareach.core.model.Assignee
 import com.oryareach.core.model.EntityType
+import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FlowLevel
 import com.oryareach.core.model.Mood
 import com.oryareach.core.model.PainLevel
@@ -71,6 +72,9 @@ class DatabaseConverters {
     @TypeConverter fun recurrenceFrequencyToString(value: RecurrenceFrequency?): String? = value?.name
     @TypeConverter fun stringToRecurrenceFrequency(value: String?): RecurrenceFrequency? =
         value?.let(RecurrenceFrequency::valueOf)
+
+    @TypeConverter fun feedTypeToString(value: FeedType): String = value.name
+    @TypeConverter fun stringToFeedType(value: String): FeedType = FeedType.valueOf(value)
 
     @TypeConverter fun tagsToString(value: List<String>): String = Json.encodeToString(value)
     @TypeConverter fun stringToTags(value: String): List<String> = Json.decodeFromString(value)

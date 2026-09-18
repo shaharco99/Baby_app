@@ -1,8 +1,10 @@
 package com.oryareach.core.database.mapper
 
 import com.oryareach.core.database.entity.AppSettingsEntity
+import com.oryareach.core.database.entity.BabyEntity
 import com.oryareach.core.database.entity.CycleEntryEntity
 import com.oryareach.core.database.entity.DocumentEntity
+import com.oryareach.core.database.entity.FeedingEntryEntity
 import com.oryareach.core.database.entity.FolderEntity
 import com.oryareach.core.database.entity.ImportantDateEntity
 import com.oryareach.core.database.entity.MenstrualCycleEntity
@@ -10,8 +12,10 @@ import com.oryareach.core.database.entity.ShoppingItemEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.TaskEntity
 import com.oryareach.core.model.AppSettings
+import com.oryareach.core.model.Baby
 import com.oryareach.core.model.CycleEntry
 import com.oryareach.core.model.Document
+import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
@@ -20,6 +24,7 @@ import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.model.Task
 import com.oryareach.core.sync.RemoteRecord
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 
 /**
  * Entity to domain and back.
@@ -65,6 +70,29 @@ fun AppSettingsEntity.toAppSettings() = AppSettings(
     babyName = babyName,
     partnerOneName = partnerOneName,
     partnerTwoName = partnerTwoName,
+    activeBabyId = activeBabyId,
+    feedIntervalMinutes = feedIntervalMinutes,
+)
+
+fun BabyEntity.toBaby() = Baby(
+    id = id,
+    name = name,
+    dueDate = dueDate?.let(LocalDate::parse),
+    birthDate = birthDate?.let(LocalDate::parse),
+    birthTime = birthTime?.let(LocalTime::parse),
+    birthWeightGrams = birthWeightGrams,
+    birthPlace = birthPlace,
+)
+
+fun FeedingEntryEntity.toFeedingEntry() = FeedingEntry(
+    id = id,
+    babyId = babyId,
+    fedAtEpochMillis = fedAt,
+    feedType = feedType,
+    amountMl = amountMl,
+    hadUrine = hadUrine,
+    hadStool = hadStool,
+    note = note,
 )
 
 fun FolderEntity.toFolder() = Folder(id = id, name = name, parentId = parentId, path = path)
@@ -147,6 +175,31 @@ fun AppSettings.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     babyName = babyName,
     partnerOneName = partnerOneName,
     partnerTwoName = partnerTwoName,
+    activeBabyId = activeBabyId,
+    feedIntervalMinutes = feedIntervalMinutes,
+    sync = record.toSyncMeta(workspaceId, now),
+)
+
+fun Baby.toEntity(workspaceId: String, record: RemoteRecord, now: Long) = BabyEntity(
+    id = id,
+    name = name,
+    dueDate = dueDate?.toString(),
+    birthDate = birthDate?.toString(),
+    birthTime = birthTime?.toString(),
+    birthWeightGrams = birthWeightGrams,
+    birthPlace = birthPlace,
+    sync = record.toSyncMeta(workspaceId, now),
+)
+
+fun FeedingEntry.toEntity(workspaceId: String, record: RemoteRecord, now: Long) = FeedingEntryEntity(
+    id = id,
+    babyId = babyId,
+    fedAt = fedAtEpochMillis,
+    feedType = feedType,
+    amountMl = amountMl,
+    hadUrine = hadUrine,
+    hadStool = hadStool,
+    note = note,
     sync = record.toSyncMeta(workspaceId, now),
 )
 
