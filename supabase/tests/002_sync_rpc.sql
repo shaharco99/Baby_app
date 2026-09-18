@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(21);
 
 create schema if not exists tests;
 
@@ -282,6 +282,38 @@ select is(
     (select created_by from public.records where id = '22222222-2222-2222-2222-222222222222'),
     tests.uid('shahar'),
     'the original author is unchanged'
+);
+
+-- ---------------------------------------------------------------------------
+-- The per-child entity types added with the feeding page (0007)
+-- ---------------------------------------------------------------------------
+
+select tests.act_as(tests.uid('shahar'));
+
+select is(
+    public.push_records(tests.workspace(), jsonb_build_array(jsonb_build_object(
+        'id', '44444444-4444-4444-4444-444444444444',
+        'entity_type', 'baby',
+        'ciphertext', encode('\xdddd'::bytea, 'base64'),
+        'base_version', 0,
+        'client_mutation_id', gen_random_uuid()::text,
+        'deleted', false
+    ))) -> 0 ->> 'status',
+    'applied',
+    'a baby record pushes like any other entity type'
+);
+
+select is(
+    public.push_records(tests.workspace(), jsonb_build_array(jsonb_build_object(
+        'id', '55555555-5555-5555-5555-555555555555',
+        'entity_type', 'feeding_entry',
+        'ciphertext', encode('\xeeee'::bytea, 'base64'),
+        'base_version', 0,
+        'client_mutation_id', gen_random_uuid()::text,
+        'deleted', false
+    ))) -> 0 ->> 'status',
+    'applied',
+    'a feeding entry pushes like any other entity type'
 );
 
 select * from finish();
