@@ -45,6 +45,9 @@
     <string name="home_birth_date">נולד/ה ב-%1$s</string>
     <string name="home_birth_date_and_time">נולד/ה ב-%1$s בשעה %2$s</string>
     <string name="home_birth_weight">%1$d גרם</string>
+    <string name="home_next_feed_label">עד ההאכלה הבאה</string>
+    <string name="home_feed_overdue_label">האכלה באיחור של</string>
+    <string name="home_no_feeds_yet">עדיין לא נרשמה האכלה — אפשר להתחיל בלשונית ההאכלה.</string>
 
     <string-array name="home_book_of_love_tips">
         <item>תגידו תודה על משהו קטן היום — מהדברים שקל להפסיק לשים לב אליהם.</item>

@@ -1,6 +1,7 @@
 package com.oryareach.feature.home
 
 import androidx.compose.runtime.Immutable
+import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
 import com.oryareach.core.model.Baby
 import kotlinx.datetime.LocalDate
@@ -17,6 +18,8 @@ data class HomeUiState(
     val children: List<Baby> = emptyList(),
     /** The child everything currently points at. Null only before the one-time seed runs. */
     val activeBaby: Baby? = null,
+    /** Baby mode only: how long until this child's next feed. Null until a first feed exists. */
+    val feedCountdown: FeedCountdown? = null,
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,

@@ -65,6 +65,7 @@ dependencies {
     implementation(project(":feature:pairing"))
     implementation(project(":feature:tasks"))
     implementation(project(":feature:cycle"))
+    implementation(project(":feature:feeding"))
     implementation(project(":feature:update"))
     implementation(project(":feature:shopping"))
     implementation(project(":feature:home"))

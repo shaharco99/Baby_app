@@ -70,6 +70,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.domain.home.dailyMessageIndex
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
 import com.oryareach.core.model.Baby
@@ -93,6 +95,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onNavigateToShopping: () -> Unit = {},
     onNavigateToTasks: () -> Unit = {},
+    onNavigateToFeeding: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -126,6 +129,8 @@ fun HomeScreen(
 
                 if (uiState.isBabyMode) {
                     BirthStatsCard(baby = requireNotNull(uiState.activeBaby), actions = actions)
+
+                    FeedCountdownCard(countdown = uiState.feedCountdown, onClick = onNavigateToFeeding)
 
                     BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
 
@@ -557,6 +562,44 @@ private fun ChildSwitcher(uiState: HomeUiState, actions: HomeActions) {
                 selected = child.id == uiState.activeBaby?.id,
                 onClick = { actions.onSelectChild(child.id) },
                 label = { Text(child.name ?: stringResource(R.string.home_child_unnamed)) },
+            )
+        }
+    }
+}
+
+/** Baby mode's headline number; tapping it opens the feeding tab, where a feed can be logged. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeedCountdownCard(countdown: FeedCountdown?, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (countdown == null) {
+                Text(
+                    text = stringResource(R.string.home_no_feeds_yet),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                return@Column
+            }
+            Text(
+                text = stringResource(
+                    if (countdown.isOverdue) R.string.home_feed_overdue_label else R.string.home_next_feed_label,
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = formatCountdown(countdown.remainingMillis),
+                style = MaterialTheme.typography.displaySmall,
+                color = if (countdown.isOverdue) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             )
         }
     }

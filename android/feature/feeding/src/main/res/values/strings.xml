@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feeding_title">Feeding</string>
+    <string name="feeding_log_feed">Log a feed</string>
+    <string name="feeding_save">Save</string>
+    <string name="feeding_delete">Delete</string>
+    <string name="feeding_next_feed_label">Until the next feed</string>
+    <string name="feeding_overdue_label">Overdue by</string>
+    <string name="feeding_due_at">Due at %1$s</string>
+    <string name="feeding_no_feeds_yet">No feeds logged yet — the countdown starts with the first one.</string>
+    <string name="feeding_no_baby_title">No baby yet</string>
+    <string name="feeding_no_baby_body">Add the birth details on the home page, and the feeding log starts here.</string>
+    <string name="feeding_empty_history">Nothing logged in the last two weeks.</string>
+    <string name="feeding_day_header_with_total">%1$s · %2$d ml</string>
+    <string name="feeding_amount_ml">%1$d ml</string>
+    <string name="feeding_amount_field">Amount (ml, optional)</string>
+    <string name="feeding_note_field">Note</string>
+    <string name="feeding_urine">Urine</string>
+    <string name="feeding_stool">Stool</string>
+    <string name="feeding_urine_short">urine</string>
+    <string name="feeding_stool_short">stool</string>
+    <string name="feeding_type_breast_milk">Breast</string>
+    <string name="feeding_type_formula">Formula</string>
+    <string name="feeding_type_solid">Solid</string>
+    <string name="feeding_view_list">List</string>
+    <string name="feeding_view_table">Table</string>
+    <string name="feeding_row_time">Time</string>
+    <string name="feeding_row_type">Type</string>
+    <string name="feeding_row_amount">Amount</string>
+    <string name="feeding_row_urine">Urine</string>
+    <string name="feeding_row_stool">Stool</string>
+</resources>

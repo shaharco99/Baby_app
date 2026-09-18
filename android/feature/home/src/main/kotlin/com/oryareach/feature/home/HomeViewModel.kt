@@ -5,22 +5,31 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
+import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.importer.parseWebSnapshot
 import com.oryareach.core.domain.importer.toImportedSnapshot
+import com.oryareach.core.domain.feeding.nextFeedCountdown
 import com.oryareach.core.domain.pregnancy.dueDateFromLastPeriod
 import com.oryareach.core.domain.pregnancy.getPregnancyProgress
 import com.oryareach.core.domain.pregnancy.lastPeriodFromDueDate
 import com.oryareach.core.domain.shopping.calculateBudget
 import com.oryareach.core.network.auth.AuthRepository
+import com.oryareach.core.model.AppSettings
 import com.oryareach.core.sync.SyncEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -62,9 +71,11 @@ interface HomeActions {
  * The workspace id is read once, same as every other tab's ViewModel: routing already
  * guarantees a paired, unlocked device by the time this screen is reachable.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val settingsRepository: AppSettingsRepository,
     private val babyRepository: BabyRepository,
+    private val feedingRepository: FeedingEntryRepository,
     private val taskRepository: TaskRepository,
     private val shoppingRepository: ShoppingItemRepository,
     private val importantDateRepository: ImportantDateRepository,
@@ -72,6 +83,8 @@ class HomeViewModel(
     private val syncEngine: SyncEngine,
     private val workspaceId: () -> String?,
     private val today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
+    private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    private val ticker: () -> Flow<Unit> = ::secondTicker,
     private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
 ) : ViewModel(), HomeActions {
 
@@ -119,9 +132,31 @@ class HomeViewModel(
                             editingBirthTime = current.editingBirthTime,
                             editingBirthWeightGrams = current.editingBirthWeightGrams,
                             editingBirthPlace = current.editingBirthPlace,
+                            feedCountdown = current.feedCountdown,
                         )
                     }
                 }
+            }
+
+            // Baby mode's countdown. Deliberately reads the feeding repository directly
+            // rather than reaching for :feature:feeding — feature modules never depend on
+            // each other, and the shared seam for this is :core:domain's arithmetic.
+            viewModelScope.launch {
+                babyRepository.observeActive(id)
+                    .flatMapLatest { baby ->
+                        if (baby == null) flowOf(null) else feedingRepository.observeLatest(id, baby.id)
+                    }
+                    .let { latestFeed ->
+                        combine(latestFeed, settingsRepository.observe(id), ticker()) { feed, settings, _ ->
+                            nextFeedCountdown(
+                                lastFedAtEpochMillis = feed?.fedAtEpochMillis,
+                                intervalMinutes = settings?.feedIntervalMinutes
+                                    ?: AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
+                                nowEpochMillis = now(),
+                            )
+                        }
+                    }
+                    .collect { countdown -> set { it.copy(feedCountdown = countdown) } }
             }
 
             // An install that predates per-child records has its pregnancy on `app_settings`
@@ -381,5 +416,13 @@ class HomeViewModel(
     private companion object {
         const val PARTNER_RECENTLY_ACTIVE_WINDOW_MS = 5 * 60 * 1000L
         const val MAX_WEIGHT_DIGITS = 5
+    }
+}
+
+/** Drives the feed countdown text. Cancelled with the collecting scope, so it stops with the screen. */
+private fun secondTicker(): Flow<Unit> = flow {
+    while (true) {
+        emit(Unit)
+        delay(1_000)
     }
 }

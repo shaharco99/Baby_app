@@ -45,6 +45,9 @@
     <string name="home_birth_date">Born on %1$s</string>
     <string name="home_birth_date_and_time">Born on %1$s at %2$s</string>
     <string name="home_birth_weight">%1$d grams</string>
+    <string name="home_next_feed_label">Until the next feed</string>
+    <string name="home_feed_overdue_label">Feed overdue by</string>
+    <string name="home_no_feeds_yet">No feeds logged yet — start the countdown on the feeding tab.</string>
 
     <string-array name="home_book_of_love_tips">
         <item>Say thank you for something small today — the kind of thing that\'s easy to stop noticing.</item>

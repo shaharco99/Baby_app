@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feeding_title">האכלה</string>
+    <string name="feeding_log_feed">רישום האכלה</string>
+    <string name="feeding_save">שמירה</string>
+    <string name="feeding_delete">מחיקה</string>
+    <string name="feeding_next_feed_label">עד ההאכלה הבאה</string>
+    <string name="feeding_overdue_label">באיחור של</string>
+    <string name="feeding_due_at">מועד: %1$s</string>
+    <string name="feeding_no_feeds_yet">עדיין לא נרשמה האכלה — הספירה מתחילה עם הראשונה.</string>
+    <string name="feeding_no_baby_title">עוד אין תינוק/ת</string>
+    <string name="feeding_no_baby_body">אפשר להוסיף את פרטי הלידה בדף הבית, ויומן ההאכלות יתחיל כאן.</string>
+    <string name="feeding_empty_history">לא נרשם דבר בשבועיים האחרונים.</string>
+    <string name="feeding_day_header_with_total">%1$s · %2$d מ״ל</string>
+    <string name="feeding_amount_ml">%1$d מ״ל</string>
+    <string name="feeding_amount_field">כמות (מ״ל, לא חובה)</string>
+    <string name="feeding_note_field">הערה</string>
+    <string name="feeding_urine">שתן</string>
+    <string name="feeding_stool">צואה</string>
+    <string name="feeding_urine_short">שתן</string>
+    <string name="feeding_stool_short">צואה</string>
+    <string name="feeding_type_breast_milk">הנקה</string>
+    <string name="feeding_type_formula">בקבוק</string>
+    <string name="feeding_type_solid">מוצק</string>
+    <string name="feeding_view_list">רשימה</string>
+    <string name="feeding_view_table">טבלה</string>
+    <string name="feeding_row_time">שעה</string>
+    <string name="feeding_row_type">סוג האכלה</string>
+    <string name="feeding_row_amount">כמות</string>
+    <string name="feeding_row_urine">שתן</string>
+    <string name="feeding_row_stool">צואה</string>
+</resources>

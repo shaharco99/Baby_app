@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.LocalDrink
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -76,6 +78,8 @@ import com.oryareach.feature.auth.ResetPasswordEffect
 import com.oryareach.feature.auth.ResetPasswordScreen
 import com.oryareach.feature.auth.ResetPasswordViewModel
 import com.oryareach.feature.cycle.CycleScreen
+import com.oryareach.feature.feeding.FeedingScreen
+import com.oryareach.feature.feeding.FeedingViewModel
 import com.oryareach.feature.cycle.CycleViewModel
 import com.oryareach.feature.pairing.PairingEffect
 import com.oryareach.feature.pairing.PairingScreen
@@ -183,7 +187,7 @@ private fun UpdateHost(viewModel: UpdateViewModel = koinViewModel()) {
     }
 }
 
-private enum class HomeTab { Home, Tasks, Shopping, Folders, Cycle, Calendar, Search, Settings }
+private enum class HomeTab { Home, Tasks, Shopping, Folders, Feeding, Cycle, Calendar, Search, Settings }
 
 /**
  * A plain tab switch, not `navigation-compose`: two peer screens with no back-stack semantics
@@ -283,6 +287,13 @@ private fun HomeRoute() {
                         onClick = { navigateTo(HomeTab.Folders); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
+                        label = stringResource(com.oryareach.feature.feeding.R.string.feeding_title),
+                        selectedIcon = Icons.Filled.LocalDrink,
+                        unselectedIcon = Icons.Outlined.LocalDrink,
+                        selected = tab == HomeTab.Feeding,
+                        onClick = { navigateTo(HomeTab.Feeding); drawerScope.launch { drawerState.close() } },
+                    ),
+                    MoonNavItem(
                         label = stringResource(com.oryareach.feature.cycle.R.string.cycle_title),
                         selectedIcon = Icons.Filled.WaterDrop,
                         unselectedIcon = Icons.Outlined.WaterDrop,
@@ -328,6 +339,7 @@ private fun HomeRoute() {
                 modifier = androidx.compose.ui.Modifier.padding(padding),
                 onNavigateToShopping = { navigateTo(HomeTab.Shopping) },
                 onNavigateToTasks = { navigateTo(HomeTab.Tasks) },
+                onNavigateToFeeding = { navigateTo(HomeTab.Feeding) },
             )
             HomeTab.Tasks -> TasksRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
@@ -340,6 +352,7 @@ private fun HomeRoute() {
                 onHighlightConsumed = { highlightId = null },
             )
             HomeTab.Folders -> FoldersRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
+            HomeTab.Feeding -> FeedingRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
             HomeTab.Cycle -> CycleRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
             HomeTab.Calendar -> CalendarRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
@@ -387,6 +400,7 @@ private fun HomeTabRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
     onNavigateToShopping: () -> Unit = {},
     onNavigateToTasks: () -> Unit = {},
+    onNavigateToFeeding: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -396,6 +410,7 @@ private fun HomeTabRoute(
         modifier = modifier,
         onNavigateToShopping = onNavigateToShopping,
         onNavigateToTasks = onNavigateToTasks,
+        onNavigateToFeeding = onNavigateToFeeding,
     )
 }
 
@@ -423,6 +438,15 @@ private fun FoldersRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     FoldersScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+}
+
+@Composable
+private fun FeedingRoute(
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    viewModel: FeedingViewModel = koinViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    FeedingScreen(uiState = uiState, actions = viewModel, modifier = modifier)
 }
 
 @Composable
@@ -492,9 +516,9 @@ private fun com.oryareach.core.model.EntityType.toHomeTab(): HomeTab = when (thi
     com.oryareach.core.model.EntityType.FOLDER, com.oryareach.core.model.EntityType.DOCUMENT -> HomeTab.Folders
     com.oryareach.core.model.EntityType.CYCLE, com.oryareach.core.model.EntityType.CYCLE_ENTRY -> HomeTab.Cycle
     com.oryareach.core.model.EntityType.SETTINGS -> HomeTab.Settings
-    // Until the Feeding tab lands, a matched feed or child drops the user on Home, which is
-    // where the next-feed timer and the child switcher live.
-    com.oryareach.core.model.EntityType.BABY, com.oryareach.core.model.EntityType.FEEDING_ENTRY -> HomeTab.Home
+    com.oryareach.core.model.EntityType.FEEDING_ENTRY -> HomeTab.Feeding
+    // A child itself has no screen of its own; the switcher that picks one lives on Home.
+    com.oryareach.core.model.EntityType.BABY -> HomeTab.Home
 }
 
 @Composable

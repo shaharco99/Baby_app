@@ -47,6 +47,7 @@ import com.oryareach.feature.auth.ResetPasswordViewModel
 import com.oryareach.feature.pairing.PairingViewModel
 import com.oryareach.feature.tasks.TasksViewModel
 import com.oryareach.feature.cycle.CycleViewModel
+import com.oryareach.feature.feeding.FeedingViewModel
 import com.oryareach.feature.update.UpdateViewModel
 import com.oryareach.feature.shopping.ShoppingViewModel
 import com.oryareach.feature.home.HomeViewModel
@@ -179,6 +180,16 @@ val appModule = module {
         )
     }
     viewModel {
+        FeedingViewModel(
+            repository = get(),
+            babyRepository = get(),
+            settingsRepository = get(),
+            auth = get(),
+            syncEngine = get(),
+            workspaceId = { get<SessionState>().workspaceId },
+        )
+    }
+    viewModel {
         ShoppingViewModel(
             repository = get(),
             settingsRepository = get(),
@@ -192,6 +203,7 @@ val appModule = module {
         HomeViewModel(
             settingsRepository = get(),
             babyRepository = get(),
+            feedingRepository = get(),
             taskRepository = get(),
             shoppingRepository = get(),
             importantDateRepository = get(),
