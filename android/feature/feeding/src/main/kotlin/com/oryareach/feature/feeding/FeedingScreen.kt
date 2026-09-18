@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -360,7 +361,10 @@ private fun FeedingTable(days: List<FeedingDay>) {
 /** The column titles, once at the top — every feed below reads against these. */
 @Composable
 private fun TableHeaderRow() {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    // IntrinsicSize.Min is load-bearing: `VerticalDivider` fills max height, which in a Row
+    // resolves against the *incoming* constraint rather than the row's content. Without it the
+    // header stretched to the whole remaining column and left the rows below it no height at all.
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         TableRowLabels.forEachIndexed { index, label ->
             if (index > 0) VerticalDivider()
             TableCell(
@@ -402,7 +406,7 @@ private fun FeedCellsRow(feed: FeedingEntry) {
         if (feed.hadStool) MARK else "",
     )
 
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         cells.forEachIndexed { index, text ->
             if (index > 0) VerticalDivider()
             TableCell(text = text, modifier = Modifier.weight(ColumnWeights[index]))
