@@ -8,6 +8,7 @@ import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.ReminderAlarms
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
+import com.oryareach.app.sync.ForegroundSyncController
 import com.oryareach.app.sync.SyncWorker
 import com.oryareach.core.network.di.networkModule
 import org.koin.android.ext.koin.androidContext
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 class TakesTwoApplication : Application(), KoinComponent {
 
     private val autoLockController: AutoLockController by inject()
+    private val foregroundSync: ForegroundSyncController by inject()
     private val feedingReminders: FeedingReminderRefresher by inject()
     private val pumpReminders: PumpReminderRefresher by inject()
     private val session: SessionState by inject()
@@ -46,6 +48,7 @@ class TakesTwoApplication : Application(), KoinComponent {
         // rotation or multi-window change stops/restarts an Activity without the app actually
         // leaving the foreground.
         ProcessLifecycleOwner.get().lifecycle.addObserver(autoLockController)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSync)
 
         ReminderAlarms.dropLegacyWork(this)
 

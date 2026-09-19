@@ -53,6 +53,7 @@ class SyncWorker(
         private const val MAX_ATTEMPTS = 5
         private const val ONE_SHOT = "sync-now"
         private const val PERIODIC = "sync-periodic"
+        private const val POLL = "sync-foreground-poll"
 
         private val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -75,6 +76,19 @@ class SyncWorker(
                 // each run drains the outbox until empty, the extra runs a burst produces
                 // are cheap no-ops rather than duplicate work.
                 .enqueueUniqueWork(ONE_SHOT, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        }
+
+        /**
+         * The foreground poll. KEEP, unlike [syncNow]: a poll only needs *a* run to be pending,
+         * and appending one every tick while offline would stack a long queue for reconnect.
+         */
+        fun pollNow(context: Context) {
+            val request = OneTimeWorkRequestBuilder<SyncWorker>()
+                .setConstraints(constraints)
+                .build()
+
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(POLL, ExistingWorkPolicy.KEEP, request)
         }
 
         /** Safety net for changes made on the other device while this one was idle. */

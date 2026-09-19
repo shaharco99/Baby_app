@@ -84,6 +84,12 @@ val appModule = module {
     single<com.oryareach.core.security.SessionController> { get<SessionState>() }
     single { SettingsPreferences(androidContext()) }
     single { AutoLockController(session = get(), preferences = get()) }
+    single {
+        com.oryareach.app.sync.ForegroundSyncController(
+            session = get(),
+            poll = { com.oryareach.app.sync.SyncWorker.pollNow(androidContext()) },
+        )
+    }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }
     single<FeedingReminderScheduler> { AlarmFeedingReminderScheduler(androidContext()) }
     single<PumpReminderScheduler> { AlarmPumpReminderScheduler(androidContext()) }
