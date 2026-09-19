@@ -1,8 +1,8 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.6.3`; everything after it (startup, reminders, pairing,
-calendar) is **not released yet**, and migration 0010 is not applied — see `git log` for full history; this file only
+Branch `feature/android-app`. Latest tag `v1.7.0` (released 2026-09-19, CI green). Supabase migrations 0001-0010 are all
+applied — see `git log` for full history; this file only
 tracks what's still open plus enough context to act on it.
 
 ## 2026-09-19 — Xiaomi pass, cold start, background reminders
@@ -96,13 +96,12 @@ both show "Connected as [account]" in Settings, and the Calendar screen renders 
 with the "Google Calendar" legend entry active on both — no error state. Google account linking
 is also confirmed live-connected on both devices already.
 
-## Done in code, migration NOT applied — partner identity on the pairing screen
+## Done 2026-09-19 — partner identity on the pairing screen
 
 The waiting-for-approval screen shows "Waiting on: <partner email>" from
-`workspace_partner_emails(ws)` (`supabase/migrations/0010_workspace_partner_emails.sql`, pgTAP in
-`supabase/tests/004_partner_emails.sql`). **Apply 0010 to the Supabase project before tagging.**
-Until then the app treats the missing function as "no names" and the screen reads as it did.
-Not yet seen on a device. It only shows on a phone that has joined but not been approved.
+`workspace_partner_emails(ws)` (migration 0010, **applied**, pgTAP in
+`supabase/tests/004_partner_emails.sql`, green in CI). Not yet seen on a device. It only shows on
+a phone that has joined but not yet been approved.
 
 ## Fixed 2026-09-19 — `device_keys.workspace_id` stale on reuse
 
@@ -113,13 +112,13 @@ active workspace with wrapped keys. The old workspace still has 6 orphaned rows,
 harmless and can be left. Not exercised on a device, since that needs a leave-and-rejoin.
 
 ## Open — small items
-- Tag a release for `perf(startup)` + `fix(reminders)`. Ask first, and apply any pending Supabase
-  migrations before tagging (nothing applies them automatically).
-- Calendar legend chip wrap: fixed in code (`FlowRow`), not yet seen on a device.
-- Startup has no Macrobenchmark `StartupTimingMetric` module, on purpose for now. Macrobenchmark
-  runs a separately built `benchmark` variant, and installing one on either real phone breaks
-  the release-only rule. It needs a spare device or an emulator. The numbers above are
-  `am start -W` + screen recordings.
+- Doze check (deep sleep): parked by the user. Steps are in the 2026-09-19 chat. Log a feed, then
+  leave the phone unplugged, locked and still, and the reminder should ring on time.
+- Startup has no Macrobenchmark `StartupTimingMetric` module, on purpose for now. It needs a
+  spare device or an emulator, since a benchmark build would break the release-only rule on the
+  real phones.
+- Supabase advisor, older items not addressed: leaked-password protection is off and only a few
+  MFA options are enabled. Both are dashboard settings.
 
 ## Done, don't redo
 
