@@ -1,9 +1,33 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.7.0` (released 2026-09-19, CI green). Supabase migrations 0001-0010 are all
-applied — see `git log` for full history; this file only
-tracks what's still open plus enough context to act on it.
+Branch `feature/android-app`, fully pushed. Latest release **v1.7.0** (2026-09-19, CI green).
+Both real phones run v1.7.0. Supabase migrations 0001-0010 are all applied. See `git log` for the
+full history. This file only tracks what's still open, plus enough context to act on it.
+
+## What's left (as of 2026-09-19 session end)
+
+**Tests not done:**
+1. **Doze (deep sleep) reminder check.** Parked by the user. Do the Pixel first (stock Android).
+   Do it by hand, with no computer: log a feed, then leave the phone unplugged, locked and still
+   for the 3h until the reminder, which should ring on time. The forced adb way does not work on
+   the Xiaomi: `dumpsys deviceidle force-idle deep` and `step deep` both stop at INACTIVE
+   (`mMotionActive=true`, `mNotMoving=false`, 143 pending alarms). The cause wasn't pinned down.
+   Suspects: Android's "no deep idle within `min_time_to_alarm` (30 min) of a wake-from-idle
+   alarm" rule, or MIUI's own power manager. Don't keep retrying it on MIUI.
+2. **Partner email on the pairing screen, on a real phone.** It only appears on a phone that has
+   joined a workspace but isn't approved yet. The function and pgTAP test are green.
+3. **`device_keys` stale-on-reuse fix, on a real phone.** Needs a leave-and-rejoin, which is
+   disruptive. Low priority.
+
+**Small open items:**
+- No Macrobenchmark startup module. It needs a spare device or an emulator; a benchmark build
+  breaks the release-only rule on the real phones.
+- Supabase security advisor: leaked-password protection is off and few MFA options are enabled.
+  Both are dashboard toggles. The "SECURITY DEFINER callable by authenticated" warnings are
+  intended: every such RPC checks membership itself.
+- Kept as Android does them, by the user's choice (don't "fix"): the Material date picker's month
+  arrows in Hebrew (next is on the left) and the top-bar back arrow (points right in Hebrew).
 
 ## 2026-09-19 — Xiaomi pass, cold start, background reminders
 
@@ -58,8 +82,8 @@ refused `force-idle` while on USB.
 
 ## Known limits (by design, not bugs)
 - A partner's feed can't move this phone's alarm while this app is closed: the workspace key is
-  only in memory after unlock, and a push would need a server-side trigger. It catches up on the
-  next open or sync.
+  only in memory after unlock, and a push would need a server-side trigger. While the app is open
+  it arrives within ~30s (foreground poll). Otherwise it arrives on the next open or sync.
 - Force-stop (Settings → Force stop, or MIUI "clean" on a non-whitelisted app) drops all alarms
   until the app is next opened. Nothing an app can do about that.
 
@@ -110,15 +134,6 @@ the workspace being joined, and registers a fresh row otherwise. `devices()` is 
 given workspace. The live DB was checked the same day: both phones' current rows are in the
 active workspace with wrapped keys. The old workspace still has 6 orphaned rows, which are
 harmless and can be left. Not exercised on a device, since that needs a leave-and-rejoin.
-
-## Open — small items
-- Doze check (deep sleep): parked by the user. Steps are in the 2026-09-19 chat. Log a feed, then
-  leave the phone unplugged, locked and still, and the reminder should ring on time.
-- Startup has no Macrobenchmark `StartupTimingMetric` module, on purpose for now. It needs a
-  spare device or an emulator, since a benchmark build would break the release-only rule on the
-  real phones.
-- Supabase advisor, older items not addressed: leaked-password protection is off and only a few
-  MFA options are enabled. Both are dashboard settings.
 
 ## Done, don't redo
 
