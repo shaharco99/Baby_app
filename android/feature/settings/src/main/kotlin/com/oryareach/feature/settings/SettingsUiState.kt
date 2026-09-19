@@ -37,6 +37,7 @@ data class SettingsUiState(
     val children: List<Baby> = emptyList(),
     val activeBabyId: String? = null,
     val feedIntervalMinutes: Int = AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
+    val pumpIntervalMinutes: Int = AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES,
     /** The child whose birth details are open for editing, if any. */
     val editingChild: Baby? = null,
     val addChildVisible: Boolean = false,
@@ -45,6 +46,9 @@ data class SettingsUiState(
 
     /** Two hours to four, the range a newborn's feeds actually fall in. */
     val feedIntervalOptionMinutes: List<Int> get() = listOf(120, 150, 180, 210, 240)
+
+    /** Starts lower than the feed range: establishing supply means pumping more often. */
+    val pumpIntervalOptionMinutes: List<Int> get() = listOf(90, 120, 150, 180, 240)
 }
 
 sealed interface SettingsEffect {

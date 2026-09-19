@@ -18,6 +18,7 @@ import com.oryareach.core.database.mapper.toDocument
 import com.oryareach.core.database.mapper.toCycleEntry
 import com.oryareach.core.database.mapper.toBaby
 import com.oryareach.core.database.mapper.toFeedingEntry
+import com.oryareach.core.database.mapper.toPumpSession
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.CycleEntry
@@ -27,6 +28,7 @@ import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
+import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.model.Task
@@ -62,6 +64,7 @@ class RoomSyncStore(
     private val cycleEntries get() = database.cycleEntryDao()
     private val babies get() = database.babyDao()
     private val feedingEntries get() = database.feedingEntryDao()
+    private val pumpSessions get() = database.pumpSessionDao()
     private val search = SearchIndexer(database)
     private val operations get() = database.syncOperationDao()
     private val state get() = database.syncStateDao()
@@ -96,6 +99,7 @@ class RoomSyncStore(
                 EntityType.CYCLE_ENTRY -> cycleEntries.markSynced(recordId, SyncStatus.SYNCED, version)
                 EntityType.BABY -> babies.markSynced(recordId, SyncStatus.SYNCED, version)
                 EntityType.FEEDING_ENTRY -> feedingEntries.markSynced(recordId, SyncStatus.SYNCED, version)
+                EntityType.PUMP_SESSION -> pumpSessions.markSynced(recordId, SyncStatus.SYNCED, version)
                 else -> tasks.markSynced(recordId, SyncStatus.SYNCED, version)
             }
             operations.removeByRecord(recordId)
@@ -125,6 +129,7 @@ class RoomSyncStore(
                 EntityType.CYCLE_ENTRY -> cycleEntries.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 EntityType.BABY -> babies.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 EntityType.FEEDING_ENTRY -> feedingEntries.markSynced(recordId, SyncStatus.CONFLICT, server.version)
+                EntityType.PUMP_SESSION -> pumpSessions.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 else -> tasks.markSynced(recordId, SyncStatus.CONFLICT, server.version)
             }
             // The queued operation is dropped: replaying it would just conflict again. The
@@ -234,6 +239,14 @@ class RoomSyncStore(
                         feedingEntries.upsert(feed.toEntity(workspace, record, now()))
                         reindex(EntityType.FEEDING_ENTRY, record, workspace, "", feed.note.orEmpty())
                     }
+
+                    EntityType.PUMP_SESSION -> {
+                        val session = runCatching {
+                            json.decodeFromString<PumpSession>(decoded.data)
+                        }.getOrNull() ?: continue
+                        pumpSessions.upsert(session.toEntity(workspace, record, now()))
+                        reindex(EntityType.PUMP_SESSION, record, workspace, "", session.note.orEmpty())
+                    }
                 }
             }
         }
@@ -298,6 +311,10 @@ class RoomSyncStore(
         EntityType.FEEDING_ENTRY -> feedingEntries.findById(recordId)?.let {
             Payload(json.encodeToString(it.toFeedingEntry()), it.sync.version)
         }
+
+        EntityType.PUMP_SESSION -> pumpSessions.findById(recordId)?.let {
+            Payload(json.encodeToString(it.toPumpSession()), it.sync.version)
+        }
     }
 
     /** Every syncable table is checked in turn; `TASK` is the fallback for a row not found
@@ -312,6 +329,7 @@ class RoomSyncStore(
         cycleEntries.findById(recordId) != null -> EntityType.CYCLE_ENTRY
         babies.findById(recordId) != null -> EntityType.BABY
         feedingEntries.findById(recordId) != null -> EntityType.FEEDING_ENTRY
+        pumpSessions.findById(recordId) != null -> EntityType.PUMP_SESSION
         else -> EntityType.TASK
     }
 }

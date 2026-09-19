@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pumping_title">Pumping</string>
+    <string name="pumping_start">Start pumping</string>
+    <string name="pumping_stop">Stop</string>
+    <string name="pumping_running_label">Pumping now</string>
+    <string name="pumping_log_past">Add a past session</string>
+    <string name="pumping_edit_session">Edit session</string>
+    <string name="pumping_save">Save</string>
+    <string name="pumping_discard">Discard</string>
+    <string name="pumping_delete">Delete</string>
+    <string name="pumping_edit">Edit</string>
+    <string name="pumping_pick_confirm">Choose</string>
+    <string name="pumping_pick_cancel">Cancel</string>
+    <string name="pumping_when_value">%1$s at %2$s</string>
+    <string name="pumping_when_locked">The time a session started can\'t be changed after it is saved.</string>
+    <string name="pumping_next_label">Until the next pump</string>
+    <string name="pumping_overdue_label">Overdue by</string>
+    <string name="pumping_due_at">Due at %1$s</string>
+    <string name="pumping_none_yet">Nothing pumped yet — the countdown starts with the first session.</string>
+    <string name="pumping_empty_history">Nothing logged in the last two weeks.</string>
+    <string name="pumping_day_header">%1$s · %2$d min</string>
+    <string name="pumping_day_header_with_ml">%1$s · %2$d min · %3$d ml</string>
+    <string name="pumping_minutes">%1$d min</string>
+    <string name="pumping_amount_ml">%1$d ml</string>
+    <string name="pumping_minutes_field">Minutes</string>
+    <string name="pumping_amount_field">Amount (ml, optional)</string>
+    <string name="pumping_note_field">Note</string>
+    <string name="pumping_side_left">Left</string>
+    <string name="pumping_side_right">Right</string>
+    <string name="pumping_side_both">Both</string>
+    <string name="pumping_view_list">List</string>
+    <string name="pumping_view_table">Table</string>
+    <string name="pumping_row_time">Start</string>
+    <string name="pumping_row_side">Side</string>
+    <string name="pumping_row_minutes">Minutes</string>
+    <string name="pumping_row_amount">Amount</string>
+    <string name="pumping_in_progress">in progress</string>
+</resources>

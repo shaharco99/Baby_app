@@ -13,5 +13,6 @@
     <string name="search_type_cycle">וסת</string>
     <string name="search_type_cycle_entry">רשומת מחזור</string>
     <string name="search_type_feeding_entry">רישום האכלה</string>
+    <string name="search_type_pump_session">רישום שאיבה</string>
     <string name="search_type_other">אחר</string>
 </resources>

@@ -8,6 +8,7 @@ import com.oryareach.core.database.entity.FeedingEntryEntity
 import com.oryareach.core.database.entity.FolderEntity
 import com.oryareach.core.database.entity.ImportantDateEntity
 import com.oryareach.core.database.entity.MenstrualCycleEntity
+import com.oryareach.core.database.entity.PumpSessionEntity
 import com.oryareach.core.database.entity.ShoppingItemEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.TaskEntity
@@ -19,6 +20,7 @@ import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
+import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.model.Task
@@ -72,6 +74,7 @@ fun AppSettingsEntity.toAppSettings() = AppSettings(
     partnerTwoName = partnerTwoName,
     activeBabyId = activeBabyId,
     feedIntervalMinutes = feedIntervalMinutes,
+    pumpIntervalMinutes = pumpIntervalMinutes,
 )
 
 fun BabyEntity.toBaby() = Baby(
@@ -92,6 +95,15 @@ fun FeedingEntryEntity.toFeedingEntry() = FeedingEntry(
     amountMl = amountMl,
     hadUrine = hadUrine,
     hadStool = hadStool,
+    note = note,
+)
+
+fun PumpSessionEntity.toPumpSession() = PumpSession(
+    id = id,
+    startedAtEpochMillis = startedAt,
+    endedAtEpochMillis = endedAt,
+    side = side,
+    amountMl = amountMl,
     note = note,
 )
 
@@ -177,6 +189,7 @@ fun AppSettings.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     partnerTwoName = partnerTwoName,
     activeBabyId = activeBabyId,
     feedIntervalMinutes = feedIntervalMinutes,
+    pumpIntervalMinutes = pumpIntervalMinutes,
     sync = record.toSyncMeta(workspaceId, now),
 )
 
@@ -199,6 +212,16 @@ fun FeedingEntry.toEntity(workspaceId: String, record: RemoteRecord, now: Long) 
     amountMl = amountMl,
     hadUrine = hadUrine,
     hadStool = hadStool,
+    note = note,
+    sync = record.toSyncMeta(workspaceId, now),
+)
+
+fun PumpSession.toEntity(workspaceId: String, record: RemoteRecord, now: Long) = PumpSessionEntity(
+    id = id,
+    startedAt = startedAtEpochMillis,
+    endedAt = endedAtEpochMillis,
+    side = side,
+    amountMl = amountMl,
     note = note,
     sync = record.toSyncMeta(workspaceId, now),
 )

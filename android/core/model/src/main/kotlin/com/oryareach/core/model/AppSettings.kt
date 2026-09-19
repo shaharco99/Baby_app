@@ -24,8 +24,15 @@ data class AppSettings(
     val activeBabyId: String? = null,
     /** How long after a feed the reminder fires. */
     val feedIntervalMinutes: Int = DEFAULT_FEED_INTERVAL_MINUTES,
+    /**
+     * How long after a pumping session *starts* the next reminder fires. Separate from
+     * [feedIntervalMinutes] because a pump schedule and a feed schedule rarely line up, and
+     * counted from the start because that is how pump schedules are spaced.
+     */
+    val pumpIntervalMinutes: Int = DEFAULT_PUMP_INTERVAL_MINUTES,
 ) {
     companion object {
         const val DEFAULT_FEED_INTERVAL_MINUTES = 180
+        const val DEFAULT_PUMP_INTERVAL_MINUTES = 180
     }
 }

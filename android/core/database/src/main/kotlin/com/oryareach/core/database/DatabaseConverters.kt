@@ -8,6 +8,7 @@ import com.oryareach.core.model.FlowLevel
 import com.oryareach.core.model.Mood
 import com.oryareach.core.model.PainLevel
 import com.oryareach.core.model.Priority
+import com.oryareach.core.model.PumpSide
 import com.oryareach.core.model.RecurrenceFrequency
 import com.oryareach.core.model.ShoppingAlternative
 import com.oryareach.core.model.ShoppingCategory
@@ -75,6 +76,9 @@ class DatabaseConverters {
 
     @TypeConverter fun feedTypeToString(value: FeedType): String = value.name
     @TypeConverter fun stringToFeedType(value: String): FeedType = FeedType.valueOf(value)
+
+    @TypeConverter fun pumpSideToString(value: PumpSide): String = value.name
+    @TypeConverter fun stringToPumpSide(value: String): PumpSide = PumpSide.valueOf(value)
 
     @TypeConverter fun tagsToString(value: List<String>): String = Json.encodeToString(value)
     @TypeConverter fun stringToTags(value: String): List<String> = Json.decodeFromString(value)

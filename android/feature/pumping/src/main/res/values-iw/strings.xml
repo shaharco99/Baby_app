@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pumping_title">שאיבה</string>
+    <string name="pumping_start">התחלת שאיבה</string>
+    <string name="pumping_stop">עצירה</string>
+    <string name="pumping_running_label">שואבת כרגע</string>
+    <string name="pumping_log_past">הוספת שאיבה שהיתה</string>
+    <string name="pumping_edit_session">עריכת שאיבה</string>
+    <string name="pumping_save">שמירה</string>
+    <string name="pumping_discard">ביטול השאיבה</string>
+    <string name="pumping_delete">מחיקה</string>
+    <string name="pumping_edit">עריכה</string>
+    <string name="pumping_pick_confirm">בחירה</string>
+    <string name="pumping_pick_cancel">ביטול</string>
+    <string name="pumping_when_value">%1$s בשעה %2$s</string>
+    <string name="pumping_when_locked">לא ניתן לשנות את מועד תחילת השאיבה אחרי השמירה.</string>
+    <string name="pumping_next_label">עד השאיבה הבאה</string>
+    <string name="pumping_overdue_label">באיחור של</string>
+    <string name="pumping_due_at">מועד: %1$s</string>
+    <string name="pumping_none_yet">עוד לא נרשמה שאיבה — הספירה מתחילה עם הראשונה.</string>
+    <string name="pumping_empty_history">לא נרשם דבר בשבועיים האחרונים.</string>
+    <string name="pumping_day_header">%1$s · %2$d דק׳</string>
+    <string name="pumping_day_header_with_ml">%1$s · %2$d דק׳ · %3$d מ״ל</string>
+    <string name="pumping_minutes">%1$d דק׳</string>
+    <string name="pumping_amount_ml">%1$d מ״ל</string>
+    <string name="pumping_minutes_field">דקות</string>
+    <string name="pumping_amount_field">כמות (מ״ל, לא חובה)</string>
+    <string name="pumping_note_field">הערה</string>
+    <string name="pumping_side_left">שמאל</string>
+    <string name="pumping_side_right">ימין</string>
+    <string name="pumping_side_both">שתיים</string>
+    <string name="pumping_view_list">רשימה</string>
+    <string name="pumping_view_table">טבלה</string>
+    <string name="pumping_row_time">התחלה</string>
+    <string name="pumping_row_side">צד</string>
+    <string name="pumping_row_minutes">דקות</string>
+    <string name="pumping_row_amount">כמות</string>
+    <string name="pumping_in_progress">בתהליך</string>
+</resources>

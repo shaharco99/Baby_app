@@ -13,5 +13,6 @@
     <string name="search_type_cycle">Period</string>
     <string name="search_type_cycle_entry">Cycle log</string>
     <string name="search_type_feeding_entry">Feeding log</string>
+    <string name="search_type_pump_session">Pumping log</string>
     <string name="search_type_other">Other</string>
 </resources>

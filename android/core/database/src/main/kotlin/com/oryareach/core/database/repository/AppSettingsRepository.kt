@@ -41,6 +41,8 @@ class AppSettingsRepository(
         partnerTwoName: String? = null,
         /** Null leaves the current cadence alone — only the Settings field ever changes it. */
         feedIntervalMinutes: Int? = null,
+        /** Null leaves the current pumping cadence alone, same as [feedIntervalMinutes]. */
+        pumpIntervalMinutes: Int? = null,
     ) {
         val timestamp = now()
         val existing = settings.find(workspaceId)
@@ -52,6 +54,7 @@ class AppSettingsRepository(
                 partnerOneName = partnerOneName,
                 partnerTwoName = partnerTwoName,
                 feedIntervalMinutes = feedIntervalMinutes ?: existing.feedIntervalMinutes,
+                pumpIntervalMinutes = pumpIntervalMinutes ?: existing.pumpIntervalMinutes,
                 sync = existing.sync.copy(
                     updatedAt = timestamp,
                     syncStatus = SyncStatus.PENDING_UPDATE,
@@ -66,6 +69,7 @@ class AppSettingsRepository(
                 partnerOneName = partnerOneName,
                 partnerTwoName = partnerTwoName,
                 feedIntervalMinutes = feedIntervalMinutes ?: AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
+                pumpIntervalMinutes = pumpIntervalMinutes ?: AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES,
                 sync = SyncMetaEntity(
                     workspaceId = workspaceId,
                     createdBy = userId,

@@ -7,6 +7,9 @@
     <string name="feeding_reminder_channel_name">Feeding reminders</string>
     <string name="feeding_reminder_title">Takes Two of Us</string>
     <string name="feeding_reminder_body">Time for the next feeding.</string>
+    <string name="pump_reminder_channel_name">Pumping reminders</string>
+    <string name="pump_reminder_title">Takes Two of Us</string>
+    <string name="pump_reminder_body">Time to pump again.</string>
     <string name="lock_title">App locked</string>
     <string name="lock_unlock">Unlock</string>
     <string name="lock_prompt_title">Unlock Takes Two of Us</string>

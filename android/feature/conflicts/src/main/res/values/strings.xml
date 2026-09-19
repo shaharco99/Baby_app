@@ -20,4 +20,5 @@
     <string name="conflicts_type_settings">Settings</string>
     <string name="conflicts_type_baby">Child</string>
     <string name="conflicts_type_feeding_entry">Feeding log</string>
+    <string name="conflicts_type_pump_session">Pumping log</string>
 </resources>

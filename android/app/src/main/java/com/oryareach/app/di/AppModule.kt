@@ -2,6 +2,7 @@ package com.oryareach.app.di
 
 import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.WorkManagerFeedingReminderScheduler
+import com.oryareach.app.notifications.WorkManagerPumpReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.sync.WorkManagerSyncTrigger
 import com.oryareach.core.calendar.CalendarEventSource
@@ -12,6 +13,7 @@ import com.oryareach.core.security.GoogleCalendarAuthManager
 import com.oryareach.core.security.GoogleCalendarAuthManagerImpl
 import com.oryareach.core.security.GoogleCalendarTokenStore
 import com.oryareach.core.settings.FeedingReminderScheduler
+import com.oryareach.core.settings.PumpReminderScheduler
 import com.oryareach.core.settings.ReminderScheduler
 import com.oryareach.core.settings.SettingsPreferences
 import com.oryareach.core.database.DatabaseFactory
@@ -19,11 +21,13 @@ import com.oryareach.core.database.DatabasePassphrase
 import com.oryareach.core.database.OrYareachDatabase
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
+import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.CycleEntryRepository
 import com.oryareach.core.database.repository.CycleRepository
 import com.oryareach.core.database.repository.DocumentRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
+import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.FolderRepository
 import com.oryareach.core.database.repository.ConflictRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
@@ -51,6 +55,7 @@ import com.oryareach.feature.pairing.PairingViewModel
 import com.oryareach.feature.tasks.TasksViewModel
 import com.oryareach.feature.cycle.CycleViewModel
 import com.oryareach.feature.feeding.FeedingViewModel
+import com.oryareach.feature.pumping.PumpingViewModel
 import com.oryareach.feature.update.UpdateViewModel
 import com.oryareach.feature.shopping.ShoppingViewModel
 import com.oryareach.feature.home.HomeViewModel
@@ -81,6 +86,7 @@ val appModule = module {
     single { AutoLockController(session = get(), preferences = get()) }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }
     single<FeedingReminderScheduler> { WorkManagerFeedingReminderScheduler(androidContext()) }
+    single<PumpReminderScheduler> { WorkManagerPumpReminderScheduler(androidContext()) }
 
     // Consumed by :core:network, which must not depend on the session type.
     single(workspaceIdQualifier) { { get<SessionState>().workspaceId } }
@@ -140,6 +146,7 @@ val appModule = module {
     single { CycleEntryRepository(database = get(), syncTrigger = get()) }
     single { BabyRepository(database = get(), syncTrigger = get()) }
     single { FeedingEntryRepository(database = get(), syncTrigger = get(), reminders = get()) }
+    single { PumpSessionRepository(database = get(), syncTrigger = get(), reminders = get()) }
     single { ShoppingItemRepository(database = get(), syncTrigger = get()) }
     single { ImportantDateRepository(database = get(), syncTrigger = get()) }
     single { AppSettingsRepository(database = get(), syncTrigger = get()) }
@@ -150,6 +157,14 @@ val appModule = module {
         FeedingReminderRefresher(
             babies = get(),
             feeds = get(),
+            settings = get(),
+            scheduler = get(),
+            workspaceId = { get<SessionState>().workspaceId },
+        )
+    }
+    single {
+        PumpReminderRefresher(
+            sessions = get(),
             settings = get(),
             scheduler = get(),
             workspaceId = { get<SessionState>().workspaceId },
@@ -203,6 +218,15 @@ val appModule = module {
         )
     }
     viewModel {
+        PumpingViewModel(
+            repository = get(),
+            settingsRepository = get(),
+            auth = get(),
+            syncEngine = get(),
+            workspaceId = { get<SessionState>().workspaceId },
+        )
+    }
+    viewModel {
         ShoppingViewModel(
             repository = get(),
             settingsRepository = get(),
@@ -247,6 +271,7 @@ val appModule = module {
             babies = get(),
             appSettings = get(),
             feedingReminders = get(),
+            pumpReminders = get(),
             workspaceId = { get<SessionState>().workspaceId },
         )
     }

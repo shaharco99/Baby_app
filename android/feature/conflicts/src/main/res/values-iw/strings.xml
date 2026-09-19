@@ -20,4 +20,5 @@
     <string name="conflicts_type_settings">הגדרות</string>
     <string name="conflicts_type_baby">ילד/ה</string>
     <string name="conflicts_type_feeding_entry">רישום האכלה</string>
+    <string name="conflicts_type_pump_session">רישום שאיבה</string>
 </resources>

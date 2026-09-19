@@ -62,5 +62,6 @@
     <string name="settings_child_make_active">מעבר לילד/ה הזה/זו עכשיו</string>
     <string name="settings_child_save">שמירה</string>
     <string name="settings_feed_interval">תזכורת האכלה כל</string>
-    <string name="settings_feed_interval_value">%1$d דק׳</string>
+    <string name="settings_interval_value">%1$d דק׳</string>
+    <string name="settings_pump_interval">תזכורת שאיבה כל</string>
 </resources>

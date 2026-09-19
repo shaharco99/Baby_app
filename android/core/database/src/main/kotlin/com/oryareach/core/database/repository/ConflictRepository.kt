@@ -15,6 +15,7 @@ import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
+import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
@@ -160,6 +161,11 @@ class ConflictRepository(
                 database.feedingEntryDao().upsert(feed.toEntity(workspace, record, now()))
                 search.index(entityType, recordId(record), workspace, "", feed.note.orEmpty())
             }
+            EntityType.PUMP_SESSION -> {
+                val session = runCatching { json.decodeFromString<PumpSession>(payload) }.getOrNull() ?: return
+                database.pumpSessionDao().upsert(session.toEntity(workspace, record, now()))
+                search.index(entityType, recordId(record), workspace, "", session.note.orEmpty())
+            }
         }
     }
 
@@ -197,6 +203,9 @@ class ConflictRepository(
             EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let {
                 database.feedingEntryDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
             }
+            EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let {
+                database.pumpSessionDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
+            }
         }
     }
 
@@ -211,6 +220,7 @@ class ConflictRepository(
         EntityType.CYCLE_ENTRY -> database.cycleEntryDao().findById(recordId)?.sync?.workspaceId
         EntityType.BABY -> database.babyDao().findById(recordId)?.sync?.workspaceId
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.sync?.workspaceId
+        EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.sync?.workspaceId
     }
 
     private suspend fun localTitleAndUpdatedAt(entityType: EntityType, recordId: String): Pair<String, Long>? = when (entityType) {
@@ -225,6 +235,9 @@ class ConflictRepository(
         EntityType.BABY -> database.babyDao().findById(recordId)?.let { (it.name ?: it.id) to it.sync.updatedAt }
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let {
             (it.note ?: it.fedAt.toString()) to it.sync.updatedAt
+        }
+        EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let {
+            (it.note ?: it.startedAt.toString()) to it.sync.updatedAt
         }
     }
 
@@ -245,6 +258,9 @@ class ConflictRepository(
                 EntityType.BABY -> json.decodeFromString<Baby>(payload).let { it.name ?: it.id }
                 EntityType.FEEDING_ENTRY -> json.decodeFromString<FeedingEntry>(payload).let {
                     it.note ?: it.fedAtEpochMillis.toString()
+                }
+                EntityType.PUMP_SESSION -> json.decodeFromString<PumpSession>(payload).let {
+                    it.note ?: it.startedAtEpochMillis.toString()
                 }
             }
         }.getOrNull()

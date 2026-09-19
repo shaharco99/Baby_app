@@ -5,6 +5,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.oryareach.app.di.appModule
 import com.oryareach.app.lock.AutoLockController
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
+import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.app.sync.SyncWorker
 import com.oryareach.core.network.di.networkModule
 import org.koin.android.ext.koin.androidContext
@@ -22,6 +23,7 @@ class TakesTwoApplication : Application(), KoinComponent {
 
     private val autoLockController: AutoLockController by inject()
     private val feedingReminders: FeedingReminderRefresher by inject()
+    private val pumpReminders: PumpReminderRefresher by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -43,6 +45,9 @@ class TakesTwoApplication : Application(), KoinComponent {
 
         // Off the main thread and not awaited: nothing on screen depends on it, and a device
         // with no workspace open yet is a no-op that the next launch redoes.
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { feedingReminders.refresh() }
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            feedingReminders.refresh()
+            pumpReminders.refresh()
+        }
     }
 }

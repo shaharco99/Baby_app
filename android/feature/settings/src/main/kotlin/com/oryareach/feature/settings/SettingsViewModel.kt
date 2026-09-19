@@ -9,6 +9,7 @@ import com.oryareach.core.calendar.GoogleCalendarSyncRepository
 import com.oryareach.core.common.AppResult
 import com.oryareach.core.crypto.RecoveryPhrase
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
+import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.model.Baby
@@ -68,6 +69,7 @@ interface SettingsActions {
         birthPlace: String?,
     )
     fun onFeedIntervalChange(minutes: Int)
+    fun onPumpIntervalChange(minutes: Int)
 }
 
 class SettingsViewModel(
@@ -82,6 +84,7 @@ class SettingsViewModel(
     private val babies: BabyRepository,
     private val appSettings: AppSettingsRepository,
     private val feedingReminders: FeedingReminderRefresher,
+    private val pumpReminders: PumpReminderRefresher,
     private val workspaceId: () -> String?,
 ) : ViewModel(), SettingsActions {
 
@@ -133,6 +136,8 @@ class SettingsViewModel(
                             activeBabyId = settings?.activeBabyId,
                             feedIntervalMinutes = settings?.feedIntervalMinutes
                                 ?: it.feedIntervalMinutes,
+                            pumpIntervalMinutes = settings?.pumpIntervalMinutes
+                                ?: it.pumpIntervalMinutes,
                         )
                     }
                 }
@@ -402,6 +407,24 @@ class SettingsViewModel(
                 feedIntervalMinutes = minutes,
             )
             feedingReminders.refresh()
+        }
+    }
+
+    /** Same as [onFeedIntervalChange], against the pumping schedule's own pending reminder. */
+    override fun onPumpIntervalChange(minutes: Int) {
+        val workspace = workspaceId() ?: return
+        viewModelScope.launch {
+            val current = appSettings.observe(workspace).first() ?: return@launch
+            appSettings.save(
+                workspaceId = workspace,
+                userId = auth.currentUserId().orEmpty(),
+                dueDate = current.dueDate,
+                babyName = current.babyName,
+                partnerOneName = current.partnerOneName,
+                partnerTwoName = current.partnerTwoName,
+                pumpIntervalMinutes = minutes,
+            )
+            pumpReminders.refresh()
         }
     }
 

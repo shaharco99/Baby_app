@@ -27,5 +27,7 @@ data class AppSettingsEntity(
     @ColumnInfo(name = "active_baby_id") val activeBabyId: String? = null,
     @ColumnInfo(name = "feed_interval_minutes") val feedIntervalMinutes: Int =
         AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
+    @ColumnInfo(name = "pump_interval_minutes") val pumpIntervalMinutes: Int =
+        AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES,
     @Embedded val sync: SyncMetaEntity,
 )

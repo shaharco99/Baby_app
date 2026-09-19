@@ -2,6 +2,7 @@ package com.oryareach.feature.settings
 
 import android.content.ClipData
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -219,7 +220,19 @@ private fun ChildrenSection(uiState: SettingsUiState, actions: SettingsActions) 
             Text(stringResource(R.string.settings_add_child))
         }
 
-        FeedIntervalRow(uiState = uiState, actions = actions)
+        IntervalRow(
+            labelRes = R.string.settings_feed_interval,
+            minutes = uiState.feedIntervalMinutes,
+            options = uiState.feedIntervalOptionMinutes,
+            onChange = actions::onFeedIntervalChange,
+        )
+
+        IntervalRow(
+            labelRes = R.string.settings_pump_interval,
+            minutes = uiState.pumpIntervalMinutes,
+            options = uiState.pumpIntervalOptionMinutes,
+            onChange = actions::onPumpIntervalChange,
+        )
     }
 }
 
@@ -249,25 +262,31 @@ private fun ChildRow(child: Baby, active: Boolean, onSetActive: () -> Unit, onEd
     }
 }
 
+/** Shared by the feed and pump cadences — same control, different setting behind it. */
 @Composable
-private fun FeedIntervalRow(uiState: SettingsUiState, actions: SettingsActions) {
+private fun IntervalRow(
+    @StringRes labelRes: Int,
+    minutes: Int,
+    options: List<Int>,
+    onChange: (Int) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = stringResource(R.string.settings_feed_interval),
+            text = stringResource(labelRes),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
         )
         Box {
             TextButton(onClick = { expanded = true }) {
-                Text(stringResource(R.string.settings_feed_interval_value, uiState.feedIntervalMinutes))
+                Text(stringResource(R.string.settings_interval_value, minutes))
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                uiState.feedIntervalOptionMinutes.forEach { minutes ->
+                options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.settings_feed_interval_value, minutes)) },
-                        onClick = { expanded = false; actions.onFeedIntervalChange(minutes) },
+                        text = { Text(stringResource(R.string.settings_interval_value, option)) },
+                        onClick = { expanded = false; onChange(option) },
                     )
                 }
             }
@@ -690,4 +709,5 @@ private object NoopSettingsActions : SettingsActions {
         birthPlace: String?,
     ) = Unit
     override fun onFeedIntervalChange(minutes: Int) = Unit
+    override fun onPumpIntervalChange(minutes: Int) = Unit
 }

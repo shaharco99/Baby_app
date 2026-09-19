@@ -528,3 +528,43 @@ val MIGRATION_16_17 = object : Migration(16, 17) {
         db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `feed_interval_minutes` INTEGER NOT NULL DEFAULT 180")
     }
 }
+
+val MIGRATION_17_18 = object : Migration(17, 18) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `pump_sessions` (
+                `id` TEXT NOT NULL,
+                `started_at` INTEGER NOT NULL,
+                `ended_at` INTEGER,
+                `side` TEXT NOT NULL,
+                `amount_ml` INTEGER,
+                `note` TEXT,
+                `workspace_id` TEXT NOT NULL,
+                `created_by` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `deleted_at` INTEGER,
+                `version` INTEGER NOT NULL,
+                `sync_status` TEXT NOT NULL,
+                `client_mutation_id` TEXT,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_pump_sessions_sync_status` " +
+                "ON `pump_sessions` (`sync_status`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_pump_sessions_workspace_id_updated_at` " +
+                "ON `pump_sessions` (`workspace_id`, `updated_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_pump_sessions_workspace_id_started_at` " +
+                "ON `pump_sessions` (`workspace_id`, `started_at`)",
+        )
+
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `pump_interval_minutes` INTEGER NOT NULL DEFAULT 180")
+    }
+}
