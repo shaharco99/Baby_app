@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette.Light.background in :core:ui — the window behind the first Compose frame. -->
+    <color name="startup_background">#FFF6EFE1</color>
+</resources>

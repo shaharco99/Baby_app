@@ -145,7 +145,10 @@ fun TakesTwoApp(
         !session.isUnlocked -> PairingRoute()
 
         else -> {
-            HomeRoute()
+            Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+                HomeRoute()
+                StartupCurtain()
+            }
             ConflictHost()
         }
     }
@@ -180,6 +183,36 @@ private fun StartupScreen() {
         }
     }
 }
+
+/**
+ * Keeps [StartupScreen] over the app until Home — the tab every cold start lands on — has heard
+ * back from the database once, then fades it out. Without it the first frames show Home's
+ * defaults, which are indistinguishable from a real empty workspace.
+ *
+ * Latched: once lifted it never returns for the life of the Activity, whatever tab is open. The
+ * cap is there so a query that never answers can't trap anyone behind the app's name.
+ */
+@Composable
+private fun StartupCurtain(homeViewModel: HomeViewModel = koinViewModel()) {
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    var lifted by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(homeState.isLoaded) { if (homeState.isLoaded) lifted = true }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(STARTUP_CURTAIN_CAP_MILLIS)
+        lifted = true
+    }
+
+    androidx.compose.animation.AnimatedVisibility(
+        visible = !lifted,
+        enter = androidx.compose.animation.EnterTransition.None,
+        exit = androidx.compose.animation.fadeOut(),
+    ) {
+        StartupScreen()
+    }
+}
+
+private const val STARTUP_CURTAIN_CAP_MILLIS = 4_000L
 
 /** Not modal like [UpdateHost]'s mandatory case — a stuck conflict is important but never
  * urgent enough to block the screen. Re-surfaces whenever the conflict count changes (a new

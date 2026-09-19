@@ -10,6 +10,13 @@ import kotlinx.datetime.LocalTime
 
 @Immutable
 data class HomeUiState(
+    /**
+     * False until the database has answered once. Every field below defaults to "nothing stored",
+     * which renders as a genuine empty state ("when did your last period start?") — so until this
+     * flips, the screen must not be shown at all, or a cold start briefly lies about the data.
+     */
+    val isLoaded: Boolean = false,
+
     // Persisted snapshot: what's actually stored.
     val dueDate: LocalDate? = null,
     val babyName: String? = null,

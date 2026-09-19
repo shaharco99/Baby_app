@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette.Dark.background in :core:ui. -->
+    <color name="startup_background">#FF2A2636</color>
+</resources>

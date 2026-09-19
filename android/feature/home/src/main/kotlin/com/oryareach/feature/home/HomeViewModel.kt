@@ -121,6 +121,7 @@ class HomeViewModel(
                 }.collect { computed ->
                     set { current ->
                         computed.copy(
+                            isLoaded = true,
                             sheetVisible = current.sheetVisible,
                             datePickerVisible = current.datePickerVisible,
                             editingLastPeriodDate = current.editingLastPeriodDate,

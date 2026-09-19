@@ -23,6 +23,12 @@ object DatabaseFactory {
 
         return Room.databaseBuilder(context, OrYareachDatabase::class.java, OrYareachDatabase.NAME)
             .openHelperFactory(factory)
+            // Not WAL: WAL gives Room a pool of read connections, and SQLCipher runs its full key
+            // derivation on every one it opens — measured on a real phone as four connections
+            // opened back to back at ~0.6s each, with Home's first query waiting behind all of
+            // them. One connection pays that cost once. The app's writes are small enough that
+            // readers queuing behind them is not noticeable.
+            .setJournalMode(androidx.room.RoomDatabase.JournalMode.TRUNCATE)
             // No fallbackToDestructiveMigration: losing local data on a schema change would
             // discard anything not yet synced. A missing migration must fail loudly instead.
             .addMigrations(
