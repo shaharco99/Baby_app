@@ -376,13 +376,14 @@ private fun CalendarGrid(uiState: CycleUiState, onSelectDate: (LocalDate) -> Uni
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         for (row in 0 until rows) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0 until 7) {
                     val cellIndex = row * 7 + col
                     val dayNumber = cellIndex - leadingBlanks + 1
-                    if (dayNumber < 1 || dayNumber > dayCount) {
-                        Box(modifier = Modifier.minimumInteractiveComponentSize().size(36.dp))
-                    } else {
+                    // An equal seventh each. Seven fixed-size cells overflowed a narrow card, and
+                    // the squeezed edge cell broke "12" into two stacked digits.
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+                    if (dayNumber >= 1 && dayNumber <= dayCount) {
                         val date = LocalDate(month.year, month.month, dayNumber)
                         DayCell(
                             day = dayNumber,
@@ -393,6 +394,7 @@ private fun CalendarGrid(uiState: CycleUiState, onSelectDate: (LocalDate) -> Uni
                             hasEntry = date in loggedDates,
                             onClick = { onSelectDate(date) },
                         )
+                    }
                     }
                 }
             }
@@ -429,6 +431,8 @@ private fun DayCell(
             Text(
                 text = day.toString(),
                 style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = if (hasEntry) FontWeight.Bold else FontWeight.Normal,
                 color = if (isActual) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface,
             )

@@ -374,7 +374,12 @@ private fun DayCell(
                 },
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.size(width = CELL_SIZE, height = 6.dp)) {
+        // Centered, not start-aligned: in a fixed-width row a lone dot sat at its start edge,
+        // visibly left of the day number it belongs to.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
+            modifier = Modifier.size(width = CELL_SIZE, height = 6.dp),
+        ) {
             if (CalendarEventKind.TASK_DUE in kinds) Dot(MaterialTheme.colorScheme.primary)
             if (CalendarEventKind.IMPORTANT_DATE in kinds) Dot(MaterialTheme.colorScheme.tertiary)
             if (CalendarEventKind.PERIOD_ACTUAL in kinds || CalendarEventKind.PERIOD_PREDICTED in kinds) {
