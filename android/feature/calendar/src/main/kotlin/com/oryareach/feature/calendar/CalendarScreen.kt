@@ -244,9 +244,12 @@ private fun Long.toLocalDate(): LocalDate =
 
 @Composable
 private fun LegendChipRow() {
-    Row(
+    // Flows, not a Row: four chips don't fit one line on a phone, and a Row squeezed the last
+    // one until "Google Calendar" broke mid-word. A chip that doesn't fit moves down whole.
+    androidx.compose.foundation.layout.FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         LegendChip(color = MaterialTheme.colorScheme.primary, label = stringResource(R.string.calendar_legend_task))
         LegendChip(color = MaterialTheme.colorScheme.tertiary, label = stringResource(R.string.calendar_legend_important_date))
@@ -266,7 +269,13 @@ private fun LegendChip(color: Color, label: String) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
