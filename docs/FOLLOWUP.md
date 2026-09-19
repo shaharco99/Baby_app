@@ -88,16 +88,6 @@ both show "Connected as [account]" in Settings, and the Calendar screen renders 
 with the "Google Calendar" legend entry active on both — no error state. Google account linking
 is also confirmed live-connected on both devices already.
 
-## Open — Forgot password (coded, needs one manual run)
-
-Shipped in `v1.3.0`. Checked 2026-09-19: an expired link
-(`#error_code=otp_expired`) and a bogus `?code=` sent to the Xiaomi by adb were both ignored
-without a crash. Still never clicked through for real. It needs a real inbox. Steps:
-1. Supabase dashboard → Authentication → URL Configuration → Redirect URLs has
-   `com.oryareach.app://reset-password` (the repo's `config.toml` only covers local dev).
-2. Signed out on one phone: Forgot password → your email → open the email **on that phone** → tap
-   the link → `ResetPasswordScreen` → set a new password → sign in with it.
-
 ## Done in code, migration NOT applied — partner identity on the pairing screen
 
 The waiting-for-approval screen shows "Waiting on: <partner email>" from
