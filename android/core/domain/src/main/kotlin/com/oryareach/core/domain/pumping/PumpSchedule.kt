@@ -57,6 +57,47 @@ data class PumpingTally(
     val totalMl: Int?,
 )
 
+/**
+ * What the pumping has actually produced — the numbers behind the milk-drop panel.
+ *
+ * [feedsCovered] is the one figure here that is not arithmetic on the log: it turns millilitres
+ * into something recognisable, because "1,440 ml" means less at 4am than "twelve feeds' worth".
+ */
+data class MilkStash(
+    val totalMl: Int,
+    val sessions: Int,
+    val totalMinutes: Int,
+    /** The best single day, by measured output. */
+    val bestDayMl: Int,
+    val longestSessionMinutes: Int,
+    val feedsCovered: Int,
+)
+
+/**
+ * Null until at least one session has had its output measured: a stash panel showing zero
+ * millilitres would be a worse thing to show than nothing at all.
+ */
+fun milkStash(sessions: List<PumpSession>, timeZone: TimeZone): MilkStash? {
+    val measured = sessions.filter { it.amountMl != null }
+    if (measured.isEmpty()) return null
+
+    val totalMl = measured.sumOf { it.amountMl ?: 0 }
+    val perDay = measured.groupBy {
+        Instant.fromEpochMilliseconds(it.startedAtEpochMillis).toLocalDateTime(timeZone).date
+    }
+    return MilkStash(
+        totalMl = totalMl,
+        sessions = sessions.size,
+        totalMinutes = sessions.sumOf { it.durationMinutes ?: 0 },
+        bestDayMl = perDay.values.maxOf { day -> day.sumOf { it.amountMl ?: 0 } },
+        longestSessionMinutes = sessions.maxOf { it.durationMinutes ?: 0 },
+        feedsCovered = totalMl / ML_PER_FEED,
+    )
+}
+
+/** A middling bottle for a newborn. Only ever used to make a total legible, never as advice. */
+private const val ML_PER_FEED = 120
+
 fun pumpingTally(sessions: List<PumpSession>): PumpingTally {
     val minutes = sessions.mapNotNull { it.durationMinutes }
     val measured = sessions.mapNotNull { it.amountMl }

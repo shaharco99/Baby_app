@@ -98,16 +98,83 @@ class PumpScheduleTest {
         tally.totalMl shouldBe 90
     }
 
+    @Test
+    fun `a pause comes out of the duration`() {
+        // Half past ten to eleven is thirty minutes of wall time, seven of them paused.
+        val paused = session(
+            "a",
+            "2026-09-18T10:30:00Z",
+            "2026-09-18T11:00:00Z",
+            pausedMillis = 7 * 60_000L,
+        )
+
+        paused.durationMinutes shouldBe 23
+    }
+
+    @Test
+    fun `while paused the elapsed time stops moving`() {
+        val paused = session("a", "2026-09-18T10:00:00Z", endedAt = null)
+            .copy(pausedAtEpochMillis = at("2026-09-18T10:12:00Z"))
+
+        paused.isPaused shouldBe true
+        // Ten minutes after the pause began, it still reads twelve minutes.
+        paused.elapsedMillisAt(at("2026-09-18T10:22:00Z")) shouldBe 12 * 60_000L
+    }
+
+    @Test
+    fun `a session paused more than it ran cannot go negative`() {
+        val odd = session("a", "2026-09-18T10:00:00Z", "2026-09-18T10:05:00Z", pausedMillis = 600_000L)
+
+        odd.durationMinutes shouldBe 0
+    }
+
+    @Test
+    fun `an unpaused session is unaffected`() {
+        session("a", "2026-09-18T10:00:00Z", "2026-09-18T10:20:00Z").durationMinutes shouldBe 20
+    }
+
+    @Test
+    fun `the stash is silent until something has been measured`() {
+        val unmeasured = listOf(session("a", "2026-09-18T06:00:00Z", "2026-09-18T06:20:00Z"))
+
+        milkStash(unmeasured, TimeZone.UTC) shouldBe null
+    }
+
+    @Test
+    fun `the stash totals the measured output and translates it into feeds`() {
+        val stash = milkStash(
+            listOf(
+                session("a", "2026-09-17T06:00:00Z", "2026-09-17T06:20:00Z", amountMl = 100),
+                session("b", "2026-09-18T06:00:00Z", "2026-09-18T06:30:00Z", amountMl = 90),
+                session("c", "2026-09-18T09:00:00Z", "2026-09-18T09:25:00Z", amountMl = 130),
+                // Unmeasured: it counts as a session and as minutes, but not as millilitres.
+                session("d", "2026-09-18T12:00:00Z", "2026-09-18T12:10:00Z"),
+            ),
+            TimeZone.UTC,
+        )!!
+
+        stash.totalMl shouldBe 320
+        stash.sessions shouldBe 4
+        stash.totalMinutes shouldBe 85
+        // The 18th: 90 and 130 together beat the 17th's 100.
+        stash.bestDayMl shouldBe 220
+        stash.longestSessionMinutes shouldBe 30
+        // 320 ml is two 120 ml feeds, with the remainder left out rather than rounded up.
+        stash.feedsCovered shouldBe 2
+    }
+
     private fun session(
         id: String,
         startedAt: String,
         endedAt: String?,
         amountMl: Int? = null,
+        pausedMillis: Long = 0,
     ) = PumpSession(
         id = id,
         startedAtEpochMillis = at(startedAt),
         endedAtEpochMillis = endedAt?.let(::at),
         amountMl = amountMl,
+        pausedMillis = pausedMillis,
     )
 
     private fun at(instant: String): Long = Instant.parse(instant).toEpochMilliseconds()

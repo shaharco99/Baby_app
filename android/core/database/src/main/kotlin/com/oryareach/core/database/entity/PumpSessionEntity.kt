@@ -12,7 +12,8 @@ import com.oryareach.core.model.PumpSide
  * record, so it does not belong to a child and does not move with the child switcher.
  *
  * [endedAt] is null while the session is running, which is what makes the timer survive a reboot —
- * there is no in-memory state to lose.
+ * there is no in-memory state to lose. A pause is stored the same way, for the same reason: a
+ * session paused on one phone reads as paused on the other.
  */
 @Entity(
     tableName = "pump_sessions",
@@ -32,5 +33,9 @@ data class PumpSessionEntity(
     val side: PumpSide,
     @ColumnInfo(name = "amount_ml") val amountMl: Int?,
     val note: String?,
+    /** Paused time already closed off. The duration is wall time minus this. */
+    @ColumnInfo(name = "paused_millis", defaultValue = "0") val pausedMillis: Long = 0,
+    /** Set only while a pause is open. */
+    @ColumnInfo(name = "paused_at") val pausedAt: Long? = null,
     @Embedded val sync: SyncMetaEntity,
 )

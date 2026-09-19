@@ -105,6 +105,8 @@ fun PumpSessionEntity.toPumpSession() = PumpSession(
     side = side,
     amountMl = amountMl,
     note = note,
+    pausedMillis = pausedMillis,
+    pausedAtEpochMillis = pausedAt,
 )
 
 fun FolderEntity.toFolder() = Folder(id = id, name = name, parentId = parentId, path = path)
@@ -223,6 +225,8 @@ fun PumpSession.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     side = side,
     amountMl = amountMl,
     note = note,
+    pausedMillis = pausedMillis,
+    pausedAt = pausedAtEpochMillis,
     sync = record.toSyncMeta(workspaceId, now),
 )
 

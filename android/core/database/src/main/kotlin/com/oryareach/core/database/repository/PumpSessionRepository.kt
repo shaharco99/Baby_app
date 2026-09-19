@@ -136,7 +136,35 @@ class PumpSessionRepository(
         return entity.id
     }
 
-    /** Fills in the end of a running session and everything the sheet collected on the way out. */
+    /**
+     * Pauses a running session. Nothing is subtracted yet — the open pause is remembered as the
+     * moment it began, and only becomes time when the session resumes or stops. The reminder is
+     * left alone: it is scheduled off the *start*, which a pause does not move.
+     */
+    suspend fun pause(id: String, at: Long = now()) {
+        val existing = sessions.findById(id) ?: return
+        if (existing.endedAt != null || existing.pausedAt != null) return
+        write(existing, pausedAt = at)
+    }
+
+    /** Closes an open pause, folding however long it lasted into the time that does not count. */
+    suspend fun resume(id: String, at: Long = now()) {
+        val existing = sessions.findById(id) ?: return
+        val pausedAt = existing.pausedAt ?: return
+        if (existing.endedAt != null) return
+        write(
+            existing,
+            pausedMillis = existing.pausedMillis + (at - pausedAt).coerceAtLeast(0),
+            pausedAt = null,
+        )
+    }
+
+    /**
+     * Fills in the end of a running session and everything the sheet collected on the way out.
+     *
+     * A session stopped while paused closes the pause first, so the break between pressing Pause
+     * and pressing Stop is counted as paused rather than as pumping.
+     */
     suspend fun stop(
         id: String,
         side: PumpSide,
@@ -146,7 +174,18 @@ class PumpSessionRepository(
         intervalMinutes: Int,
     ) {
         val existing = sessions.findById(id) ?: return
-        write(existing, endedAt = endedAt, side = side, amountMl = amountMl, note = note)
+        val paused = existing.pausedAt
+            ?.let { existing.pausedMillis + (endedAt - it).coerceAtLeast(0) }
+            ?: existing.pausedMillis
+        write(
+            existing,
+            endedAt = endedAt,
+            side = side,
+            amountMl = amountMl,
+            note = note,
+            pausedMillis = paused,
+            pausedAt = null,
+        )
         rescheduleReminder(existing.sync.workspaceId, existing.startedAt, intervalMinutes)
     }
 
@@ -165,7 +204,9 @@ class PumpSessionRepository(
         val existing = sessions.findById(id) ?: return
         write(
             existing,
-            endedAt = existing.startedAt + durationMinutes * MILLIS_PER_MINUTE,
+            // The paused time is added back on, so the minutes typed in are the minutes the
+            // session reads as: the duration is wall time *minus* what was paused.
+            endedAt = existing.startedAt + durationMinutes * MILLIS_PER_MINUTE + existing.pausedMillis,
             side = side,
             amountMl = amountMl,
             note = note,
@@ -182,12 +223,18 @@ class PumpSessionRepository(
         syncTrigger.syncNow()
     }
 
+    /**
+     * The one write path for an existing session. Everything not passed keeps the value it had,
+     * which is what lets a pause be a one-field change rather than a re-statement of the row.
+     */
     private suspend fun write(
         existing: PumpSessionEntity,
-        endedAt: Long,
-        side: PumpSide,
-        amountMl: Int?,
-        note: String?,
+        endedAt: Long? = existing.endedAt,
+        side: PumpSide = existing.side,
+        amountMl: Int? = existing.amountMl,
+        note: String? = existing.note,
+        pausedMillis: Long = existing.pausedMillis,
+        pausedAt: Long? = existing.pausedAt,
     ) {
         val timestamp = now()
         val entity = existing.copy(
@@ -195,6 +242,8 @@ class PumpSessionRepository(
             side = side,
             amountMl = amountMl,
             note = note,
+            pausedMillis = pausedMillis,
+            pausedAt = pausedAt,
             sync = existing.sync.copy(
                 updatedAt = timestamp,
                 syncStatus = SyncStatus.PENDING_UPDATE,

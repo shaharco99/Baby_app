@@ -7,6 +7,7 @@ import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.domain.feeding.nextFeedCountdown
 import com.oryareach.core.domain.pumping.groupPumpsByDay
+import com.oryareach.core.domain.pumping.milkStash
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
@@ -33,7 +34,12 @@ import kotlin.time.Instant
 @Stable
 interface PumpingActions {
     fun onStartClick()
+    fun onPauseClick()
+    fun onResumeClick()
     fun onStopClick()
+    fun onTimerLongPress()
+    fun onDismissStash()
+    fun onDropsShown()
     fun onLogPastClick()
     fun onEditClick(session: PumpSession)
     fun onDismissSheet()
@@ -98,7 +104,9 @@ class PumpingViewModel(
                         ?: AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES
                     Snapshot(
                         running = running,
-                        elapsedMillis = running?.let { now() - it.startedAtEpochMillis } ?: 0,
+                        // The session knows how to do this: a pause has to come out of the
+                        // number, and while paused it stops moving altogether.
+                        elapsedMillis = running?.elapsedMillisAt(now()) ?: 0,
                         countdown = nextFeedCountdown(
                             lastFedAtEpochMillis = latest?.startedAtEpochMillis,
                             intervalMinutes = interval,
@@ -131,6 +139,23 @@ class PumpingViewModel(
                 side = _uiState.value.formSide,
             )
         }
+    }
+
+    /**
+     * Pause and resume are writes to the row, not screen state: the break is visible on the
+     * partner's phone, survives a force-stop, and comes out of the duration on its own — so a
+     * session interrupted to answer the door does not have to be corrected by hand afterwards.
+     */
+    override fun onPauseClick() {
+        val running = _uiState.value.running ?: return
+        if (running.isPaused) return
+        viewModelScope.launch { repository.pause(running.id) }
+    }
+
+    override fun onResumeClick() {
+        val running = _uiState.value.running ?: return
+        if (!running.isPaused) return
+        viewModelScope.launch { repository.resume(running.id) }
     }
 
     /**
@@ -274,11 +299,39 @@ class PumpingViewModel(
                     note = state.formNote.ifBlank { null },
                 )
             }
+            // Drops for a session being put away, not for a correction to an old one: the
+            // flourish marks finishing a pump, and firing it on every edit would wear it out.
+            val celebrate = editingId == null || state.discardable
             set {
-                it.copy(busy = false, sheetVisible = false, editingSessionId = null, discardable = false)
+                it.copy(
+                    busy = false,
+                    sheetVisible = false,
+                    editingSessionId = null,
+                    discardable = false,
+                    milkDrops = if (celebrate) {
+                        MilkDrops(id = now(), count = dropCount(state.formAmountMl.toIntOrNull()))
+                    } else {
+                        it.milkDrops
+                    },
+                )
             }
         }
     }
+
+    override fun onDropsShown() = set { it.copy(milkDrops = null) }
+
+    /**
+     * The stash easter egg: what the pumping has actually come to. Silent until something has
+     * been measured, on the same principle as the feeding log's night watch — a panel reading
+     * zero millilitres is worse than no panel.
+     */
+    override fun onTimerLongPress() {
+        val sessions = _uiState.value.days.flatMap { it.sessions }
+        val stash = milkStash(sessions, timeZone()) ?: return
+        set { it.copy(stash = stash) }
+    }
+
+    override fun onDismissStash() = set { it.copy(stash = null) }
 
     /** For a session that was started by accident: the row is thrown away rather than kept at 0. */
     override fun onDiscard() {
@@ -320,6 +373,13 @@ class PumpingViewModel(
     private companion object {
         const val MAX_MINUTES_DIGITS = 3
         const val MAX_AMOUNT_DIGITS = 4
+
+        /**
+         * Roughly one drop per 20 ml, clamped: enough that a good session visibly rains and a
+         * small one still gets something, without either turning into weather.
+         */
+        fun dropCount(amountMl: Int?): Int =
+            amountMl?.let { (it / 20).coerceIn(5, 18) } ?: 7
 
         /** The table view scrolls through days; a fortnight is as far back as it reads. */
         const val HISTORY_WINDOW_MILLIS = 14L * 24 * 60 * 60 * 1000

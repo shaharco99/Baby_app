@@ -36,4 +36,20 @@
     <string name="pumping_row_minutes">Minutes</string>
     <string name="pumping_row_amount">Amount</string>
     <string name="pumping_in_progress">in progress</string>
+    <string name="pumping_pause">Pause</string>
+    <string name="pumping_resume">Resume</string>
+    <string name="pumping_paused_label">Paused</string>
+    <string name="pumping_stash_title">The stash</string>
+    <string name="pumping_stash_close">Back to it</string>
+    <string name="pumping_stash_total">%1$d ml pumped, all told</string>
+    <string name="pumping_stash_feeds">About %1$d feeds\' worth</string>
+    <string name="pumping_stash_sessions">%1$d sessions, %2$d minutes on the pump</string>
+    <string name="pumping_stash_best_day">Best day: %1$d ml</string>
+    <string-array name="pumping_stash_praise">
+        <item>Made out of nothing but you. Quietly astonishing.</item>
+        <item>Every drop of that was an hour you gave up.</item>
+        <item>Nobody claps for this one. They should.</item>
+        <item>The freezer is filling up because you sat there.</item>
+        <item>Liquid gold, and you made all of it.</item>
+    </string-array>
 </resources>

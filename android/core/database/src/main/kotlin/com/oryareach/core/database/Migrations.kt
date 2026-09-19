@@ -568,3 +568,20 @@ val MIGRATION_17_18 = object : Migration(17, 18) {
         db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `pump_interval_minutes` INTEGER NOT NULL DEFAULT 180")
     }
 }
+
+/**
+ * Pausing a pump session.
+ *
+ * Both columns are additive, so nothing existing has to be rewritten: a session recorded before
+ * this migration has never been paused, which `0` and `NULL` say exactly.
+ */
+val MIGRATION_18_19 = object : Migration(18, 19) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE `pump_sessions` ADD COLUMN `paused_millis` INTEGER NOT NULL DEFAULT 0",
+        )
+        // No DEFAULT: a column added without one is NULL on every existing row, which is what
+        // "has never been paused" means, and Room's schema has no default here to match.
+        db.execSQL("ALTER TABLE `pump_sessions` ADD COLUMN `paused_at` INTEGER")
+    }
+}

@@ -2,6 +2,7 @@ package com.oryareach.feature.pumping
 
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.domain.pumping.MilkStash
 import com.oryareach.core.domain.pumping.PumpingDay
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.PumpSession
@@ -9,6 +10,16 @@ import com.oryareach.core.model.PumpSide
 
 /** The history has two shapes; the toggle above it picks which one is drawn. */
 enum class PumpHistoryView { LIST, TABLE }
+
+/**
+ * One burst of falling milk drops, shown when a session is saved.
+ *
+ * [id] is what makes a second burst a second burst: the animation is keyed to it, so saving twice
+ * restarts the drops rather than leaving the first run to finish alone. [count] is how many drops
+ * fall, which is the measured amount's only job here.
+ */
+@Immutable
+data class MilkDrops(val id: Long, val count: Int)
 
 @Immutable
 data class PumpingUiState(
@@ -48,8 +59,15 @@ data class PumpingUiState(
     val historyView: PumpHistoryView = PumpHistoryView.LIST,
     val busy: Boolean = false,
     val refreshing: Boolean = false,
+    /** Set for one burst of falling drops after a session is put away, then cleared. */
+    val milkDrops: MilkDrops? = null,
+    /** The stash panel, when it has been asked for and there is something in it. */
+    val stash: MilkStash? = null,
 ) {
     val isRunning: Boolean get() = running != null
+
+    /** Paused is a running session holding still, so both of these are true at once. */
+    val isPaused: Boolean get() = running?.isPaused == true
 
     /**
      * The start of an existing session is read-only, for the same reason a feed's time is: the
