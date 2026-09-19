@@ -1,24 +1,59 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.3.7` — see `git log` for full history; this file
-only tracks what's still open plus enough context to act on it.
+Branch `feature/android-app`. Latest tag `v1.6.3`; two commits on top of it (`perf(startup)`,
+`fix(reminders)`) are **not released yet** — see `git log` for full history; this file only
+tracks what's still open plus enough context to act on it.
 
-## Resolved 2026-08-22 — v1.3.7 on-device verification (MIUI done; Pixel two-device check done, rest still open)
+## 2026-09-19 — Xiaomi pass, cold start, background reminders
 
-MIUI phone (`b6d8682a049d`) was already on v1.3.7 (no update needed). Verified live:
-- Search tab pull-to-refresh: swiped down over search results, app survived, no crash.
-- Book of Love dialog icon pair: confirmed in source (`HomeScreen.kt` — overlapping
-  `Icons.AutoMirrored.Filled.MenuBook` + `Icons.Filled.Favorite`) and by user's own manual check.
-- Moon long-press glitch + Book-of-Love-on-partner-activity fire: confirmed manually by user,
-  no crash.
+Xiaomi (`b6d8682a049d`, MIUI 14 / Android 13) runs a locally signed release of the two
+unreleased commits (versionName still 1.6.3). Pixel was not connected.
 
-Pixel updated to v1.3.7 same session. Two-device Book-of-Love recency check (one phone acts,
-other long-presses moon within 5 min) confirmed by user — works across the pair, including
-across MIUI's Hebrew locale and Pixel's English-only locale.
+**Fixed + verified on the Xiaomi:**
+- Cold start: SQLCipher re-ran key derivation (~0.6s) on each of 4 WAL pool connections; Home
+  showed its empty "last period" state for 3-8s. Now TRUNCATE journaling (one connection) + the
+  name screen stays up until Home's first data. First frame ~0.52s (was ~1.03s), populated Home
+  ~1.4s (was 4-8s), no empty frame in a screen recording.
+- Feed/pump reminders moved from WorkManager to exact `AlarmManager` alarms. Rang on time with
+  the app swiped away, process killed, screen off (15:00:00.8). After a reboot MIUI delivered
+  `BOOT_COMPLETED` ~3 min late, the alarm re-armed and rang on time. Doze result: see below.
 
-**Still open: rest of the Pixel-solo pass** — Search pull-to-refresh and Book-of-Love icon pair
-haven't been separately confirmed on the Pixel itself (only the two-device interaction was).
+**Xiaomi live pass: all pass.** Every drawer destination opens, no crash, no `*:E`. Back walks
+tab history, then Home, then the exit confirm. Pumping timer: pause freezes it (Home too), survives
+force-stop while paused, resume continues, and stop drops the paused time from the duration.
+Feeding table view + log sheet with a backdated date/time. Settings shows children, both intervals
+and the version. Tasks category includes "For the baby". Test pump sessions (note `0000-…`)
+were deleted afterwards.
+
+**Found, not fixed:** Calendar legend chip "Google Calendar" wraps mid-word ("Calenda / r").
+
+## Still to test — Pixel (`49100DLAQ004MM`, English locale)
+Update it to the release that carries the two commits above first (install-as-update, never a
+debug build).
+- Cold start: `am start -W -S` x5 plus a screenrecord. Expect the name screen, then populated Home.
+- Reminders: exact alarm rings with the app swiped away and screen off; after a reboot; and under
+  Doze (`dumpsys battery unplug` + `dumpsys deviceidle force-idle`).
+- Repeat of the Xiaomi pass: drawer sweep, back history, pumping timer (pause / force-stop /
+  resume / stop), feeding table + backdated log, Settings children/intervals/version, the
+  "For the baby" category.
+- Old leftovers: Search pull-to-refresh, Book of Love icon pair.
+
+## Still to test — both phones together
+- A feed logged on one phone shows on the other, and moves the other's alarm after its next sync
+  (`dumpsys alarm | grep ReminderAlarmReceiver`). Same for a pump session.
+- A running/paused pump timer started on one phone, as seen on the other.
+- Feeding conflict display: edit the same feed on both phones offline, then sync both.
+- Add or rename a child in Settings on one phone, and it syncs.
+- Change the feed/pump interval on one phone: it syncs and both alarms re-arm.
+- The same records render correctly in Hebrew (Xiaomi) and English (Pixel).
+
+## Known limits (by design, not bugs)
+- A partner's feed can't move this phone's alarm while this app is closed: the workspace key is
+  only in memory after unlock, and a push would need a server-side trigger. It catches up on the
+  next open or sync.
+- Force-stop (Settings → Force stop, or MIUI "clean" on a non-whitelisted app) drops all alarms
+  until the app is next opened. Nothing an app can do about that.
 
 ## Resolved 2026-08-17 (this session, shipped in v1.3.1)
 
@@ -80,6 +115,13 @@ once already (2026-08-17), worked around with a manual `UPDATE device_keys SET w
 stop keying pending/paired lookups off that column and join through `wrapped_workspace_keys`
 instead (always correct). User explicitly asked to leave this unfixed and only documented — ask
 before touching.
+
+## Open — small items
+- Tag a release for `perf(startup)` + `fix(reminders)`. Ask first, and apply any pending Supabase
+  migrations before tagging (nothing applies them automatically).
+- Calendar legend chip "Google Calendar" wraps mid-word.
+- Startup has no Macrobenchmark `StartupTimingMetric` module. The numbers above are
+  `am start -W` + screen recordings.
 
 ## Done, don't redo
 
