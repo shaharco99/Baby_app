@@ -5,7 +5,19 @@ import com.oryareach.core.common.AppResult
 import com.oryareach.core.database.OrYareachDatabase
 import com.oryareach.core.database.SearchIndexer
 import com.oryareach.core.database.entity.SyncOperationEntity
+import com.oryareach.core.database.mapper.toAppSettings
+import com.oryareach.core.database.mapper.toBaby
+import com.oryareach.core.database.mapper.toCycle
+import com.oryareach.core.database.mapper.toCycleEntry
+import com.oryareach.core.database.mapper.toDocument
 import com.oryareach.core.database.mapper.toEntity
+import com.oryareach.core.database.mapper.toFeedingEntry
+import com.oryareach.core.database.mapper.toFolder
+import com.oryareach.core.database.mapper.toImportantDate
+import com.oryareach.core.database.mapper.toPumpSession
+import com.oryareach.core.database.mapper.toShoppingItem
+import com.oryareach.core.database.mapper.toTask
+import com.oryareach.core.domain.conflict.recordDifferences
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.CycleEntry
@@ -37,6 +49,10 @@ data class Conflict(
     val localUpdatedAt: Long,
     val serverTitle: String,
     val serverUpdatedAt: Long,
+    /** The fields that differ, one "name: value" line each, as this device has them. */
+    val localChanges: List<String> = emptyList(),
+    /** The same fields, as the partner's device has them. */
+    val serverChanges: List<String> = emptyList(),
 )
 
 /**
@@ -60,6 +76,13 @@ class ConflictRepository(
         conflicts.mapNotNull { conflict ->
             val serverTitle = decodeTitle(conflict.entityType, conflict.recordId, conflict.serverCiphertext) ?: return@mapNotNull null
             val local = localTitleAndUpdatedAt(conflict.entityType, conflict.recordId) ?: return@mapNotNull null
+            val serverJson = (codec.decode(conflict.entityType, conflict.recordId, conflict.serverCiphertext) as? AppResult.Success)?.data
+            val localJson = localJson(conflict.entityType, conflict.recordId)
+            val changes = if (serverJson != null && localJson != null) {
+                recordDifferences(localJson, serverJson, TimeZone.currentSystemDefault())
+            } else {
+                null
+            }
             Conflict(
                 recordId = conflict.recordId,
                 entityType = conflict.entityType,
@@ -67,8 +90,25 @@ class ConflictRepository(
                 localUpdatedAt = local.second,
                 serverTitle = serverTitle,
                 serverUpdatedAt = conflict.serverUpdatedAt,
+                localChanges = changes?.local.orEmpty(),
+                serverChanges = changes?.server.orEmpty(),
             )
         }
+    }
+
+    /** This device's copy, serialized exactly the way a push would send it. */
+    private suspend fun localJson(entityType: EntityType, recordId: String): String? = when (entityType) {
+        EntityType.TASK -> database.taskDao().findById(recordId)?.let { json.encodeToString(it.toTask()) }
+        EntityType.SHOPPING_ITEM -> database.shoppingItemDao().findById(recordId)?.let { json.encodeToString(it.toShoppingItem()) }
+        EntityType.IMPORTANT_DATE -> database.importantDateDao().findById(recordId)?.let { json.encodeToString(it.toImportantDate()) }
+        EntityType.SETTINGS -> database.appSettingsDao().findById(recordId)?.let { json.encodeToString(it.toAppSettings()) }
+        EntityType.FOLDER -> database.folderDao().findById(recordId)?.let { json.encodeToString(it.toFolder()) }
+        EntityType.DOCUMENT -> database.documentDao().findById(recordId)?.let { json.encodeToString(it.toDocument()) }
+        EntityType.CYCLE -> database.menstrualCycleDao().findById(recordId)?.let { json.encodeToString(it.toCycle()) }
+        EntityType.CYCLE_ENTRY -> database.cycleEntryDao().findById(recordId)?.let { json.encodeToString(it.toCycleEntry()) }
+        EntityType.BABY -> database.babyDao().findById(recordId)?.let { json.encodeToString(it.toBaby()) }
+        EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let { json.encodeToString(it.toFeedingEntry()) }
+        EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let { json.encodeToString(it.toPumpSession()) }
     }
 
     /** Keeps this device's edit: re-queues it for push, based on the server's version so the

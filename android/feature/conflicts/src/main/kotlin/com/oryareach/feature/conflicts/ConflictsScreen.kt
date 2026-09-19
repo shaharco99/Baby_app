@@ -94,11 +94,13 @@ private fun ConflictCard(conflict: Conflict, busy: Boolean, onKeepLocal: () -> U
                     label = stringResource(R.string.conflicts_mine, conflict.localTitle),
                     editedAt = conflict.localUpdatedAt,
                     older = conflict.localUpdatedAt <= conflict.serverUpdatedAt,
+                    changes = conflict.localChanges,
                 )
                 ConflictSide(
                     label = stringResource(R.string.conflicts_theirs, conflict.serverTitle),
                     editedAt = conflict.serverUpdatedAt,
                     older = conflict.serverUpdatedAt < conflict.localUpdatedAt,
+                    changes = conflict.serverChanges,
                 )
 
                 // The older edit is the filled button: in a log the first entry is usually the
@@ -129,9 +131,14 @@ private fun ConflictCard(conflict: Conflict, busy: Boolean, onKeepLocal: () -> U
 
 /** One side of a conflict: what it says, when it was edited, and whether it is the earlier one. */
 @Composable
-private fun ConflictSide(label: String, editedAt: Long, older: Boolean) {
+private fun ConflictSide(label: String, editedAt: Long, older: Boolean, changes: List<String>) {
     Column {
         Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        // What actually differs. The title alone often matches on both sides — two edits of a
+        // feed's amount read the same when all that is shown is the note.
+        changes.forEach { change ->
+            Text(text = change, style = MaterialTheme.typography.bodySmall)
+        }
         Text(
             text = if (older) {
                 stringResource(R.string.conflicts_edited_at_older, editedLabel(editedAt))
@@ -170,6 +177,8 @@ private fun ConflictsPreview() {
                         localUpdatedAt = 0,
                         serverTitle = "Pack hospital bag (updated)",
                         serverUpdatedAt = 0,
+                        localChanges = listOf("title: Pack hospital bag"),
+                        serverChanges = listOf("title: Pack hospital bag (updated)"),
                     ),
                 ),
             ),
