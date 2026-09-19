@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.first
 
 /**
  * Re-derives the pending pump reminder from what is actually in the database, for the same reasons
- * as [FeedingReminderRefresher]: a reinstall drops WorkManager's queue, a changed interval
+ * as [FeedingReminderRefresher]: a reinstall drops the pending alarm, a changed interval
  * invalidates the pending alarm, and a session logged on the partner's device arrives by sync
  * without ever passing through this device's repository.
  *

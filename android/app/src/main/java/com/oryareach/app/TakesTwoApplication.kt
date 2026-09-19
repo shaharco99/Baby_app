@@ -2,8 +2,10 @@ package com.oryareach.app
 
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.oryareach.app.di.SessionState
 import com.oryareach.app.di.appModule
 import com.oryareach.app.lock.AutoLockController
+import com.oryareach.app.notifications.ReminderAlarms
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.app.sync.SyncWorker
@@ -17,6 +19,7 @@ import org.koin.core.logger.Level
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 class TakesTwoApplication : Application(), KoinComponent {
@@ -24,6 +27,7 @@ class TakesTwoApplication : Application(), KoinComponent {
     private val autoLockController: AutoLockController by inject()
     private val feedingReminders: FeedingReminderRefresher by inject()
     private val pumpReminders: PumpReminderRefresher by inject()
+    private val session: SessionState by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -43,11 +47,16 @@ class TakesTwoApplication : Application(), KoinComponent {
         // leaving the foreground.
         ProcessLifecycleOwner.get().lifecycle.addObserver(autoLockController)
 
-        // Off the main thread and not awaited: nothing on screen depends on it, and a device
-        // with no workspace open yet is a no-op that the next launch redoes.
+        ReminderAlarms.dropLegacyWork(this)
+
+        // Re-derive the pending feed and pump alarms from the database each time a workspace
+        // opens. Not at process start: the workspace is still locked then, so the refreshers
+        // would find no workspace and do nothing. Off the main thread and never awaited.
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            feedingReminders.refresh()
-            pumpReminders.refresh()
+            session.workspaceIdFlow.filterNotNull().collect {
+                feedingReminders.refresh()
+                pumpReminders.refresh()
+            }
         }
     }
 }

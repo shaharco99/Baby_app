@@ -10,10 +10,11 @@ import kotlinx.coroutines.flow.first
 /**
  * Re-derives the pending feed reminder from what is actually in the database.
  *
- * A reminder is scheduled when a feed is logged, but WorkManager's queue does not survive
+ * A reminder is scheduled when a feed is logged, but the pending alarm does not survive
  * everything: a reinstall drops it, a changed interval invalidates it, and a feed logged on the
  * partner's device arrives by sync without ever going through this device's repository. Running
- * this at startup — and after the interval changes in Settings — puts it back.
+ * this whenever the workspace opens, after a sync pulls anything in, and after the interval
+ * changes in Settings puts it back.
  */
 class FeedingReminderRefresher(
     private val babies: BabyRepository,

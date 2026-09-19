@@ -9,7 +9,7 @@ package com.oryareach.core.settings
  * Counted from when a session *starts*, not when it ends — that is how a pump schedule is spaced.
  */
 interface PumpReminderScheduler {
-    /** Fires [intervalMinutes] after [startedAtEpochMillis]; a time already past fires promptly. */
+    /** Fires [intervalMinutes] after [startedAtEpochMillis]. A time already past is not rung: the app's countdown already reads "overdue". */
     fun scheduleNext(startedAtEpochMillis: Long, intervalMinutes: Int)
 
     fun cancel()

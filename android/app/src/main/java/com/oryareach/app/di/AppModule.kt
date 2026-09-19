@@ -1,8 +1,8 @@
 package com.oryareach.app.di
 
 import com.oryareach.app.lock.AutoLockController
-import com.oryareach.app.notifications.WorkManagerFeedingReminderScheduler
-import com.oryareach.app.notifications.WorkManagerPumpReminderScheduler
+import com.oryareach.app.notifications.AlarmFeedingReminderScheduler
+import com.oryareach.app.notifications.AlarmPumpReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.sync.WorkManagerSyncTrigger
 import com.oryareach.core.calendar.CalendarEventSource
@@ -85,8 +85,8 @@ val appModule = module {
     single { SettingsPreferences(androidContext()) }
     single { AutoLockController(session = get(), preferences = get()) }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }
-    single<FeedingReminderScheduler> { WorkManagerFeedingReminderScheduler(androidContext()) }
-    single<PumpReminderScheduler> { WorkManagerPumpReminderScheduler(androidContext()) }
+    single<FeedingReminderScheduler> { AlarmFeedingReminderScheduler(androidContext()) }
+    single<PumpReminderScheduler> { AlarmPumpReminderScheduler(androidContext()) }
 
     // Consumed by :core:network, which must not depend on the session type.
     single(workspaceIdQualifier) { { get<SessionState>().workspaceId } }

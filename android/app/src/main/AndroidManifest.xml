@@ -5,6 +5,13 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Feed and pump reminders are exact alarms (see ReminderAlarms). USE_EXACT_ALARM is granted
+         at install on 33+; below that, SCHEDULE_EXACT_ALARM is granted by default. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".TakesTwoApplication"
@@ -36,6 +43,21 @@
                 <data android:scheme="com.oryareach.app" android:host="reset-password" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".notifications.ReminderAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".notifications.ReminderRearmReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

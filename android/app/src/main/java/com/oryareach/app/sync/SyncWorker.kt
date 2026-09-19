@@ -12,6 +12,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.oryareach.core.common.AppResult
+import com.oryareach.core.database.reminder.FeedingReminderRefresher
+import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.sync.SyncEngine
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -29,10 +31,19 @@ class SyncWorker(
 ) : CoroutineWorker(context, params), KoinComponent {
 
     private val engine: SyncEngine by inject()
+    private val feedingReminders: FeedingReminderRefresher by inject()
+    private val pumpReminders: PumpReminderRefresher by inject()
 
     override suspend fun doWork(): Result = when (val outcome = engine.sync()) {
-        is AppResult.Success ->
+        is AppResult.Success -> {
+            // A feed or pump logged on the partner's phone arrives here, never through this
+            // device's repositories — so this is where it moves this device's alarm.
+            if (outcome.data.pulled > 0) {
+                feedingReminders.refresh()
+                pumpReminders.refresh()
+            }
             if (outcome.data.shouldRetry) Result.retry() else Result.success()
+        }
 
         // A hard failure is still worth another attempt with backoff; the outbox is intact.
         is AppResult.Failure -> if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
