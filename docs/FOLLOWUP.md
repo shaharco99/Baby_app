@@ -28,25 +28,35 @@ were deleted afterwards.
 
 **Found:** Calendar legend chip "Google Calendar" wrapped mid-word. Fixed later the same day.
 
-## Still to test — Pixel (`49100DLAQ004MM`, English locale)
-Update it to the release that carries the two commits above first (install-as-update, never a
-debug build).
-- Cold start: `am start -W -S` x5 plus a screenrecord. Expect the name screen, then populated Home.
-- Reminders: exact alarm rings with the app swiped away and screen off; after a reboot; and under
-  Doze (`dumpsys battery unplug` + `dumpsys deviceidle force-idle`).
-- Repeat of the Xiaomi pass: drawer sweep, back history, pumping timer (pause / force-stop /
-  resume / stop), feeding table + backdated log, Settings children/intervals/version, the
-  "For the baby" category.
-- Old leftovers: Search pull-to-refresh, Book of Love icon pair.
+## 2026-09-19 (later) — Pixel + both-phone pass
 
-## Still to test — both phones together
-- A feed logged on one phone shows on the other, and moves the other's alarm after its next sync
-  (`dumpsys alarm | grep ReminderAlarmReceiver`). Same for a pump session.
-- A running/paused pump timer started on one phone, as seen on the other.
-- Feeding conflict display: edit the same feed on both phones offline, then sync both.
-- Add or rename a child in Settings on one phone, and it syncs.
-- Change the feed/pump interval on one phone: it syncs and both alarms re-arm.
-- The same records render correctly in Hebrew (Xiaomi) and English (Pixel).
+Both phones on a locally signed release of `362642e` (versionName 1.6.3). The Pixel now runs
+**Hebrew, light theme**, and the Xiaomi English, dark theme. The same records rendered correctly
+in both.
+
+**Pixel solo, all pass:** cold start (first frame ~150ms; it showed the same false empty state for
+~1.8s before the fix and shows none after), drawer sweep of 9 screens, back history, exit
+confirm, Search pull-to-refresh (no crash), Book of Love dialog with its book+heart icons, and
+the Calendar legend wrap fix. The reminder fired on time (17:10:00.07) with the app process killed.
+
+**Both phones, all pass:** a feed logged on the Pixel arrived on the Xiaomi and moved its alarm
+to the same instant; a conflict (same feed edited offline on both) showed the conflict screen,
+resolved, and both then agreed; a pump timer started on the Pixel showed running on the Xiaomi,
+and a pause from the Xiaomi showed frozen on the Pixel; a feed-interval change synced and
+re-armed both alarms, and reverting it cleared both; a child rename synced both ways. All test
+data was reverted or deleted.
+
+**Findings, not fixed:**
+- Conflict screen labels both versions only by the note text, so when only the amount differs
+  (11 vs 22 ml) the two sides look identical. It should show the fields that differ.
+- Cycle screen's mini month grid breaks "12" into two stacked digits in a narrow cell (Pixel,
+  Hebrew).
+- Calendar event dots sit about a third of a column left of their day (Xiaomi).
+- A partner's change only arrives on write, on open, or on the 6h background sync. With the
+  app open, nothing arrived in 30s. There's no live push.
+
+**Not tested:** real deep Doze. It needs the screen off, which locks both phones. MIUI also
+refused `force-idle` while on USB.
 
 ## Known limits (by design, not bugs)
 - A partner's feed can't move this phone's alarm while this app is closed: the workspace key is
