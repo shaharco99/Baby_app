@@ -1,6 +1,7 @@
 package com.oryareach.feature.feeding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,12 +22,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -34,9 +38,12 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +64,10 @@ import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
@@ -99,7 +109,7 @@ fun FeedingScreen(
 
                 when (uiState.historyView) {
                     HistoryView.LIST -> FeedingList(days = uiState.days, actions = actions)
-                    HistoryView.TABLE -> FeedingTable(days = uiState.days)
+                    HistoryView.TABLE -> FeedingTable(days = uiState.days, actions = actions)
                 }
             }
         }
@@ -114,6 +124,50 @@ fun FeedingScreen(
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             LogFeedForm(uiState = uiState, actions = actions)
         }
+    }
+
+    if (uiState.datePickerVisible) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = uiState.formFedAtEpochMillis.toUtcDateMillis(),
+        )
+        DatePickerDialog(
+            onDismissRequest = actions::onDismissDatePicker,
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { actions.onFedDateChange(it.toPickedDate()) }
+                }) { Text(stringResource(R.string.feeding_pick_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissDatePicker) {
+                    Text(stringResource(R.string.feeding_pick_cancel))
+                }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+
+    if (uiState.timePickerVisible) {
+        val fedAt = uiState.formFedAtEpochMillis.toLocalDateTime()
+        val timeState = rememberTimePickerState(
+            initialHour = fedAt.hour,
+            initialMinute = fedAt.minute,
+            is24Hour = true,
+        )
+        AlertDialog(
+            onDismissRequest = actions::onDismissTimePicker,
+            confirmButton = {
+                TextButton(onClick = {
+                    actions.onFedTimeChange(LocalTime(timeState.hour, timeState.minute))
+                }) { Text(stringResource(R.string.feeding_pick_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissTimePicker) {
+                    Text(stringResource(R.string.feeding_pick_cancel))
+                }
+            },
+            text = { TimePicker(state = timeState) },
+        )
     }
 }
 
@@ -276,15 +330,19 @@ private fun FeedingList(days: List<FeedingDay>, actions: FeedingActions) {
             // Newest first within the day: the list reads as a feed log, while the table's
             // columns read left-to-right through the day.
             items(day.feeds.reversed(), key = { it.id }) { feed ->
-                FeedRow(feed = feed, onDelete = { actions.onDeleteFeed(feed.id) })
+                FeedRow(
+                    feed = feed,
+                    onEdit = { actions.onEditFeedClick(feed) },
+                    onDelete = { actions.onDeleteFeed(feed.id) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FeedRow(feed: FeedingEntry, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -315,6 +373,7 @@ private fun FeedRow(feed: FeedingEntry, onDelete: () -> Unit) {
             feed.amountMl?.let {
                 Text(stringResource(R.string.feeding_amount_ml, it), style = MaterialTheme.typography.bodyMedium)
             }
+            TextButton(onClick = onEdit) { Text(stringResource(R.string.feeding_edit)) }
             TextButton(onClick = onDelete) { Text(stringResource(R.string.feeding_delete)) }
         }
     }
@@ -332,7 +391,7 @@ private fun feedMarks(feed: FeedingEntry): String = listOfNotNull(
  * Compose doesn't have — a [Row] of day groups, each a fixed set of rows.
  */
 @Composable
-private fun FeedingTable(days: List<FeedingDay>) {
+private fun FeedingTable(days: List<FeedingDay>, actions: FeedingActions) {
     if (days.isEmpty()) {
         Text(
             text = stringResource(R.string.feeding_empty_history),
@@ -351,7 +410,7 @@ private fun FeedingTable(days: List<FeedingDay>) {
                 item(key = "day-${day.date}") { DayTitleRow(day = day) }
                 items(day.feeds, key = { it.id }) { feed ->
                     HorizontalDivider()
-                    FeedCellsRow(feed = feed)
+                    FeedCellsRow(feed = feed, onEdit = { actions.onEditFeedClick(feed) })
                 }
             }
         }
@@ -397,7 +456,7 @@ private fun DayTitleRow(day: FeedingDay) {
 }
 
 @Composable
-private fun FeedCellsRow(feed: FeedingEntry) {
+private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
     val cells = listOf(
         formatClock(feed.fedAtEpochMillis),
         stringResource(feed.feedType.labelRes()),
@@ -406,7 +465,8 @@ private fun FeedCellsRow(feed: FeedingEntry) {
         if (feed.hadStool) MARK else "",
     )
 
-    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+    // A cell is too small a target for its own button, so the whole row opens the feed.
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onEdit)) {
         cells.forEachIndexed { index, text ->
             if (index > 0) VerticalDivider()
             TableCell(text = text, modifier = Modifier.weight(ColumnWeights[index]))
@@ -441,7 +501,14 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
         modifier = Modifier.fillMaxWidth().imePadding().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(stringResource(R.string.feeding_log_feed), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(
+                if (uiState.isEditing) R.string.feeding_edit_feed else R.string.feeding_log_feed,
+            ),
+            style = MaterialTheme.typography.titleMedium,
+        )
+
+        WhenFedRow(uiState = uiState, actions = actions)
 
         // Segmented buttons rather than a dropdown: three options, tapped constantly, and the
         // one being picked is worth seeing without opening anything.
@@ -492,6 +559,58 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
         Spacer(Modifier.height(8.dp))
     }
 }
+
+/**
+ * When the feed happened. Two buttons while logging — the default is now, and a retroactive
+ * entry walks either half back — and plain text while editing, because the time a feed happened
+ * is not something a later correction gets to move.
+ */
+@Composable
+private fun WhenFedRow(uiState: FeedingUiState, actions: FeedingActions) {
+    val fedAt = uiState.formFedAtEpochMillis.toLocalDateTime()
+    val date = fedAt.date.toString()
+    val time = "%02d:%02d".format(fedAt.hour, fedAt.minute)
+
+    if (uiState.isEditing) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.feeding_when_value, date, time),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(R.string.feeding_when_locked),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(onClick = actions::onOpenDatePicker, modifier = Modifier.weight(1f)) {
+            Text(date)
+        }
+        OutlinedButton(onClick = actions::onOpenTimePicker, modifier = Modifier.weight(1f)) {
+            Text(time)
+        }
+    }
+}
+
+private fun Long.toLocalDateTime(): LocalDateTime =
+    Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.currentSystemDefault())
+
+/**
+ * `DatePicker` reads and writes UTC midnights, so the local calendar day goes in and comes back
+ * out through [TimeZone.UTC] rather than being shifted by the device's offset on the way.
+ */
+private fun Long.toUtcDateMillis(): Long =
+    toLocalDateTime().date.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+
+private fun Long.toPickedDate(): LocalDate =
+    Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
 
 private fun formatClock(epochMillis: Long): String {
     val time = Instant.fromEpochMilliseconds(epochMillis)
@@ -544,12 +663,19 @@ private fun FeedingPreview() {
 
 private object NoopFeedingActions : FeedingActions {
     override fun onLogFeedClick() = Unit
+    override fun onEditFeedClick(feed: FeedingEntry) = Unit
     override fun onDismissSheet() = Unit
     override fun onFeedTypeChange(value: FeedType) = Unit
     override fun onAmountChange(value: String) = Unit
     override fun onToggleUrine() = Unit
     override fun onToggleStool() = Unit
     override fun onNoteChange(value: String) = Unit
+    override fun onOpenDatePicker() = Unit
+    override fun onDismissDatePicker() = Unit
+    override fun onFedDateChange(value: LocalDate) = Unit
+    override fun onOpenTimePicker() = Unit
+    override fun onDismissTimePicker() = Unit
+    override fun onFedTimeChange(value: LocalTime) = Unit
     override fun onLogFeed() = Unit
     override fun onDeleteFeed(id: String) = Unit
     override fun onHistoryViewChange(value: HistoryView) = Unit

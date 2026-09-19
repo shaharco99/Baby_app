@@ -13,6 +13,7 @@ import com.oryareach.core.domain.feeding.nextFeedCountdown
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
+import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.sync.SyncEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,18 +28,31 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Stable
 interface FeedingActions {
     fun onLogFeedClick()
+    fun onEditFeedClick(feed: FeedingEntry)
     fun onDismissSheet()
     fun onFeedTypeChange(value: FeedType)
     fun onAmountChange(value: String)
     fun onToggleUrine()
     fun onToggleStool()
     fun onNoteChange(value: String)
+    fun onOpenDatePicker()
+    fun onDismissDatePicker()
+    fun onFedDateChange(value: LocalDate)
+    fun onOpenTimePicker()
+    fun onDismissTimePicker()
+    fun onFedTimeChange(value: LocalTime)
     fun onLogFeed()
     fun onDeleteFeed(id: String)
     fun onHistoryViewChange(value: HistoryView)
@@ -108,15 +122,34 @@ class FeedingViewModel(
     override fun onLogFeedClick() = set {
         it.copy(
             sheetVisible = true,
+            editingFeedId = null,
             formFeedType = FeedType.BREAST_MILK,
             formAmountMl = "",
             formHadUrine = false,
             formHadStool = false,
             formNote = "",
+            // Now, the overwhelmingly common case: the feed just happened. A retroactive entry
+            // walks it back from here.
+            formFedAtEpochMillis = now(),
         )
     }
 
-    override fun onDismissSheet() = set { it.copy(sheetVisible = false) }
+    override fun onEditFeedClick(feed: FeedingEntry) = set {
+        it.copy(
+            sheetVisible = true,
+            editingFeedId = feed.id,
+            formFeedType = feed.feedType,
+            formAmountMl = feed.amountMl?.toString().orEmpty(),
+            formHadUrine = feed.hadUrine,
+            formHadStool = feed.hadStool,
+            formNote = feed.note.orEmpty(),
+            formFedAtEpochMillis = feed.fedAtEpochMillis,
+        )
+    }
+
+    override fun onDismissSheet() = set {
+        it.copy(sheetVisible = false, datePickerVisible = false, timePickerVisible = false)
+    }
     override fun onFeedTypeChange(value: FeedType) = set { it.copy(formFeedType = value) }
 
     /** Digits only: the field feeds an Int, and a stray character would silently drop the amount. */
@@ -129,6 +162,38 @@ class FeedingViewModel(
     override fun onNoteChange(value: String) = set { it.copy(formNote = value) }
     override fun onHistoryViewChange(value: HistoryView) = set { it.copy(historyView = value) }
 
+    override fun onOpenDatePicker() = set { it.copy(datePickerVisible = true) }
+    override fun onDismissDatePicker() = set { it.copy(datePickerVisible = false) }
+    override fun onOpenTimePicker() = set { it.copy(timePickerVisible = true) }
+    override fun onDismissTimePicker() = set { it.copy(timePickerVisible = false) }
+
+    /** Keeps the time of day and moves the date, so picking either one at a time works. */
+    override fun onFedDateChange(value: LocalDate) = set {
+        it.copy(
+            formFedAtEpochMillis = it.formFedAtEpochMillis.movedTo(date = value),
+            datePickerVisible = false,
+        )
+    }
+
+    override fun onFedTimeChange(value: LocalTime) = set {
+        it.copy(
+            formFedAtEpochMillis = it.formFedAtEpochMillis.movedTo(time = value),
+            timePickerVisible = false,
+        )
+    }
+
+    /**
+     * Rebuilds an instant with one half of it replaced, in the device's own zone — the pickers
+     * hand back a date or a time, never both, and the other half has to survive.
+     */
+    private fun Long.movedTo(date: LocalDate? = null, time: LocalTime? = null): Long {
+        val zone = timeZone()
+        val current = Instant.fromEpochMilliseconds(this).toLocalDateTime(zone)
+        return LocalDateTime(date ?: current.date, time ?: current.time)
+            .toInstant(zone)
+            .toEpochMilliseconds()
+    }
+
     override fun onLogFeed() {
         val workspace = workspaceId() ?: return
         val state = _uiState.value
@@ -137,18 +202,34 @@ class FeedingViewModel(
         set { it.copy(busy = true) }
 
         viewModelScope.launch {
-            repository.logFeed(
-                workspaceId = workspace,
-                babyId = baby.id,
-                userId = auth.currentUserId().orEmpty(),
-                feedType = state.formFeedType,
-                amountMl = state.formAmountMl.toIntOrNull(),
-                hadUrine = state.formHadUrine,
-                hadStool = state.formHadStool,
-                note = state.formNote.ifBlank { null },
-                intervalMinutes = state.intervalMinutes,
-            )
-            set { it.copy(busy = false, sheetVisible = false) }
+            val editingId = state.editingFeedId
+            if (editingId == null) {
+                repository.logFeed(
+                    workspaceId = workspace,
+                    babyId = baby.id,
+                    userId = auth.currentUserId().orEmpty(),
+                    feedType = state.formFeedType,
+                    amountMl = state.formAmountMl.toIntOrNull(),
+                    hadUrine = state.formHadUrine,
+                    hadStool = state.formHadStool,
+                    note = state.formNote.ifBlank { null },
+                    intervalMinutes = state.intervalMinutes,
+                    fedAt = state.formFedAtEpochMillis,
+                )
+            } else {
+                // `fedAt` goes back unchanged: the sheet shows it read-only while editing, and
+                // the reminder already scheduled off it stays correct as a result.
+                repository.update(
+                    id = editingId,
+                    feedType = state.formFeedType,
+                    amountMl = state.formAmountMl.toIntOrNull(),
+                    hadUrine = state.formHadUrine,
+                    hadStool = state.formHadStool,
+                    note = state.formNote.ifBlank { null },
+                    fedAt = state.formFedAtEpochMillis,
+                )
+            }
+            set { it.copy(busy = false, sheetVisible = false, editingFeedId = null) }
         }
     }
 

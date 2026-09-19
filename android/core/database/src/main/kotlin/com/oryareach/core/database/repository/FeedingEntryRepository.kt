@@ -85,9 +85,12 @@ class FeedingEntryRepository(
             search.index(EntityType.FEEDING_ENTRY, entity.id, workspaceId, "", entity.note.orEmpty())
             enqueue(entity.id, SyncOperationType.CREATE, entity.sync.clientMutationId, timestamp)
         }
-        // Scheduled off the feed's own time, not "now": a feed logged late still puts the next
-        // reminder an interval after it actually happened.
-        reminders.scheduleNext(fedAt, intervalMinutes)
+        // Scheduled off the most recent feed on record rather than the one just written, and off
+        // its own time rather than "now": a feed logged late still puts the reminder an interval
+        // after it actually happened, while a retroactive entry older than the last feed leaves
+        // the pending reminder where it is instead of dragging it into the past.
+        val latest = entries.findLatest(workspaceId, babyId)
+        reminders.scheduleNext(latest?.fedAt ?: fedAt, intervalMinutes)
         syncTrigger.syncNow()
         return entity.id
     }

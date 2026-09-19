@@ -22,13 +22,20 @@ data class FeedingUiState(
     /** Shared setting, kept here so logging a feed can schedule the reminder off it. */
     val intervalMinutes: Int = AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
 
-    // The log-a-feed sheet.
+    // The log-a-feed sheet, which doubles as the edit sheet — [editingFeedId] is what tells
+    // them apart.
     val sheetVisible: Boolean = false,
+    /** Null while logging a new feed, the row's id while editing an existing one. */
+    val editingFeedId: String? = null,
     val formFeedType: FeedType = FeedType.BREAST_MILK,
     val formAmountMl: String = "",
     val formHadUrine: Boolean = false,
     val formHadStool: Boolean = false,
     val formNote: String = "",
+    /** When the feed happened. Defaults to now; retroactive entries move it back. */
+    val formFedAtEpochMillis: Long = 0,
+    val datePickerVisible: Boolean = false,
+    val timePickerVisible: Boolean = false,
 
     // Transient UI-only.
     val historyView: HistoryView = HistoryView.LIST,
@@ -45,4 +52,12 @@ data class FeedingUiState(
      * shows the screen with an empty history and a working "Feed" button.
      */
     val hasBaby: Boolean get() = baby != null
+
+    /**
+     * Editing an existing feed leaves its date and time read-only. The moment a feed happened is
+     * what the whole log is arranged by — the countdown, the day grouping, the reminder that was
+     * already scheduled off it — so it is set once, when the feed is entered, and everything else
+     * about the row stays correctable.
+     */
+    val isEditing: Boolean get() = editingFeedId != null
 }
