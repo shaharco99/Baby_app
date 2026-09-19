@@ -222,9 +222,7 @@ class PairingViewModel(
                     identity.workspaceId = workspaceId
                     when (val registered = registerDevice(workspaceId)) {
                         is AppResult.Failure -> fail(registered.error)
-                        is AppResult.Success -> set {
-                            it.copy(busy = false, stage = PairingStage.AwaitingKey)
-                        }
+                        is AppResult.Success -> showAwaitingKey(workspaceId)
                     }
                 }
             }
@@ -306,18 +304,17 @@ class PairingViewModel(
 
     /** For a device that has joined but not yet been handed the key. */
     private suspend fun tryClaimKey(workspaceId: String) {
-        val deviceKeyId = identity.registeredKeyId
-            ?: when (val registered = registerDevice(workspaceId)) {
-                is AppResult.Failure -> return fail(registered.error)
-                is AppResult.Success -> registered.data
-            }
+        val deviceKeyId = when (val registered = registerDevice(workspaceId)) {
+            is AppResult.Failure -> return fail(registered.error)
+            is AppResult.Success -> registered.data
+        }
 
         when (val wrapped = workspaces.wrappedKeyFor(deviceKeyId)) {
             is AppResult.Failure -> fail(wrapped.error)
             is AppResult.Success -> {
                 val blob = wrapped.data
                 if (blob == null) {
-                    set { it.copy(stage = PairingStage.AwaitingKey, busy = false) }
+                    showAwaitingKey(workspaceId)
                     return
                 }
 
@@ -336,7 +333,21 @@ class PairingViewModel(
     }
 
     private suspend fun registerDevice(workspaceId: String): AppResult<String> {
-        identity.registeredKeyId?.let { return AppResult.Success(it) }
+        identity.registeredKeyId?.let { cached ->
+            // A registration belongs to one workspace. Reusing one from a workspace this device
+            // has since left leaves `device_keys.workspace_id` pointing at the old one, and RLS
+            // then hides this device from its new partner, so it never gets the key. Keep the
+            // cached id only while it is still a live device of *this* workspace.
+            when (val devices = workspaces.devices(workspaceId)) {
+                // Offline: the old behavior. Everything after this needs the network anyway.
+                is AppResult.Failure -> return AppResult.Success(cached)
+                is AppResult.Success ->
+                    if (devices.data.any { it.deviceKeyId == cached && !it.isRevoked }) {
+                        return AppResult.Success(cached)
+                    }
+            }
+            identity.registeredKeyId = null
+        }
 
         val publicKey = identity.keyPair().publicKey
         val result = workspaces.publishDeviceKey(
@@ -357,6 +368,15 @@ class PairingViewModel(
      */
     private fun keySuffix(publicKey: ByteArray): String =
         MessageDigest.getInstance("SHA-256").digest(publicKey).joinToString("") { "%02X".format(it) }.take(4)
+
+    private fun showAwaitingKey(workspaceId: String) {
+        set { it.copy(stage = PairingStage.AwaitingKey, busy = false) }
+        viewModelScope.launch {
+            // Best effort: without it the screen reads as it always did.
+            val emails = (workspaces.partnerEmails(workspaceId) as? AppResult.Success)?.data.orEmpty()
+            set { it.copy(partnerEmails = emails) }
+        }
+    }
 
     private fun showReady(workspaceId: String) {
         viewModelScope.launch {

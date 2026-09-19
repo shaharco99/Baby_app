@@ -19,6 +19,7 @@
 
     <string name="pairing_waiting_title">כמעט סיימנו</string>
     <string name="pairing_waiting_body">הצטרפתם למרחב. בן/בת הזוג צריכים לאשר את הטלפון הזה לפני שיוכל לקרוא משהו — בקשו מהם ללחוץ על אישור ואז בדקו שוב.</string>
+    <string name="pairing_waiting_on">ממתינים ל: %1$s</string>
     <string name="pairing_check_again">בדיקה חוזרת</string>
     <string name="pairing_recover_with_phrase">שחזור עם משפט במקום זאת</string>
 

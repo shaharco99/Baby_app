@@ -52,6 +52,12 @@ interface WorkspaceRepository {
     suspend fun wrappedKeyFor(deviceKeyId: String): AppResult<ByteArray?>
 
     /**
+     * The emails of the workspace's other members — who a joiner is waiting on. Empty for a
+     * non-member. Backed by `workspace_partner_emails` (migration 0010).
+     */
+    suspend fun partnerEmails(workspaceId: String): AppResult<List<String>>
+
+    /**
      * Marks [deviceKeyId] as revoked. This stops it being offered for future key-wrap
      * grants (see PairingViewModel's pending-device filter) — it does not end that
      * device's ongoing Supabase Auth session or rotate the workspace key.
@@ -68,6 +74,7 @@ class SupabaseWorkspaceRepository(private val client: SupabaseClient) : Workspac
     private data class DeviceKeyRow(
         val id: String,
         @SerialName("user_id") val userId: String,
+        @SerialName("workspace_id") val workspaceId: String? = null,
         @SerialName("public_key") val publicKey: String,
         val label: String? = null,
         @SerialName("revoked_at") val revokedAt: String? = null,
@@ -143,7 +150,8 @@ class SupabaseWorkspaceRepository(private val client: SupabaseClient) : Workspac
             .map { it.deviceKeyId }
             .toSet()
 
-        keys.map { row ->
+        // RLS returns every device in every workspace this user belongs to; only this one's count.
+        keys.filter { it.workspaceId == workspaceId }.map { row ->
             PartnerDevice(
                 deviceKeyId = row.id,
                 userId = row.userId,
@@ -153,6 +161,12 @@ class SupabaseWorkspaceRepository(private val client: SupabaseClient) : Workspac
                 isRevoked = row.revokedAt != null,
             )
         }
+    }
+
+    override suspend fun partnerEmails(workspaceId: String): AppResult<List<String>> = attempt {
+        client.postgrest
+            .rpc("workspace_partner_emails", buildJsonObject { put("ws", JsonPrimitive(workspaceId)) })
+            .decodeList<String>()
     }
 
     override suspend fun revokeDevice(deviceKeyId: String): AppResult<Unit> = attempt<Unit> {

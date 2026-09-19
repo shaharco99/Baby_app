@@ -285,6 +285,14 @@ private fun EnterCodeStage(uiState: PairingUiState, actions: PairingActions) {
 private fun AwaitingKeyStage(uiState: PairingUiState, actions: PairingActions) {
     Heading(R.string.pairing_waiting_title, R.string.pairing_waiting_body)
 
+    if (uiState.partnerEmails.isNotEmpty()) {
+        Text(
+            text = stringResource(R.string.pairing_waiting_on, uiState.partnerEmails.joinToString()),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
     Button(
         onClick = actions::onRefresh,
         enabled = !uiState.busy,

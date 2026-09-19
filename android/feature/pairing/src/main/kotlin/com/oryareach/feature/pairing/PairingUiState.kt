@@ -66,6 +66,11 @@ data class PairingUiState(
     val phraseConfirmed: Boolean = false,
     val recoveryPhraseInput: String = "",
     val busy: Boolean = false,
+    /**
+     * [PairingStage.AwaitingKey] only: who this device is waiting on, so a joiner can tell they
+     * landed in the right space. Empty while loading, offline, or if the server predates it.
+     */
+    val partnerEmails: List<String> = emptyList(),
     @StringRes val errorMessage: Int? = null,
 ) {
     val canSubmitCode: Boolean get() = enteredCode.length == CODE_LENGTH && !busy

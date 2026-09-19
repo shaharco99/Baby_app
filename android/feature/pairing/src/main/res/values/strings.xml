@@ -19,6 +19,7 @@
 
     <string name="pairing_waiting_title">Almost there</string>
     <string name="pairing_waiting_body">You have joined the space. Your partner needs to approve this phone before it can read anything — ask them to tap approve, then check again.</string>
+    <string name="pairing_waiting_on">Waiting on: %1$s</string>
     <string name="pairing_check_again">Check again</string>
     <string name="pairing_recover_with_phrase">Recover with a phrase instead</string>
 
