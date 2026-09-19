@@ -1,5 +1,8 @@
 package com.oryareach.feature.calendar
 
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -116,17 +119,22 @@ fun CalendarScreen(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        FilledTonalIconButton(onClick = actions::onPreviousMonth) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
-                        }
-                        Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleLarge)
-                        FilledTonalIconButton(onClick = actions::onNextMonth) {
-                            Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+                    // Pinned left-to-right in every language: "back" is the left button pointing left and
+                    // "next" the right one pointing right. Under RTL the Row used to swap the buttons but
+                    // not the chevrons, so in Hebrew the right-hand arrow went back a month.
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            FilledTonalIconButton(onClick = actions::onPreviousMonth) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
+                            }
+                            Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleLarge)
+                            FilledTonalIconButton(onClick = actions::onNextMonth) {
+                                Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+                            }
                         }
                     }
 

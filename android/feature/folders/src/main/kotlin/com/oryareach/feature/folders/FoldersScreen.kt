@@ -1,5 +1,6 @@
 package com.oryareach.feature.folders
 
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -33,7 +34,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -323,7 +323,13 @@ private fun Breadcrumb(uiState: FoldersUiState, actions: FoldersActions) {
             modifier = Modifier.clickable { actions.onNavigateToBreadcrumb(-1) },
         )
         uiState.breadcrumb.forEachIndexed { index, folder ->
-            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.padding(horizontal = 2.dp))
+            // Auto-mirrored: the path reads right-to-left in Hebrew, so the separator has to point
+            // left there, towards the deeper folder, not back at the one before it.
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.padding(horizontal = 2.dp),
+            )
             val isLast = index == uiState.breadcrumb.lastIndex
             Text(
                 text = folder.name,

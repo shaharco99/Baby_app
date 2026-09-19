@@ -1,5 +1,8 @@
 package com.oryareach.feature.cycle
 
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -313,17 +316,22 @@ private fun CalendarCard(uiState: CycleUiState, actions: CycleActions) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = actions::onPreviousMonth) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.cycle_calendar_previous_month))
-                }
-                Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleSmall)
-                IconButton(onClick = actions::onNextMonth) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.cycle_calendar_next_month))
+            // Pinned left-to-right in every language: "back" is the left button pointing left and
+            // "next" the right one pointing right. Under RTL the Row used to swap the buttons but
+            // not the chevrons, so in Hebrew the right-hand arrow went back a month.
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = actions::onPreviousMonth) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.cycle_calendar_previous_month))
+                    }
+                    Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleSmall)
+                    IconButton(onClick = actions::onNextMonth) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.cycle_calendar_next_month))
+                    }
                 }
             }
 
