@@ -7,6 +7,7 @@ import com.oryareach.core.domain.pumping.PumpingDay
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
+import kotlinx.datetime.LocalDate
 
 /** The history has two shapes; the toggle above it picks which one is drawn. */
 enum class PumpHistoryView { LIST, TABLE }
@@ -34,6 +35,18 @@ data class PumpingUiState(
     val countdown: FeedCountdown? = null,
     /** Shared setting, kept here so finishing a session can schedule the reminder off it. */
     val intervalMinutes: Int = AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES,
+    /**
+     * Today, in the viewer's zone, carried in state rather than read during composition: the day
+     * headers name today and yesterday, and a label that decides that for itself would go stale
+     * without anything telling it to redraw.
+     */
+    val today: LocalDate? = null,
+    /**
+     * Which side the card will start with. Deliberately *not* [formSide]: the sheet's picker and
+     * the card's picker used to be one field, so dismissing a sheet quietly rewrote what the card
+     * was set to.
+     */
+    val pendingSide: PumpSide = PumpSide.BOTH,
 
     // The sheet. It has three ways in — a session that was just stopped, an older session being
     // corrected, and one typed in from scratch — and [editingSessionId] plus [discardable] are
@@ -50,6 +63,8 @@ data class PumpingUiState(
     val formMinutes: String = "",
     val formAmountMl: String = "",
     val formNote: String = "",
+    /** Set once the minutes field has been typed in, so the error only shows after a real attempt. */
+    val minutesTouched: Boolean = false,
     /** When the session started. Defaults to now; a session typed in later moves it back. */
     val formStartedAtEpochMillis: Long = 0,
     val datePickerVisible: Boolean = false,
@@ -61,6 +76,11 @@ data class PumpingUiState(
     val refreshing: Boolean = false,
     /** Set for one burst of falling drops after a session is put away, then cleared. */
     val milkDrops: MilkDrops? = null,
+    /**
+     * The id of a session just deleted, while the undo is still on offer. The row is soft-deleted
+     * either way — this is only what keeps the snackbar on screen.
+     */
+    val undoDeleteId: String? = null,
     /** The stash panel, when it has been asked for and there is something in it. */
     val stash: MilkStash? = null,
 ) {
@@ -77,5 +97,13 @@ data class PumpingUiState(
     val isEditing: Boolean get() = editingSessionId != null
 
     /** Duration is the one field that has to be there — it is the point of the record. */
-    val canSave: Boolean get() = !busy && formMinutes.toIntOrNull()?.let { it > 0 } == true
+    val canSave: Boolean get() = !busy && hasMinutes
+
+    private val hasMinutes: Boolean get() = formMinutes.toIntOrNull()?.let { it > 0 } == true
+
+    /**
+     * Marks the minutes field rather than leaving Save dead with no explanation. Only after the
+     * field has been touched: an untouched form is not yet wrong, it is just empty.
+     */
+    val minutesError: Boolean get() = minutesTouched && !hasMinutes
 }

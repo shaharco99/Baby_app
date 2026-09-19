@@ -188,4 +188,8 @@
         <item>גור קואלה</item>
         <item>תינוקת מוכנה!</item>
     </string-array>
+    <string name="home_next_pump_label">עד השאיבה הבאה</string>
+    <string name="home_pump_overdue_label">השאיבה באיחור של</string>
+    <string name="home_pumping_now">שואבת כרגע</string>
+    <string name="home_pump_paused">שאיבה בהשהיה</string>
 </resources>

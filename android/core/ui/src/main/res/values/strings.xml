@@ -3,4 +3,16 @@
     <string name="app_drawer_title">Takes Two of Us</string>
     <string name="app_drawer_subtitle">Shahar &amp; Topaz</string>
     <string name="app_drawer_open">Open navigation menu</string>
+    <string name="day_label_today">Today</string>
+    <string name="day_label_yesterday">Yesterday</string>
+    <string name="day_label_value">%1$s, %2$d.%3$d</string>
+    <string-array name="day_label_weekdays">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
 </resources>

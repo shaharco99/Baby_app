@@ -384,6 +384,7 @@ private fun HomeRoute() {
                 onNavigateToShopping = { navigateTo(HomeTab.Shopping) },
                 onNavigateToTasks = { navigateTo(HomeTab.Tasks) },
                 onNavigateToFeeding = { navigateTo(HomeTab.Feeding) },
+                onNavigateToPumping = { navigateTo(HomeTab.Pumping) },
             )
             HomeTab.Tasks -> TasksRoute(
                 modifier = androidx.compose.ui.Modifier.padding(padding),
@@ -446,6 +447,7 @@ private fun HomeTabRoute(
     onNavigateToShopping: () -> Unit = {},
     onNavigateToTasks: () -> Unit = {},
     onNavigateToFeeding: () -> Unit = {},
+    onNavigateToPumping: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -456,6 +458,7 @@ private fun HomeTabRoute(
         onNavigateToShopping = onNavigateToShopping,
         onNavigateToTasks = onNavigateToTasks,
         onNavigateToFeeding = onNavigateToFeeding,
+        onNavigateToPumping = onNavigateToPumping,
     )
 }
 

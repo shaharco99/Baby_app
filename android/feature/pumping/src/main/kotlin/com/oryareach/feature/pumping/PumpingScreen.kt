@@ -19,9 +19,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -29,6 +33,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -38,6 +44,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -51,12 +60,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -68,6 +81,7 @@ import com.oryareach.core.domain.pumping.MilkStash
 import com.oryareach.core.domain.pumping.PumpingDay
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
+import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -87,7 +101,25 @@ fun PumpingScreen(
     actions: PumpingActions,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(modifier = modifier.fillMaxSize().safeDrawingPadding()) { padding ->
+    val snackbarHostState = remember { SnackbarHostState() }
+    val undoLabel = stringResource(R.string.pumping_undo_action)
+    val deletedLabel = stringResource(R.string.pumping_deleted)
+
+    // The snackbar owns the undo window: when it goes, so does the offer.
+    LaunchedEffect(uiState.undoDeleteId) {
+        val id = uiState.undoDeleteId ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = deletedLabel,
+            actionLabel = undoLabel,
+            withDismissAction = false,
+        )
+        if (result == SnackbarResult.ActionPerformed) actions.onUndoDelete() else actions.onUndoDismissed()
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize().safeDrawingPadding(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         PullToRefreshBox(
             isRefreshing = uiState.refreshing,
             onRefresh = actions::onRefresh,
@@ -105,15 +137,11 @@ fun PumpingScreen(
 
                 TimerCard(uiState = uiState, actions = actions)
 
-                OutlinedButton(onClick = actions::onLogPastClick, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.pumping_log_past))
-                }
-
                 HistoryViewToggle(selected = uiState.historyView, actions = actions)
 
                 when (uiState.historyView) {
-                    PumpHistoryView.LIST -> PumpingList(days = uiState.days, actions = actions)
-                    PumpHistoryView.TABLE -> PumpingTable(days = uiState.days, actions = actions)
+                    PumpHistoryView.LIST -> PumpingList(days = uiState.days, today = uiState.today, actions = actions)
+                    PumpHistoryView.TABLE -> PumpingTable(days = uiState.days, today = uiState.today, actions = actions)
                 }
             }
         }
@@ -194,7 +222,9 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
             .combinedClickable(onClick = {}, onLongClick = actions::onTimerLongPress),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            // Tighter while running: the card is then the only thing anyone is looking at, and
+            // the history below it deserves the rest of the screen.
+            modifier = Modifier.fillMaxWidth().padding(if (uiState.isRunning) 16.dp else 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -221,6 +251,20 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
                         MaterialTheme.colorScheme.primary
                     },
                 )
+                // Which side, and since when: without this the running card cannot answer
+                // "wait, which one did I pick", and leaving the page to find out is worse.
+                uiState.running?.let { running ->
+                    Text(
+                        text = stringResource(
+                            R.string.pumping_running_detail,
+                            stringResource(running.side.labelRes()),
+                            formatClock(running.startedAtEpochMillis),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -244,11 +288,18 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
             CountdownText(countdown = uiState.countdown)
 
             // Which side is picked before Start, so the running card stays a clock and a Stop
-            // button — and it can still be corrected in the sheet on the way out.
-            SideRow(selected = uiState.formSide, onChange = actions::onSideChange)
+            // button — and it can still be corrected in the sheet on the way out. Its own state,
+            // never the sheet's: a dismissed sheet must not rewrite what the card was set to.
+            SideRow(selected = uiState.pendingSide, onChange = actions::onPendingSideChange)
 
             Button(onClick = actions::onStartClick, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.pumping_start))
+            }
+
+            // In the card rather than below it: as a full-width button of its own it cost the
+            // history a row, for something used far less often than Start.
+            TextButton(onClick = actions::onLogPastClick) {
+                Text(stringResource(R.string.pumping_log_past))
             }
         }
     }
@@ -449,7 +500,7 @@ private fun HistoryViewToggle(selected: PumpHistoryView, actions: PumpingActions
 }
 
 @Composable
-private fun PumpingList(days: List<PumpingDay>, actions: PumpingActions) {
+private fun PumpingList(days: List<PumpingDay>, today: LocalDate?, actions: PumpingActions) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
@@ -459,7 +510,7 @@ private fun PumpingList(days: List<PumpingDay>, actions: PumpingActions) {
         days.forEach { day ->
             item(key = "header-${day.date}") {
                 Text(
-                    text = dayHeader(day),
+                    text = dayHeader(day, today),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 8.dp),
@@ -478,11 +529,29 @@ private fun PumpingList(days: List<PumpingDay>, actions: PumpingActions) {
     }
 }
 
+/**
+ * One session. The row itself opens it, so there is no Edit button competing for the same space —
+ * that button, a delete button and the content together left nothing room enough to read in
+ * Hebrew. Delete is the one icon, and it offers an undo rather than asking first.
+ */
 @Composable
 private fun SessionRow(session: PumpSession, onEdit: () -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit)) {
+    val description = sessionDescription(session)
+    val deleteLabel = stringResource(R.string.pumping_delete)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            // Announced as one activatable thing with everything in it: read cell by cell, a row
+            // of times and numbers tells a screen reader nothing and offers it nothing to press.
+            .semantics(mergeDescendants = true) {
+                contentDescription = description
+                role = Role.Button
+            }
+            .clickable(onClick = onEdit),
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -516,10 +585,29 @@ private fun SessionRow(session: PumpSession, onEdit: () -> Unit, onDelete: () ->
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            TextButton(onClick = onEdit) { Text(stringResource(R.string.pumping_edit)) }
-            TextButton(onClick = onDelete) { Text(stringResource(R.string.pumping_delete)) }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = deleteLabel,
+                )
+            }
         }
     }
+}
+
+/**
+ * What a screen reader is told about a session, in the order someone would say it: when, which
+ * side, how long, and how much if it was measured.
+ */
+@Composable
+private fun sessionDescription(session: PumpSession): String {
+    val side = stringResource(session.side.labelRes())
+    val length = session.durationMinutes
+        ?.let { stringResource(R.string.pumping_minutes, it) }
+        ?: stringResource(R.string.pumping_in_progress)
+    val amount = session.amountMl?.let { stringResource(R.string.pumping_amount_ml, it) }
+    return listOfNotNull(formatClock(session.startedAtEpochMillis), side, length, amount)
+        .joinToString(", ")
 }
 
 /**
@@ -527,7 +615,7 @@ private fun SessionRow(session: PumpSession, onEdit: () -> Unit, onDelete: () ->
  * per calendar day, one thin row per session. Hand-laid-out, because Compose has no table.
  */
 @Composable
-private fun PumpingTable(days: List<PumpingDay>, actions: PumpingActions) {
+private fun PumpingTable(days: List<PumpingDay>, today: LocalDate?, actions: PumpingActions) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
@@ -539,7 +627,7 @@ private fun PumpingTable(days: List<PumpingDay>, actions: PumpingActions) {
 
         LazyColumn {
             days.forEach { day ->
-                item(key = "day-${day.date}") { DayTitleRow(day = day) }
+                item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
                 items(day.sessions, key = { it.id }) { session ->
                     HorizontalDivider()
                     SessionCellsRow(session = session, onEdit = { actions.onEditClick(session) })
@@ -567,7 +655,7 @@ private fun TableHeaderRow() {
 }
 
 @Composable
-private fun DayTitleRow(day: PumpingDay) {
+private fun DayTitleRow(day: PumpingDay, today: LocalDate?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -575,7 +663,7 @@ private fun DayTitleRow(day: PumpingDay) {
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Text(
-            text = dayHeader(day),
+            text = dayHeader(day, today),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -588,12 +676,23 @@ private fun SessionCellsRow(session: PumpSession, onEdit: () -> Unit) {
     val cells = listOf(
         formatClock(session.startedAtEpochMillis),
         stringResource(session.side.labelRes()),
+        // Two different kinds of nothing, told apart: still going, versus never measured.
         session.durationMinutes?.toString() ?: MARK_RUNNING,
-        session.amountMl?.toString().orEmpty(),
+        session.amountMl?.toString() ?: MARK_UNMEASURED,
     )
+    val description = sessionDescription(session)
 
     // A cell is too small a target for its own button, so the whole row opens the session.
-    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onEdit)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .semantics(mergeDescendants = true) {
+                contentDescription = description
+                role = Role.Button
+            }
+            .clickable(onClick = onEdit),
+    ) {
         cells.forEachIndexed { index, text ->
             if (index > 0) VerticalDivider()
             TableCell(text = text, modifier = Modifier.weight(ColumnWeights[index]))
@@ -621,19 +720,37 @@ private fun TableCell(text: String, header: Boolean = false, modifier: Modifier 
     }
 }
 
+/** Says what to do rather than only that there is nothing — an empty log is the first thing seen. */
 @Composable
 private fun EmptyHistory() {
-    Text(
-        text = stringResource(R.string.pumping_empty_history),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.pumping_empty_history),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(R.string.pumping_empty_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 @Composable
 private fun PumpSessionForm(uiState: PumpingUiState, actions: PumpingActions) {
+    // Scrolls inside the sheet: with the keyboard up on a short phone, Save was below the fold.
     Column(
-        modifier = Modifier.fillMaxWidth().imePadding().padding(24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
+            .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -647,11 +764,22 @@ private fun PumpSessionForm(uiState: PumpingUiState, actions: PumpingActions) {
 
         SideRow(selected = uiState.formSide, onChange = actions::onSideChange)
 
+        // The one required field, and marked as such: a dead Save button with nothing said
+        // about why is the worst version of this form.
         OutlinedTextField(
             value = uiState.formMinutes,
             onValueChange = actions::onMinutesChange,
             label = { Text(stringResource(R.string.pumping_minutes_field)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = uiState.minutesError,
+            supportingText = if (uiState.minutesError) {
+                { Text(stringResource(R.string.pumping_minutes_required)) }
+            } else {
+                null
+            },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next,
+            ),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -660,7 +788,10 @@ private fun PumpSessionForm(uiState: PumpingUiState, actions: PumpingActions) {
             value = uiState.formAmountMl,
             onValueChange = actions::onAmountChange,
             label = { Text(stringResource(R.string.pumping_amount_field)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next,
+            ),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -669,6 +800,9 @@ private fun PumpSessionForm(uiState: PumpingUiState, actions: PumpingActions) {
             value = uiState.formNote,
             onValueChange = actions::onNoteChange,
             label = { Text(stringResource(R.string.pumping_note_field)) },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            // Bounded: an unbounded note field grows until it pushes Save off the sheet.
+            maxLines = 3,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -732,8 +866,10 @@ private fun WhenStartedRow(uiState: PumpingUiState, actions: PumpingActions) {
 
 /** A day's totals, with the millilitres only when something that day was measured. */
 @Composable
-private fun dayHeader(day: PumpingDay): String {
-    val date = day.date.toString()
+private fun dayHeader(day: PumpingDay, today: LocalDate?): String {
+    // Today and yesterday by name, anything older by weekday: at 3am that places a row faster
+    // than an ISO date does. Shared with the feeding log, hence `:core:ui`.
+    val date = today?.let { dayLabel(day.date, it) } ?: day.date.toString()
     val minutes = day.totalMinutes ?: return date
     val ml = day.totalMl ?: return stringResource(R.string.pumping_day_header, date, minutes)
     return stringResource(R.string.pumping_day_header_with_ml, date, minutes, ml)
@@ -760,6 +896,9 @@ private fun formatClock(epochMillis: Long): String {
 
 /** A session with no length yet — it is still going. */
 private const val MARK_RUNNING = "…"
+
+/** An output nobody measured, as distinct from a cell that failed to draw. */
+private const val MARK_UNMEASURED = "–"
 
 /** Long enough to read as falling, short enough not to sit in front of the log. */
 private const val FALL_MILLIS = 1_700
@@ -822,6 +961,7 @@ private object NoopPumpingActions : PumpingActions {
     override fun onEditClick(session: PumpSession) = Unit
     override fun onDismissSheet() = Unit
     override fun onSideChange(value: PumpSide) = Unit
+    override fun onPendingSideChange(value: PumpSide) = Unit
     override fun onMinutesChange(value: String) = Unit
     override fun onAmountChange(value: String) = Unit
     override fun onNoteChange(value: String) = Unit
@@ -834,6 +974,8 @@ private object NoopPumpingActions : PumpingActions {
     override fun onSave() = Unit
     override fun onDiscard() = Unit
     override fun onDeleteSession(id: String) = Unit
+    override fun onUndoDelete() = Unit
+    override fun onUndoDismissed() = Unit
     override fun onHistoryViewChange(value: PumpHistoryView) = Unit
     override fun onRefresh() = Unit
 }

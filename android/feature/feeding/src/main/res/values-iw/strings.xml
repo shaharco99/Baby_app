@@ -32,7 +32,7 @@
     <string name="feeding_view_table">טבלה</string>
     <string name="feeding_row_time">שעה</string>
     <string name="feeding_row_type">סוג האכלה</string>
-    <string name="feeding_row_amount">כמות</string>
+    <string name="feeding_row_amount">מ״ל</string>
     <string name="feeding_row_urine">שתן</string>
     <string name="feeding_row_stool">צואה</string>
     <string name="feeding_night_watch_title">שמירת לילה</string>

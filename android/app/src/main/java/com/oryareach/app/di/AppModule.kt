@@ -241,6 +241,7 @@ val appModule = module {
             settingsRepository = get(),
             babyRepository = get(),
             feedingRepository = get(),
+            pumpRepository = get(),
             taskRepository = get(),
             shoppingRepository = get(),
             importantDateRepository = get(),

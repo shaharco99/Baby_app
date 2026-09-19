@@ -96,6 +96,7 @@ fun HomeScreen(
     onNavigateToShopping: () -> Unit = {},
     onNavigateToTasks: () -> Unit = {},
     onNavigateToFeeding: () -> Unit = {},
+    onNavigateToPumping: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -132,6 +133,10 @@ fun HomeScreen(
 
                     FeedCountdownCard(countdown = uiState.feedCountdown, onClick = onNavigateToFeeding)
 
+                    if (uiState.showPumpCard) {
+                        PumpCountdownCard(uiState = uiState, onClick = onNavigateToPumping)
+                    }
+
                     BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
 
                     if (uiState.openTaskCount > 0) {
@@ -151,6 +156,10 @@ fun HomeScreen(
                     )
 
                     uiState.progress?.let { progress -> WeeklyInfoCard(progress = progress) }
+
+                    if (uiState.showPumpCard) {
+                        PumpCountdownCard(uiState = uiState, onClick = onNavigateToPumping)
+                    }
 
                     BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
 
@@ -562,6 +571,66 @@ private fun ChildSwitcher(uiState: HomeUiState, actions: HomeActions) {
                 selected = child.id == uiState.activeBaby?.id,
                 onClick = { actions.onSelectChild(child.id) },
                 label = { Text(child.name ?: stringResource(R.string.home_child_unnamed)) },
+            )
+        }
+    }
+}
+
+/**
+ * The pumping counterpart to [FeedCountdownCard], and the one card here that is not about the
+ * child: it reads the same on the moon page as in baby mode.
+ *
+ * A session in progress takes precedence over the countdown — while she is on the pump, "how long
+ * so far" is the only number worth showing, and the countdown to the next one is meaningless until
+ * this one ends.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PumpCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            val running = uiState.pumpRunning
+            if (running != null) {
+                Text(
+                    text = stringResource(
+                        if (running.isPaused) R.string.home_pump_paused else R.string.home_pumping_now,
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = formatCountdown(uiState.pumpElapsedMillis),
+                    style = MaterialTheme.typography.displaySmall,
+                    // Dimmed while paused, so a clock that has stopped looks stopped.
+                    color = if (running.isPaused) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
+                return@Column
+            }
+
+            val countdown = uiState.pumpCountdown ?: return@Column
+            Text(
+                text = stringResource(
+                    if (countdown.isOverdue) R.string.home_pump_overdue_label else R.string.home_next_pump_label,
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = formatCountdown(countdown.remainingMillis),
+                style = MaterialTheme.typography.displaySmall,
+                color = if (countdown.isOverdue) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             )
         }
     }

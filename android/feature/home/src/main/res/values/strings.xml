@@ -268,4 +268,8 @@
         <item>🐨</item>
         <item>👶</item>
     </string-array>
+    <string name="home_next_pump_label">Until the next pump</string>
+    <string name="home_pump_overdue_label">Pump overdue by</string>
+    <string name="home_pumping_now">Pumping now</string>
+    <string name="home_pump_paused">Pumping, paused</string>
 </resources>

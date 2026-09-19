@@ -213,6 +213,40 @@ class PumpSessionRepository(
         )
     }
 
+    /**
+     * Undoes a [delete]. The row was only ever soft-deleted, so this is a matter of clearing the
+     * tombstone and pushing it again — which is why the list can offer an undo rather than a
+     * confirmation dialog on every delete.
+     *
+     * A session already gone from the server would come back as a new write, which is the right
+     * outcome: the point is that nothing is lost by a mis-tap.
+     */
+    suspend fun restore(id: String) {
+        val existing = sessions.findById(id) ?: return
+        val timestamp = now()
+        val entity = existing.copy(
+            sync = existing.sync.copy(
+                deletedAt = null,
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                clientMutationId = newId(),
+            ),
+        )
+
+        database.withTransaction {
+            sessions.upsert(entity)
+            search.index(
+                EntityType.PUMP_SESSION,
+                entity.id,
+                entity.sync.workspaceId,
+                "",
+                entity.note.orEmpty(),
+            )
+            enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
+        }
+        syncTrigger.syncNow()
+    }
+
     suspend fun delete(id: String) {
         val timestamp = now()
         database.withTransaction {

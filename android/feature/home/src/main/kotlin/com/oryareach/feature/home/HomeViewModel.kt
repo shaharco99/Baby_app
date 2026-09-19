@@ -7,6 +7,7 @@ import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
+import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.importer.parseWebSnapshot
@@ -76,6 +77,7 @@ class HomeViewModel(
     private val settingsRepository: AppSettingsRepository,
     private val babyRepository: BabyRepository,
     private val feedingRepository: FeedingEntryRepository,
+    private val pumpRepository: PumpSessionRepository,
     private val taskRepository: TaskRepository,
     private val shoppingRepository: ShoppingItemRepository,
     private val importantDateRepository: ImportantDateRepository,
@@ -133,6 +135,9 @@ class HomeViewModel(
                             editingBirthWeightGrams = current.editingBirthWeightGrams,
                             editingBirthPlace = current.editingBirthPlace,
                             feedCountdown = current.feedCountdown,
+                            pumpCountdown = current.pumpCountdown,
+                            pumpRunning = current.pumpRunning,
+                            pumpElapsedMillis = current.pumpElapsedMillis,
                         )
                     }
                 }
@@ -157,6 +162,37 @@ class HomeViewModel(
                         }
                     }
                     .collect { countdown -> set { it.copy(feedCountdown = countdown) } }
+            }
+
+            // The pump countdown, on the same terms as the feed one: the repository directly,
+            // never :feature:pumping. It is not inside the baby-mode branch because pumping is
+            // workspace-scoped — it has no child, and it can start before the birth.
+            viewModelScope.launch {
+                combine(
+                    pumpRepository.observeRunning(id),
+                    pumpRepository.observeLatest(id),
+                    settingsRepository.observe(id),
+                    ticker(),
+                ) { running, latest, settings, _ ->
+                    Triple(
+                        running,
+                        running?.elapsedMillisAt(now()) ?: 0L,
+                        nextFeedCountdown(
+                            lastFedAtEpochMillis = latest?.startedAtEpochMillis,
+                            intervalMinutes = settings?.pumpIntervalMinutes
+                                ?: AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES,
+                            nowEpochMillis = now(),
+                        ),
+                    )
+                }.collect { (running, elapsed, countdown) ->
+                    set {
+                        it.copy(
+                            pumpRunning = running,
+                            pumpElapsedMillis = elapsed,
+                            pumpCountdown = countdown,
+                        )
+                    }
+                }
             }
 
             // An install that predates per-child records has its pregnancy on `app_settings`

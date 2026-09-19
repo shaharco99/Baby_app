@@ -7,6 +7,7 @@ import com.oryareach.core.domain.feeding.FeedingTally
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
+import kotlinx.datetime.LocalDate
 
 /** The history has two shapes; the toggle above it picks which one is drawn. */
 enum class HistoryView { LIST, TABLE }
@@ -19,6 +20,8 @@ data class FeedingUiState(
 
     // Derived from the last feed and the workspace's interval, recomputed on every tick.
     val countdown: FeedCountdown? = null,
+    /** Today, in the viewer's zone: the day headers name today and yesterday rather than dating them. */
+    val today: LocalDate? = null,
     /** Shared setting, kept here so logging a feed can schedule the reminder off it. */
     val intervalMinutes: Int = AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
 

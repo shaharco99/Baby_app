@@ -32,7 +32,7 @@
     <string name="feeding_view_table">Table</string>
     <string name="feeding_row_time">Time</string>
     <string name="feeding_row_type">Type</string>
-    <string name="feeding_row_amount">Amount</string>
+    <string name="feeding_row_amount">ml</string>
     <string name="feeding_row_urine">Urine</string>
     <string name="feeding_row_stool">Stool</string>
     <string name="feeding_night_watch_title">Night watch</string>

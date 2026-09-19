@@ -62,6 +62,7 @@ import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -108,8 +109,8 @@ fun FeedingScreen(
                 HistoryViewToggle(selected = uiState.historyView, actions = actions)
 
                 when (uiState.historyView) {
-                    HistoryView.LIST -> FeedingList(days = uiState.days, actions = actions)
-                    HistoryView.TABLE -> FeedingTable(days = uiState.days, actions = actions)
+                    HistoryView.LIST -> FeedingList(days = uiState.days, today = uiState.today, actions = actions)
+                    HistoryView.TABLE -> FeedingTable(days = uiState.days, today = uiState.today, actions = actions)
                 }
             }
         }
@@ -305,7 +306,7 @@ private fun HistoryViewToggle(selected: HistoryView, actions: FeedingActions) {
 }
 
 @Composable
-private fun FeedingList(days: List<FeedingDay>, actions: FeedingActions) {
+private fun FeedingList(days: List<FeedingDay>, today: LocalDate?, actions: FeedingActions) {
     if (days.isEmpty()) {
         Text(
             text = stringResource(R.string.feeding_empty_history),
@@ -319,9 +320,7 @@ private fun FeedingList(days: List<FeedingDay>, actions: FeedingActions) {
         days.forEach { day ->
             item(key = "header-${day.date}") {
                 Text(
-                    text = day.totalMl
-                        ?.let { stringResource(R.string.feeding_day_header_with_total, day.date.toString(), it) }
-                        ?: day.date.toString(),
+                    text = dayHeader(day, today),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 8.dp),
@@ -391,7 +390,7 @@ private fun feedMarks(feed: FeedingEntry): String = listOfNotNull(
  * Compose doesn't have — a [Row] of day groups, each a fixed set of rows.
  */
 @Composable
-private fun FeedingTable(days: List<FeedingDay>, actions: FeedingActions) {
+private fun FeedingTable(days: List<FeedingDay>, today: LocalDate?, actions: FeedingActions) {
     if (days.isEmpty()) {
         Text(
             text = stringResource(R.string.feeding_empty_history),
@@ -407,7 +406,7 @@ private fun FeedingTable(days: List<FeedingDay>, actions: FeedingActions) {
 
         LazyColumn {
             days.forEach { day ->
-                item(key = "day-${day.date}") { DayTitleRow(day = day) }
+                item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
                 items(day.feeds, key = { it.id }) { feed ->
                     HorizontalDivider()
                     FeedCellsRow(feed = feed, onEdit = { actions.onEditFeedClick(feed) })
@@ -437,7 +436,7 @@ private fun TableHeaderRow() {
 
 /** Separates one calendar day's feeds from the next, the thick divider on the paper sheet. */
 @Composable
-private fun DayTitleRow(day: FeedingDay) {
+private fun DayTitleRow(day: FeedingDay, today: LocalDate?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -445,9 +444,7 @@ private fun DayTitleRow(day: FeedingDay) {
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Text(
-            text = day.totalMl
-                ?.let { stringResource(R.string.feeding_day_header_with_total, day.date.toString(), it) }
-                ?: day.date.toString(),
+            text = dayHeader(day, today),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -622,6 +619,16 @@ private const val MARK = "✓"
 
 /** Time and type carry the most text; the two marks are a tick or nothing. */
 private val ColumnWeights = listOf(1.1f, 1.6f, 1f, 0.7f, 0.7f)
+
+/**
+ * Today and yesterday by name, anything older by weekday and a short date — the same labels the
+ * pumping log uses, from `:core:ui`, so a day reads identically in both.
+ */
+@Composable
+private fun dayHeader(day: FeedingDay, today: LocalDate?): String {
+    val date = today?.let { dayLabel(day.date, it) } ?: day.date.toString()
+    return day.totalMl?.let { stringResource(R.string.feeding_day_header_with_total, date, it) } ?: date
+}
 
 private val TableRowLabels = listOf(
     R.string.feeding_row_time,

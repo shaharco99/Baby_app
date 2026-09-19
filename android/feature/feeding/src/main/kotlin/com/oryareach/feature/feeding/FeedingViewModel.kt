@@ -34,6 +34,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -113,7 +114,13 @@ class FeedingViewModel(
                         }
                     }
                     .collect { (interval, countdown) ->
-                        set { it.copy(countdown = countdown, intervalMinutes = interval) }
+                        set {
+                            it.copy(
+                                countdown = countdown,
+                                intervalMinutes = interval,
+                                today = Clock.System.todayIn(timeZone()),
+                            )
+                        }
                     }
             }
         }

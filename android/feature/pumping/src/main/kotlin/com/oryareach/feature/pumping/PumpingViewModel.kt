@@ -28,6 +28,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -44,6 +45,7 @@ interface PumpingActions {
     fun onEditClick(session: PumpSession)
     fun onDismissSheet()
     fun onSideChange(value: PumpSide)
+    fun onPendingSideChange(value: PumpSide)
     fun onMinutesChange(value: String)
     fun onAmountChange(value: String)
     fun onNoteChange(value: String)
@@ -56,6 +58,8 @@ interface PumpingActions {
     fun onSave()
     fun onDiscard()
     fun onDeleteSession(id: String)
+    fun onUndoDelete()
+    fun onUndoDismissed()
     fun onHistoryViewChange(value: PumpHistoryView)
     fun onRefresh()
 }
@@ -113,6 +117,7 @@ class PumpingViewModel(
                             nowEpochMillis = now(),
                         ),
                         intervalMinutes = interval,
+                        today = Clock.System.todayIn(timeZone()),
                     )
                 }.collect { snapshot ->
                     set {
@@ -121,6 +126,7 @@ class PumpingViewModel(
                             elapsedMillis = snapshot.elapsedMillis,
                             countdown = snapshot.countdown,
                             intervalMinutes = snapshot.intervalMinutes,
+                            today = snapshot.today,
                         )
                     }
                 }
@@ -136,7 +142,7 @@ class PumpingViewModel(
             repository.start(
                 workspaceId = workspace,
                 userId = auth.currentUserId().orEmpty(),
-                side = _uiState.value.formSide,
+                side = _uiState.value.pendingSide,
             )
         }
     }
@@ -170,7 +176,7 @@ class PumpingViewModel(
         viewModelScope.launch {
             repository.stop(
                 id = running.id,
-                side = state.formSide,
+                side = running.side,
                 amountMl = null,
                 note = null,
                 intervalMinutes = state.intervalMinutes,
@@ -181,8 +187,9 @@ class PumpingViewModel(
                     sheetVisible = true,
                     editingSessionId = running.id,
                     discardable = true,
-                    formSide = state.formSide,
+                    formSide = running.side,
                     formMinutes = (stopped?.durationMinutes ?: 0).toString(),
+                    minutesTouched = false,
                     formAmountMl = "",
                     formNote = "",
                     formStartedAtEpochMillis = running.startedAtEpochMillis,
@@ -196,8 +203,9 @@ class PumpingViewModel(
             sheetVisible = true,
             editingSessionId = null,
             discardable = false,
-            formSide = PumpSide.BOTH,
+            formSide = it.pendingSide,
             formMinutes = "",
+            minutesTouched = false,
             formAmountMl = "",
             formNote = "",
             // Now, then walked back: a session typed in later is usually one from earlier today.
@@ -205,13 +213,26 @@ class PumpingViewModel(
         )
     }
 
-    override fun onEditClick(session: PumpSession) = set {
+    /**
+     * A running session has no end time for the sheet to correct, so tapping its row stops it —
+     * which is what anyone tapping the row that says "in progress" is trying to do anyway.
+     */
+    override fun onEditClick(session: PumpSession) {
+        if (session.isRunning) {
+            onStopClick()
+            return
+        }
+        setEditing(session)
+    }
+
+    private fun setEditing(session: PumpSession) = set {
         it.copy(
             sheetVisible = true,
             editingSessionId = session.id,
             discardable = false,
             formSide = session.side,
             formMinutes = session.durationMinutes?.toString().orEmpty(),
+            minutesTouched = false,
             formAmountMl = session.amountMl?.toString().orEmpty(),
             formNote = session.note.orEmpty(),
             formStartedAtEpochMillis = session.startedAtEpochMillis,
@@ -224,9 +245,15 @@ class PumpingViewModel(
 
     override fun onSideChange(value: PumpSide) = set { it.copy(formSide = value) }
 
+    /** The card's own choice, which the sheet never touches. */
+    override fun onPendingSideChange(value: PumpSide) = set { it.copy(pendingSide = value) }
+
     /** Digits only, for the same reason as the amount: the field feeds an Int. */
     override fun onMinutesChange(value: String) = set {
-        it.copy(formMinutes = value.filter(Char::isDigit).take(MAX_MINUTES_DIGITS))
+        it.copy(
+            formMinutes = value.filter(Char::isDigit).take(MAX_MINUTES_DIGITS),
+            minutesTouched = true,
+        )
     }
 
     override fun onAmountChange(value: String) = set {
@@ -271,7 +298,11 @@ class PumpingViewModel(
     override fun onSave() {
         val workspace = workspaceId() ?: return
         val state = _uiState.value
-        val minutes = state.formMinutes.toIntOrNull() ?: return
+        val minutes = state.formMinutes.toIntOrNull()
+        if (minutes == null || minutes <= 0) {
+            set { it.copy(minutesTouched = true) }
+            return
+        }
         if (state.busy) return
         set { it.copy(busy = true) }
 
@@ -344,9 +375,25 @@ class PumpingViewModel(
         }
     }
 
+    /**
+     * Deletes straight away and offers the row back, rather than asking first: the row is only
+     * soft-deleted, so undoing it is cheap, and a confirmation dialog on every delete is its own
+     * kind of annoying at four in the morning.
+     */
     override fun onDeleteSession(id: String) {
-        viewModelScope.launch { repository.delete(id) }
+        viewModelScope.launch {
+            repository.delete(id)
+            set { it.copy(undoDeleteId = id) }
+        }
     }
+
+    override fun onUndoDelete() {
+        val id = _uiState.value.undoDeleteId ?: return
+        set { it.copy(undoDeleteId = null) }
+        viewModelScope.launch { repository.restore(id) }
+    }
+
+    override fun onUndoDismissed() = set { it.copy(undoDeleteId = null) }
 
     /** Same pull-to-refresh contract as the other tabs: await the sync so the spinner ends with it. */
     override fun onRefresh() {
@@ -368,6 +415,7 @@ class PumpingViewModel(
         val elapsedMillis: Long,
         val countdown: com.oryareach.core.domain.feeding.FeedCountdown?,
         val intervalMinutes: Int,
+        val today: LocalDate,
     )
 
     private companion object {

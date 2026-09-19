@@ -3,4 +3,16 @@
     <string name="app_drawer_title">שנינו ביחד</string>
     <string name="app_drawer_subtitle">שחר וטופז</string>
     <string name="app_drawer_open">פתיחת תפריט ניווט</string>
+    <string name="day_label_today">היום</string>
+    <string name="day_label_yesterday">אתמול</string>
+    <string name="day_label_value">%1$s, %2$d.%3$d</string>
+    <string-array name="day_label_weekdays">
+        <item>שני</item>
+        <item>שלישי</item>
+        <item>רביעי</item>
+        <item>חמישי</item>
+        <item>שישי</item>
+        <item>שבת</item>
+        <item>ראשון</item>
+    </string-array>
 </resources>

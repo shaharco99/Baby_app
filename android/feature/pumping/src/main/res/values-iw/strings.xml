@@ -9,7 +9,6 @@
     <string name="pumping_save">שמירה</string>
     <string name="pumping_discard">ביטול השאיבה</string>
     <string name="pumping_delete">מחיקה</string>
-    <string name="pumping_edit">עריכה</string>
     <string name="pumping_pick_confirm">בחירה</string>
     <string name="pumping_pick_cancel">ביטול</string>
     <string name="pumping_when_value">%1$s בשעה %2$s</string>
@@ -33,8 +32,8 @@
     <string name="pumping_view_table">טבלה</string>
     <string name="pumping_row_time">התחלה</string>
     <string name="pumping_row_side">צד</string>
-    <string name="pumping_row_minutes">דקות</string>
-    <string name="pumping_row_amount">כמות</string>
+    <string name="pumping_row_minutes">דק׳</string>
+    <string name="pumping_row_amount">מ״ל</string>
     <string name="pumping_in_progress">בתהליך</string>
     <string name="pumping_pause">השהיה</string>
     <string name="pumping_resume">המשך</string>
@@ -52,4 +51,9 @@
         <item>המקפיא מתמלא כי ישבת שם.</item>
         <item>זהב נוזלי, והכול שלך.</item>
     </string-array>
+    <string name="pumping_running_detail">%1$s · התחילה ב-%2$s</string>
+    <string name="pumping_minutes_required">כמה זמן נמשכה השאיבה — שדה חובה.</string>
+    <string name="pumping_empty_hint">לחצי על התחלה כשאת מתחילה, או הוסיפי שאיבה שהיתה.</string>
+    <string name="pumping_deleted">השאיבה נמחקה</string>
+    <string name="pumping_undo_action">ביטול</string>
 </resources>

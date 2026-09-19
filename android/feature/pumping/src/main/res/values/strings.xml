@@ -9,7 +9,6 @@
     <string name="pumping_save">Save</string>
     <string name="pumping_discard">Discard</string>
     <string name="pumping_delete">Delete</string>
-    <string name="pumping_edit">Edit</string>
     <string name="pumping_pick_confirm">Choose</string>
     <string name="pumping_pick_cancel">Cancel</string>
     <string name="pumping_when_value">%1$s at %2$s</string>
@@ -33,8 +32,8 @@
     <string name="pumping_view_table">Table</string>
     <string name="pumping_row_time">Start</string>
     <string name="pumping_row_side">Side</string>
-    <string name="pumping_row_minutes">Minutes</string>
-    <string name="pumping_row_amount">Amount</string>
+    <string name="pumping_row_minutes">min</string>
+    <string name="pumping_row_amount">ml</string>
     <string name="pumping_in_progress">in progress</string>
     <string name="pumping_pause">Pause</string>
     <string name="pumping_resume">Resume</string>
@@ -52,4 +51,9 @@
         <item>The freezer is filling up because you sat there.</item>
         <item>Liquid gold, and you made all of it.</item>
     </string-array>
+    <string name="pumping_running_detail">%1$s · started at %2$s</string>
+    <string name="pumping_minutes_required">How long the session was — required.</string>
+    <string name="pumping_empty_hint">Press Start when you begin, or add one that already happened.</string>
+    <string name="pumping_deleted">Session deleted</string>
+    <string name="pumping_undo_action">Undo</string>
 </resources>

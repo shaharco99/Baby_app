@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
 import com.oryareach.core.model.Baby
+import com.oryareach.core.model.PumpSession
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 
@@ -20,6 +21,15 @@ data class HomeUiState(
     val activeBaby: Baby? = null,
     /** Baby mode only: how long until this child's next feed. Null until a first feed exists. */
     val feedCountdown: FeedCountdown? = null,
+    /**
+     * How long until the next pump. Not baby-scoped and not baby-mode-only: pumping belongs to
+     * the mother, so this shows on the moon page too once there is anything to count from.
+     */
+    val pumpCountdown: FeedCountdown? = null,
+    /** A pump session in progress, if there is one — the row with no end time. */
+    val pumpRunning: PumpSession? = null,
+    /** Frozen while that session is paused, the same as on the pumping page. */
+    val pumpElapsedMillis: Long = 0,
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,
@@ -68,6 +78,12 @@ data class HomeUiState(
 
     /** The switcher is pointless with a single child, and misleading before the seed runs. */
     val showChildSwitcher: Boolean get() = children.size > 1
+
+    /**
+     * The pump card earns its place or is not drawn at all: before the first session there is
+     * nothing to count from, and an empty card on the moon page would just be furniture.
+     */
+    val showPumpCard: Boolean get() = pumpRunning != null || pumpCountdown != null
 
     val canSubmitForm: Boolean get() = editingLastPeriodDate != null
     val canSubmitBirthDetails: Boolean get() = editingBirthDate != null
