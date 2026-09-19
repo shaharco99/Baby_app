@@ -1,8 +1,8 @@
 # Follow-up — resume here
 
 Point Claude at this file to pick up exactly where this session left off.
-Branch `feature/android-app`. Latest tag `v1.6.3`; two commits on top of it (`perf(startup)`,
-`fix(reminders)`) are **not released yet** — see `git log` for full history; this file only
+Branch `feature/android-app`. Latest tag `v1.6.3`; everything after it (startup, reminders, pairing,
+calendar) is **not released yet**, and migration 0010 is not applied — see `git log` for full history; this file only
 tracks what's still open plus enough context to act on it.
 
 ## 2026-09-19 — Xiaomi pass, cold start, background reminders
@@ -26,7 +26,7 @@ Feeding table view + log sheet with a backdated date/time. Settings shows childr
 and the version. Tasks category includes "For the baby". Test pump sessions (note `0000-…`)
 were deleted afterwards.
 
-**Found, not fixed:** Calendar legend chip "Google Calendar" wraps mid-word ("Calenda / r").
+**Found:** Calendar legend chip "Google Calendar" wrapped mid-word. Fixed later the same day.
 
 ## Still to test — Pixel (`49100DLAQ004MM`, English locale)
 Update it to the release that carries the two commits above first (install-as-update, never a
@@ -88,39 +88,39 @@ both show "Connected as [account]" in Settings, and the Calendar screen renders 
 with the "Google Calendar" legend entry active on both — no error state. Google account linking
 is also confirmed live-connected on both devices already.
 
-## Open — Forgot password (coded, untested end-to-end)
+## Open — Forgot password (coded, needs one manual run)
 
-Shipped in `v1.3.0`. Still not run fully on-device: needs a real inbox + tapping the emailed
-deep link (`com.oryareach.app://reset-password`) through to `ResetPasswordScreen`. Build/lint/
-test all pass; just hasn't been clicked through. (Google account linking, the other half of this
-item, is confirmed working — see OAuth section above.)
+Shipped in `v1.3.0`. Checked 2026-09-19: an expired link
+(`#error_code=otp_expired`) and a bogus `?code=` sent to the Xiaomi by adb were both ignored
+without a crash. Still never clicked through for real. It needs a real inbox. Steps:
+1. Supabase dashboard → Authentication → URL Configuration → Redirect URLs has
+   `com.oryareach.app://reset-password` (the repo's `config.toml` only covers local dev).
+2. Signed out on one phone: Forgot password → your email → open the email **on that phone** → tap
+   the link → `ResetPasswordScreen` → set a new password → sign in with it.
 
-## Open — Pairing: partner/workspace identity display (not built)
+## Done in code, migration NOT applied — partner identity on the pairing screen
 
-The `AwaitingKey` pairing-pending screen shows no partner/workspace identity, only "you joined
-the space." Needs a new `SECURITY DEFINER` Postgres function (pattern: existing
-`is_workspace_member`) returning a fellow member's email, scoped to workspace members, plus a
-`WorkspaceRepository` method and a field on `PairingStage.AwaitingKey`. Real schema/migration
-change to a production Supabase project — **ask before starting**.
+The waiting-for-approval screen shows "Waiting on: <partner email>" from
+`workspace_partner_emails(ws)` (`supabase/migrations/0010_workspace_partner_emails.sql`, pgTAP in
+`supabase/tests/004_partner_emails.sql`). **Apply 0010 to the Supabase project before tagging.**
+Until then the app treats the missing function as "no names" and the screen reads as it did.
+Not yet seen on a device. It only shows on a phone that has joined but not been approved.
 
-## Open — real bug, not fixed on purpose: `device_keys.workspace_id` goes stale on reuse
+## Fixed 2026-09-19 — `device_keys.workspace_id` stale on reuse
 
-`PairingViewModel.registerDevice()` short-circuits on `identity.registeredKeyId` — if a device
-has *ever* registered a `device_keys` row, it returns that row's id forever without calling
-`WorkspaceRepository.publishDeviceKey()` again, so `device_keys.workspace_id` can point at a
-workspace the device left. RLS then hides that device from its own pairing partner (`devices()`
-comes back empty) even though the real key linkage (`wrapped_workspace_keys`) is correct. Hit
-once already (2026-08-17), worked around with a manual `UPDATE device_keys SET workspace_id =
-...` in Supabase SQL editor. Proper fix: update `device_keys.workspace_id` on the reuse path, or
-stop keying pending/paired lookups off that column and join through `wrapped_workspace_keys`
-instead (always correct). User explicitly asked to leave this unfixed and only documented — ask
-before touching.
+`registerDevice()` now keeps its cached device-key id only while that id is a live device of
+the workspace being joined, and registers a fresh row otherwise. `devices()` is scoped to the
+given workspace. The live DB was checked the same day: both phones' current rows are in the
+active workspace with wrapped keys. The old workspace still has 6 orphaned rows, which are
+harmless and can be left. Not exercised on a device, since that needs a leave-and-rejoin.
 
 ## Open — small items
 - Tag a release for `perf(startup)` + `fix(reminders)`. Ask first, and apply any pending Supabase
   migrations before tagging (nothing applies them automatically).
-- Calendar legend chip "Google Calendar" wraps mid-word.
-- Startup has no Macrobenchmark `StartupTimingMetric` module. The numbers above are
+- Calendar legend chip wrap: fixed in code (`FlowRow`), not yet seen on a device.
+- Startup has no Macrobenchmark `StartupTimingMetric` module, on purpose for now. Macrobenchmark
+  runs a separately built `benchmark` variant, and installing one on either real phone breaks
+  the release-only rule. It needs a spare device or an emulator. The numbers above are
   `am start -W` + screen recordings.
 
 ## Done, don't redo
