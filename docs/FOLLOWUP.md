@@ -46,14 +46,12 @@ and a pause from the Xiaomi showed frozen on the Pixel; a feed-interval change s
 re-armed both alarms, and reverting it cleared both; a child rename synced both ways. All test
 data was reverted or deleted.
 
-**Findings, not fixed:**
-- Conflict screen labels both versions only by the note text, so when only the amount differs
-  (11 vs 22 ml) the two sides look identical. It should show the fields that differ.
-- Cycle screen's mini month grid breaks "12" into two stacked digits in a narrow cell (Pixel,
-  Hebrew).
-- Calendar event dots sit about a third of a column left of their day (Xiaomi).
-- A partner's change only arrives on write, on open, or on the 6h background sync. With the
-  app open, nothing arrived in 30s. There's no live push.
+**Findings, all fixed the same day and checked on device:** the conflict card now lists the
+fields that differ ("amount ml: 22" / "11"); the Cycle grid's "12" no longer wraps; Calendar
+dots are centered under their day; partner changes now arrive within ~30s while the app is open
+(a foreground poll). A Hebrew RTL pass followed: the month arrows now go right = next in every
+language, and the folder breadcrumb separator mirrors. By the user's choice, the Material date
+picker and the top-bar back arrow keep Android's standard RTL direction.
 
 **Not tested:** real deep Doze. It needs the screen off, which locks both phones. MIUI also
 refused `force-idle` while on USB.
