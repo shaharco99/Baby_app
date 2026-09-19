@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import java.util.UUID
+import kotlin.time.Instant
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.TimeZone
 
 data class Conflict(
     val recordId: String,
@@ -234,10 +237,10 @@ class ConflictRepository(
         EntityType.CYCLE_ENTRY -> database.cycleEntryDao().findById(recordId)?.let { (it.note ?: it.date) to it.sync.updatedAt }
         EntityType.BABY -> database.babyDao().findById(recordId)?.let { (it.name ?: it.id) to it.sync.updatedAt }
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let {
-            (it.note ?: it.fedAt.toString()) to it.sync.updatedAt
+            (it.note ?: momentLabel(it.fedAt)) to it.sync.updatedAt
         }
         EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let {
-            (it.note ?: it.startedAt.toString()) to it.sync.updatedAt
+            (it.note ?: momentLabel(it.startedAt)) to it.sync.updatedAt
         }
     }
 
@@ -257,12 +260,31 @@ class ConflictRepository(
                 EntityType.CYCLE_ENTRY -> json.decodeFromString<CycleEntry>(payload).let { it.note ?: it.date.toString() }
                 EntityType.BABY -> json.decodeFromString<Baby>(payload).let { it.name ?: it.id }
                 EntityType.FEEDING_ENTRY -> json.decodeFromString<FeedingEntry>(payload).let {
-                    it.note ?: it.fedAtEpochMillis.toString()
+                    it.note ?: momentLabel(it.fedAtEpochMillis)
                 }
                 EntityType.PUMP_SESSION -> json.decodeFromString<PumpSession>(payload).let {
-                    it.note ?: it.startedAtEpochMillis.toString()
+                    it.note ?: momentLabel(it.startedAtEpochMillis)
                 }
             }
         }.getOrNull()
     }
+}
+
+/**
+ * A feed and a pump session have no title of their own, so a conflict over one is identified by
+ * when it happened. It has to be readable to be any use at all: a bare epoch millis is what the
+ * conflict card used to show, on both sides, which told nobody anything.
+ *
+ * Deliberately not localised — this is `:core:database`, with no resources, and a numeric date and
+ * a 24-hour clock read the same either way round.
+ */
+private fun momentLabel(epochMillis: Long): String {
+    val moment = Instant.fromEpochMilliseconds(epochMillis)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    return "%02d.%02d %02d:%02d".format(
+        moment.day,
+        moment.month.ordinal + 1,
+        moment.hour,
+        moment.minute,
+    )
 }

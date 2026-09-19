@@ -134,6 +134,37 @@ class FeedingEntryRepository(
         syncTrigger.syncNow()
     }
 
+    /**
+     * Undoes a [delete]. The row was only ever soft-deleted, so this is a matter of clearing the
+     * tombstone and pushing it again — which is what lets the list offer an undo instead of
+     * asking for a confirmation on every delete.
+     */
+    suspend fun restore(id: String) {
+        val existing = entries.findById(id) ?: return
+        val timestamp = now()
+        val entity = existing.copy(
+            sync = existing.sync.copy(
+                deletedAt = null,
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                clientMutationId = newId(),
+            ),
+        )
+
+        database.withTransaction {
+            entries.upsert(entity)
+            search.index(
+                EntityType.FEEDING_ENTRY,
+                entity.id,
+                entity.sync.workspaceId,
+                "",
+                entity.note.orEmpty(),
+            )
+            enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
+        }
+        syncTrigger.syncNow()
+    }
+
     suspend fun delete(id: String) {
         val timestamp = now()
         database.withTransaction {

@@ -190,6 +190,7 @@ class PumpingViewModel(
                     formSide = running.side,
                     formMinutes = (stopped?.durationMinutes ?: 0).toString(),
                     minutesTouched = false,
+                    editingOriginalAmountMl = null,
                     formAmountMl = "",
                     formNote = "",
                     formStartedAtEpochMillis = running.startedAtEpochMillis,
@@ -206,6 +207,7 @@ class PumpingViewModel(
             formSide = it.pendingSide,
             formMinutes = "",
             minutesTouched = false,
+            editingOriginalAmountMl = null,
             formAmountMl = "",
             formNote = "",
             // Now, then walked back: a session typed in later is usually one from earlier today.
@@ -233,6 +235,7 @@ class PumpingViewModel(
             formSide = session.side,
             formMinutes = session.durationMinutes?.toString().orEmpty(),
             minutesTouched = false,
+            editingOriginalAmountMl = session.amountMl,
             formAmountMl = session.amountMl?.toString().orEmpty(),
             formNote = session.note.orEmpty(),
             formStartedAtEpochMillis = session.startedAtEpochMillis,
@@ -308,6 +311,7 @@ class PumpingViewModel(
 
         viewModelScope.launch {
             val editingId = state.editingSessionId
+            val amountMl = state.formAmountMl.toIntOrNull()
             if (editingId == null) {
                 repository.logManual(
                     workspaceId = workspace,
@@ -315,7 +319,7 @@ class PumpingViewModel(
                     side = state.formSide,
                     startedAt = state.formStartedAtEpochMillis,
                     durationMinutes = minutes,
-                    amountMl = state.formAmountMl.toIntOrNull(),
+                    amountMl = amountMl,
                     note = state.formNote.ifBlank { null },
                     intervalMinutes = state.intervalMinutes,
                 )
@@ -326,13 +330,16 @@ class PumpingViewModel(
                     id = editingId,
                     side = state.formSide,
                     durationMinutes = minutes,
-                    amountMl = state.formAmountMl.toIntOrNull(),
+                    amountMl = amountMl,
                     note = state.formNote.ifBlank { null },
                 )
             }
-            // Drops for a session being put away, not for a correction to an old one: the
-            // flourish marks finishing a pump, and firing it on every edit would wear it out.
-            val celebrate = editingId == null || state.discardable
+            // Drops mark a session being put away — and measuring one afterwards, which is the
+            // same moment arriving late: she stops, saves, pours it into the bottle, then comes
+            // back and fills the amount in. A correction that leaves the amount alone gets
+            // nothing, so a re-save of an old row does not set it off.
+            val amountWasMeasured = amountMl != null && amountMl != state.editingOriginalAmountMl
+            val celebrate = editingId == null || state.discardable || amountWasMeasured
             set {
                 it.copy(
                     busy = false,

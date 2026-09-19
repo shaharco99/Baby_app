@@ -65,6 +65,11 @@ data class PumpingUiState(
     val formNote: String = "",
     /** Set once the minutes field has been typed in, so the error only shows after a real attempt. */
     val minutesTouched: Boolean = false,
+    /**
+     * What the amount was when the sheet opened, so saving can tell a real change from a re-save.
+     * Null both when the sheet is new and when the session genuinely had no amount.
+     */
+    val editingOriginalAmountMl: Int? = null,
     /** When the session started. Defaults to now; a session typed in later moves it back. */
     val formStartedAtEpochMillis: Long = 0,
     val datePickerVisible: Boolean = false,

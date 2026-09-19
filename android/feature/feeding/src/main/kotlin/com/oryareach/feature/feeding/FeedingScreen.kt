@@ -27,6 +27,8 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -36,6 +38,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -45,10 +50,17 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.Icons
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -79,7 +91,25 @@ fun FeedingScreen(
     actions: FeedingActions,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(modifier = modifier.fillMaxSize().safeDrawingPadding()) { padding ->
+    val snackbarHostState = remember { SnackbarHostState() }
+    val undoLabel = stringResource(R.string.feeding_undo_action)
+    val deletedLabel = stringResource(R.string.feeding_deleted)
+
+    // The snackbar owns the undo window: when it goes, so does the offer.
+    LaunchedEffect(uiState.undoDeleteId) {
+        val id = uiState.undoDeleteId ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = deletedLabel,
+            actionLabel = undoLabel,
+            withDismissAction = false,
+        )
+        if (result == SnackbarResult.ActionPerformed) actions.onUndoDelete() else actions.onUndoDismissed()
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize().safeDrawingPadding(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         PullToRefreshBox(
             isRefreshing = uiState.refreshing,
             onRefresh = actions::onRefresh,
@@ -308,11 +338,7 @@ private fun HistoryViewToggle(selected: HistoryView, actions: FeedingActions) {
 @Composable
 private fun FeedingList(days: List<FeedingDay>, today: LocalDate?, actions: FeedingActions) {
     if (days.isEmpty()) {
-        Text(
-            text = stringResource(R.string.feeding_empty_history),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        EmptyHistory()
         return
     }
 
@@ -326,8 +352,8 @@ private fun FeedingList(days: List<FeedingDay>, today: LocalDate?, actions: Feed
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
-            // Newest first within the day: the list reads as a feed log, while the table's
-            // columns read left-to-right through the day.
+            // Newest first, and the table reads the same way: the feed you just logged is the
+            // one you are looking for, so it belongs at the top of its day in both views.
             items(day.feeds.reversed(), key = { it.id }) { feed ->
                 FeedRow(
                     feed = feed,
@@ -339,11 +365,28 @@ private fun FeedingList(days: List<FeedingDay>, today: LocalDate?, actions: Feed
     }
 }
 
+/**
+ * One feed. The row itself opens it, so there is no Edit button competing for the same space, and
+ * Delete is the one icon rather than a word sitting a thumb's width from it.
+ */
 @Composable
 private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit)) {
+    val description = feedDescription(feed)
+    val deleteLabel = stringResource(R.string.feeding_delete)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            // Announced as one activatable thing: read cell by cell, a row of times and numbers
+            // tells a screen reader nothing and offers it nothing to press.
+            .semantics(mergeDescendants = true) {
+                contentDescription = description
+                role = Role.Button
+            }
+            .clickable(onClick = onEdit),
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -372,9 +415,48 @@ private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit
             feed.amountMl?.let {
                 Text(stringResource(R.string.feeding_amount_ml, it), style = MaterialTheme.typography.bodyMedium)
             }
-            TextButton(onClick = onEdit) { Text(stringResource(R.string.feeding_edit)) }
-            TextButton(onClick = onDelete) { Text(stringResource(R.string.feeding_delete)) }
+            IconButton(onClick = onDelete) {
+                Icon(imageVector = Icons.Outlined.Delete, contentDescription = deleteLabel)
+            }
         }
+    }
+}
+
+/**
+ * What a screen reader is told about a feed, in the order someone would say it: when, what, how
+ * much if it was measured, and what came of it.
+ */
+@Composable
+private fun feedDescription(feed: FeedingEntry): String {
+    val amount = feed.amountMl?.let { stringResource(R.string.feeding_amount_ml, it) }
+    val marks = feedMarks(feed).takeIf { it.isNotEmpty() }
+    return listOfNotNull(
+        formatClock(feed.fedAtEpochMillis),
+        stringResource(feed.feedType.labelRes()),
+        amount,
+        marks,
+    ).joinToString(", ")
+}
+
+/** Says what to do rather than only that there is nothing — an empty log is the first thing seen. */
+@Composable
+private fun EmptyHistory() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.feeding_empty_history),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(R.string.feeding_empty_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -392,11 +474,7 @@ private fun feedMarks(feed: FeedingEntry): String = listOfNotNull(
 @Composable
 private fun FeedingTable(days: List<FeedingDay>, today: LocalDate?, actions: FeedingActions) {
     if (days.isEmpty()) {
-        Text(
-            text = stringResource(R.string.feeding_empty_history),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        EmptyHistory()
         return
     }
 
@@ -407,7 +485,7 @@ private fun FeedingTable(days: List<FeedingDay>, today: LocalDate?, actions: Fee
         LazyColumn {
             days.forEach { day ->
                 item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
-                items(day.feeds, key = { it.id }) { feed ->
+                items(day.feeds.reversed(), key = { it.id }) { feed ->
                     HorizontalDivider()
                     FeedCellsRow(feed = feed, onEdit = { actions.onEditFeedClick(feed) })
                 }
@@ -462,8 +540,19 @@ private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
         if (feed.hadStool) MARK else "",
     )
 
+    val description = feedDescription(feed)
+
     // A cell is too small a target for its own button, so the whole row opens the feed.
-    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onEdit)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .semantics(mergeDescendants = true) {
+                contentDescription = description
+                role = Role.Button
+            }
+            .clickable(onClick = onEdit),
+    ) {
         cells.forEachIndexed { index, text ->
             if (index > 0) VerticalDivider()
             TableCell(text = text, modifier = Modifier.weight(ColumnWeights[index]))
@@ -685,6 +774,8 @@ private object NoopFeedingActions : FeedingActions {
     override fun onFedTimeChange(value: LocalTime) = Unit
     override fun onLogFeed() = Unit
     override fun onDeleteFeed(id: String) = Unit
+    override fun onUndoDelete() = Unit
+    override fun onUndoDismissed() = Unit
     override fun onHistoryViewChange(value: HistoryView) = Unit
     override fun onCountdownLongPress() = Unit
     override fun onDismissNightWatch() = Unit

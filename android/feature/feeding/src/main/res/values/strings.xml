@@ -49,4 +49,7 @@
         <item>Someone will sleep through the night eventually. Probably.</item>
         <item>Two of you, one small tyrant, and the kettle. A fair fight.</item>
     </string-array>
+    <string name="feeding_empty_hint">Log a feed when it happens, or add one from earlier.</string>
+    <string name="feeding_deleted">Feed deleted</string>
+    <string name="feeding_undo_action">Undo</string>
 </resources>

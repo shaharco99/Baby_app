@@ -516,8 +516,8 @@ private fun PumpingList(days: List<PumpingDay>, today: LocalDate?, actions: Pump
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
-            // Newest first within the day: the list reads as a log, while the table's rows read
-            // forward through the day.
+            // Newest first, and the table reads the same way: the session you just finished is
+            // the one you are looking for, so it belongs at the top of its day in both views.
             items(day.sessions.reversed(), key = { it.id }) { session ->
                 SessionRow(
                     session = session,
@@ -628,7 +628,7 @@ private fun PumpingTable(days: List<PumpingDay>, today: LocalDate?, actions: Pum
         LazyColumn {
             days.forEach { day ->
                 item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
-                items(day.sessions, key = { it.id }) { session ->
+                items(day.sessions.reversed(), key = { it.id }) { session ->
                     HorizontalDivider()
                     SessionCellsRow(session = session, onEdit = { actions.onEditClick(session) })
                 }

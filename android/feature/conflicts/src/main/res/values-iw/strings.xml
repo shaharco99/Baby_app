@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="conflicts_title">%1$d התנגשויות סנכרון</string>
     <string name="conflicts_explanation">שניכם ערכתם את אותו הדבר לפני שהוא הסתנכרן. שום דבר לא מוחל אוטומטית — בחרו איזו גרסה לשמור.</string>
     <string name="conflicts_mine">המכשיר הזה: %1$s</string>
     <string name="conflicts_theirs">מכשיר בן/בת הזוג: %1$s</string>
@@ -21,4 +20,11 @@
     <string name="conflicts_type_baby">ילד/ה</string>
     <string name="conflicts_type_feeding_entry">רישום האכלה</string>
     <string name="conflicts_type_pump_session">רישום שאיבה</string>
+    <string name="conflicts_edited_at">נערך ב-%1$s</string>
+    <string name="conflicts_edited_at_older">נערך ב-%1$s · המוקדם מבין השניים</string>
+    <plurals name="conflicts_title_count">
+        <item quantity="one">התנגשות סנכרון אחת</item>
+        <item quantity="two">שתי התנגשויות סנכרון</item>
+        <item quantity="other">%1$d התנגשויות סנכרון</item>
+    </plurals>
 </resources>

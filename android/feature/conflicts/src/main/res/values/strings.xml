@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="conflicts_title">%1$d sync conflicts</string>
     <string name="conflicts_explanation">Both of you edited the same thing before it synced. Nothing is applied automatically — pick which version to keep.</string>
     <string name="conflicts_mine">This device: %1$s</string>
     <string name="conflicts_theirs">Partner\'s device: %1$s</string>
@@ -21,4 +20,10 @@
     <string name="conflicts_type_baby">Child</string>
     <string name="conflicts_type_feeding_entry">Feeding log</string>
     <string name="conflicts_type_pump_session">Pumping log</string>
+    <string name="conflicts_edited_at">Edited %1$s</string>
+    <string name="conflicts_edited_at_older">Edited %1$s · the earlier one</string>
+    <plurals name="conflicts_title_count">
+        <item quantity="one">One sync conflict</item>
+        <item quantity="other">%1$d sync conflicts</item>
+    </plurals>
 </resources>

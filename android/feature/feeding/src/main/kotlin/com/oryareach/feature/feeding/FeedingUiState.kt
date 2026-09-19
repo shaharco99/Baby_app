@@ -30,6 +30,11 @@ data class FeedingUiState(
     val sheetVisible: Boolean = false,
     /** Null while logging a new feed, the row's id while editing an existing one. */
     val editingFeedId: String? = null,
+    /**
+     * The id of a feed just deleted, while the undo is still on offer. The row is soft-deleted
+     * either way — this is only what keeps the snackbar on screen.
+     */
+    val undoDeleteId: String? = null,
     val formFeedType: FeedType = FeedType.BREAST_MILK,
     val formAmountMl: String = "",
     val formHadUrine: Boolean = false,

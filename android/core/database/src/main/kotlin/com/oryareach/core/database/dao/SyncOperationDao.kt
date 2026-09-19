@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.oryareach.core.database.entity.SyncOperationEntity
+import com.oryareach.core.model.SyncOperationType
 
 @Dao
 interface SyncOperationDao {
@@ -45,4 +46,11 @@ interface SyncOperationDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM sync_operations WHERE record_id = :recordId)")
     suspend fun hasPending(recordId: String): Boolean
+
+    /**
+     * What is queued for this record. Used to tell a queued deletion apart from a queued edit:
+     * the two look identical from the row itself, which still holds its content either way.
+     */
+    @Query("SELECT operation FROM sync_operations WHERE record_id = :recordId")
+    suspend fun pendingOperations(recordId: String): List<SyncOperationType>
 }

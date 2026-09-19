@@ -30,6 +30,7 @@ import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.ShoppingItem
+import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.model.Task
 import com.oryareach.core.sync.PushRequest
@@ -108,6 +109,11 @@ class RoomSyncStore(
     }
 
     override suspend fun markConflict(recordId: String, server: RemoteRecord) {
+        if (isSameContentAsLocal(recordId, server)) {
+            markSynced(recordId, server.version)
+            return
+        }
+
         database.withTransaction {
             state.saveConflict(
                 SyncConflictEntity(
@@ -136,6 +142,30 @@ class RoomSyncStore(
             // local edit is still in the row, and the server's copy is parked alongside it.
             operations.removeByRecord(recordId)
         }
+    }
+
+    /**
+     * Whether the server's copy says exactly what this device's copy says.
+     *
+     * A conflict is by definition the same record edited twice, but that does not mean the two
+     * versions differ: both of you logging the same feed from the same phone-in-hand, or the same
+     * edit arriving twice, ends with two writes carrying identical content. Asking which of two
+     * identical versions to keep is a question with no answer, so it is not asked — the server's
+     * version number is adopted and the matter is closed.
+     *
+     * Compared as decrypted payloads, never as ciphertext: every encryption uses a fresh nonce, so
+     * two encryptions of the same plaintext never match.
+     *
+     * A queued deletion is never auto-resolved. The row still holds its content while the delete
+     * is pending, so it would compare equal to the server's copy and the deletion would be
+     * silently dropped — the one case where "identical" is not the same as "nothing to decide".
+     */
+    private suspend fun isSameContentAsLocal(recordId: String, server: RemoteRecord): Boolean {
+        if (operations.pendingOperations(recordId).contains(SyncOperationType.DELETE)) return false
+
+        val local = serialize(server.entityType, recordId)?.json ?: return false
+        val decoded = codec.decode(server.entityType, recordId, server.ciphertext)
+        return decoded is AppResult.Success && decoded.data == local
     }
 
     override suspend fun recordFailure(recordId: String, error: AppError) {

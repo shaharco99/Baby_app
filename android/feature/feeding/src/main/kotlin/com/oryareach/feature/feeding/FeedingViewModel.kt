@@ -56,6 +56,8 @@ interface FeedingActions {
     fun onFedTimeChange(value: LocalTime)
     fun onLogFeed()
     fun onDeleteFeed(id: String)
+    fun onUndoDelete()
+    fun onUndoDismissed()
     fun onHistoryViewChange(value: HistoryView)
     fun onCountdownLongPress()
     fun onDismissNightWatch()
@@ -240,9 +242,25 @@ class FeedingViewModel(
         }
     }
 
+    /**
+     * Deletes straight away and offers the row back, rather than asking first: the row is only
+     * soft-deleted, so undoing it is cheap, and a confirmation dialog on every delete is its own
+     * kind of annoying at four in the morning.
+     */
     override fun onDeleteFeed(id: String) {
-        viewModelScope.launch { repository.delete(id) }
+        viewModelScope.launch {
+            repository.delete(id)
+            set { it.copy(undoDeleteId = id) }
+        }
     }
+
+    override fun onUndoDelete() {
+        val id = _uiState.value.undoDeleteId ?: return
+        set { it.copy(undoDeleteId = null) }
+        viewModelScope.launch { repository.restore(id) }
+    }
+
+    override fun onUndoDismissed() = set { it.copy(undoDeleteId = null) }
 
     /** Same pull-to-refresh contract as Home: await the sync so the spinner stops when it's done. */
     /**
