@@ -1,5 +1,6 @@
 package com.oryareach.core.domain.feeding
 
+import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
@@ -177,6 +178,49 @@ class FeedingScheduleTest {
     }
 
     @Test
+    fun `a day's breakdown adds up to its total when a feed came from an older build`() {
+        // What the partner's phone wrote before it was updated: a type and one amount, with
+        // neither of the split columns set. It counted toward the total and vanished from the
+        // breakdown, so a real day read "215 ml" beside "35 + 120".
+        val day = groupFeedsByDay(
+            listOf(
+                mixedFeed("new", "2026-09-21T09:27:00Z", breastMl = 35),
+                legacyFeed("old", "2026-09-21T06:18:00Z", amountMl = 60, type = FeedType.FORMULA),
+            ),
+            TimeZone.UTC,
+        ).single()
+
+        day.totalMl shouldBe 95
+        day.breastMl shouldBe 35
+        day.formulaMl shouldBe 60
+        (day.breastMl!! + day.formulaMl!!) shouldBe day.totalMl
+        day.hasSourceBreakdown shouldBe true
+    }
+
+    @Test
+    fun `a mixed feed is not counted twice through its legacy mirror`() {
+        // Anything written since the split sets `amountMl` as a mirror of the sum, so the
+        // fallback has to stay out of the way when the split columns are present.
+        val day = groupFeedsByDay(
+            listOf(
+                FeedingEntry(
+                    id = "a",
+                    babyId = "baby",
+                    fedAtEpochMillis = at("2026-09-21T09:00:00Z"),
+                    breastMl = 30,
+                    formulaMl = 30,
+                    amountMl = 60,
+                ),
+            ),
+            TimeZone.UTC,
+        ).single()
+
+        day.totalMl shouldBe 60
+        day.breastMl shouldBe 30
+        day.formulaMl shouldBe 30
+    }
+
+    @Test
     fun `the tally counts a mixed feed once, at its total`() {
         val tally = feedingTally(
             listOf(mixedFeed("a", "2026-09-18T03:00:00Z", breastMl = 30, formulaMl = 30)),
@@ -201,6 +245,14 @@ class FeedingScheduleTest {
         fedAtEpochMillis = at(iso),
         breastMl = breastMl,
         formulaMl = formulaMl,
+    )
+
+    private fun legacyFeed(id: String, iso: String, amountMl: Int, type: FeedType) = FeedingEntry(
+        id = id,
+        babyId = "baby",
+        fedAtEpochMillis = at(iso),
+        feedType = type,
+        amountMl = amountMl,
     )
 
     private fun feed(id: String, iso: String, amountMl: Int? = null) = FeedingEntry(

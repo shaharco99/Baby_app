@@ -48,4 +48,23 @@ data class FeedingEntry(
      */
     val totalMl: Int?
         get() = listOfNotNull(breastMl, formulaMl).takeIf { it.isNotEmpty() }?.sum() ?: amountMl
+
+    /**
+     * The two amounts again, but reading a pre-split record for what it plainly is.
+     *
+     * A feed written by a build from before [breastMl] existed — or pulled from a partner still
+     * running one — carries only [amountMl] and a [feedType] saying which source it came from.
+     * [totalMl] already falls back to it, so such a feed counted toward a day's total; these did
+     * not, so it went missing from the day's breakdown. A day could read "215 ml" beside
+     * "35 + 120", and the 60 that made up the difference was a formula feed the other phone had
+     * logged before it was updated.
+     *
+     * The guards keep a mixed feed from being counted twice: [amountMl] is a mirror of the sum
+     * on anything written since the split, so it is only trusted when neither column is set.
+     */
+    val breastAmountMl: Int?
+        get() = breastMl ?: amountMl.takeIf { formulaMl == null && feedType == FeedType.BREAST_MILK }
+
+    val formulaAmountMl: Int?
+        get() = formulaMl ?: amountMl.takeIf { breastMl == null && feedType == FeedType.FORMULA }
 }

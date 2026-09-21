@@ -47,9 +47,9 @@ data class FeedingDay(
      * what lets the day line show a breakdown only when there is one to show. A day fed from
      * one source has nothing to break down and reads as a single total.
      */
-    val breastMl: Int? get() = feeds.mapNotNull { it.breastMl }.takeIf { it.isNotEmpty() }?.sum()
+    val breastMl: Int? get() = feeds.mapNotNull { it.breastAmountMl }.takeIf { it.isNotEmpty() }?.sum()
 
-    val formulaMl: Int? get() = feeds.mapNotNull { it.formulaMl }.takeIf { it.isNotEmpty() }?.sum()
+    val formulaMl: Int? get() = feeds.mapNotNull { it.formulaAmountMl }.takeIf { it.isNotEmpty() }?.sum()
 
     /**
      * True only when both sources contributed. A day of breast feeds alone still has a
