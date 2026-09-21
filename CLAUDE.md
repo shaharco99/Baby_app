@@ -6,7 +6,7 @@ Guidance for Claude Code (claude.ai/code) working this repo.
 
 "אור ירח" (One More Moon) — private couple organizer, Shahar & Topaz, prep for baby arrival. Hebrew, RTL. Shopping list w/ budget & priorities, tasks (incl. hospital bag), important dates & wishes, menstrual cycle tracking, folders & documents (incl. scanning), countdown to due date framed as moon filling up.
 
-**Active product: Android app, `android/`.** End-to-end encrypted: both partners share one workspace + one encryption key; Supabase (backend) only ever sees ciphertext. See `docs/architecture/` for full decision record. What's built vs. planned: `git log` and the code itself are the source of truth — no separate progress doc is maintained.
+**Active product: Android app, `android/`.** End-to-end encrypted: both partners share one workspace + one encryption key; Supabase (backend) only ever sees ciphertext. See `docs/architecture/` for full decision record, and `docs/TASK-HISTORY.md` for what's still open plus a condensed account of what's already been done (don't redo those). What's built vs. planned: `git log` and the code itself are the source of truth — no separate progress doc is maintained.
 
 `src/` = original web PWA (React 19 + Vite, `localStorage`-only, no backend) — **retired**, kept for reference only. Export/import JSON format still migration path into Android app (`:core:domain`'s `WebSnapshot`/`toImportedSnapshot`). "Web app (legacy)" section below still accurate for that subtree — skip straight to "Android app" unless touching `src/`.
 
@@ -31,6 +31,8 @@ Read `docs/architecture/001-android-architecture.md` first — short, covers mod
 **Domain math stays in `:core:domain`**, pure Kotlin, unit-tested on JVM (no emulator): pregnancy progress, budget calculations, cycle predictions/statistics, web-import mapper. Don't inline date/domain math into ViewModel or composable if belongs here — see `core/domain/src/main/kotlin/com/oryareach/core/domain/` for existing shape (one subpackage per domain area) before adding new one.
 
 **Adding entity that syncs** touches, in order: `:core:model` (data class), `:core:database` (`Entity`/`Dao`, `Migrations.kt` bump, `DatabaseConverters` for new enum/list field), `Mappers.kt` (entity ↔ domain), `RoomSyncStore` (all four spots — grep `EntityType.CYCLE_ENTRY` for most recently added one as template; `when` blocks exhaustive, missed branch = compile error, not silent gap), and `supabase/migrations/` only if `entity_type` enum doesn't already have slot for it (check first — several declared in `0001_init.sql` a phase ahead of being used).
+
+**Shared UI pieces live in `:core:ui`**, not copied between features — features can't depend on each other, so a widget two of them need goes there. `theme/` (colours, shapes, type), `text/` (`dayLabel`/`monthLabel`/`dateLabel`, bidi helpers), `component/` (`DrawerHeader`/`CollapsibleDrawer` — the shut-by-default drawer that shopping, tasks, cycle, both logs and Settings all fold their finished rows into). Material 3 colour roles are all defined in `theme/Theme.kt`, including the *container* roles and the surface ladder: `surfaceContainerHighest` must stay the card colour, since that's what a filled `Card` reads.
 
 **Strings bilingual**, `values/` (English fallback) + `values-iw/` (Hebrew) in every module w/ UI. Add both together, never just one.
 

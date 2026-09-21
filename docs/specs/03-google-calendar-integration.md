@@ -1,24 +1,15 @@
 # Google Calendar Integration — Spec
 
-Status: **phase 1 implemented. "Sign in with Google" confirmed working
-end-to-end** (fixed 2026-08-17, a Cloud Console SHA-1 typo — see
-`docs/FOLLOWUP.md`). All the code below is written and merged
-(`:core:calendar`, `:core:security`'s
-`GoogleCalendarAuthManager`/`GoogleCalendarTokenStore`, the Room cache, the
-Calendar-screen picker UI), and along the way "Sign in with Google" was also
-added to the app's login screen (`:feature:auth`), reusing the same
-Credential Manager approach.
+Status: **phase 1 built, merged and confirmed working on both phones.** Kept as its own file
+because several code comments cite its resolved decisions by name; the condensed account of what
+shipped is in `docs/TASK-HISTORY.md`.
 
-- The OAuth client (Android + Web-application type, client ID in
-  `android/local.properties` as `googleCalendarOauthClientId`, wired in CI
-  via the `GOOGLE_WEB_CLIENT_ID` secret) now exists and is configured.
-- Google-Calendar-connect specifically shares the same client as login but
-  has **not yet been explicitly retested** end-to-end (only login has).
-- Both features fail fast with a clear in-app error if the client ID is
-  ever blank — see the doc comment in `core/security/build.gradle.kts`.
+"Sign in with Google" and Google Calendar connect share one OAuth client (client ID in
+`android/local.properties` as `googleCalendarOauthClientId`, wired in CI via the
+`GOOGLE_WEB_CLIENT_ID` secret). Both fail fast with a clear in-app error if it is ever blank —
+see the doc comment in `core/security/build.gradle.kts`.
 
-The open questions section below is now resolved (see decisions inline);
-left in place as a record of what was decided and why.
+The open-questions section below is resolved; it stays as the record of what was decided and why.
 
 ## Goal
 

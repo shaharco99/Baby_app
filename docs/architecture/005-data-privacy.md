@@ -4,7 +4,7 @@
 
 ## Context
 
-`docs/specs/01-android-conversion.md` spec privacy as *partner-vs-partner* problem:
+The original Android-conversion spec (condensed into `docs/TASK-HISTORY.md`, full text in git history) specced privacy as *partner-vs-partner* problem:
 every item private by default, explicit opt-in sharing, granular cycle-sharing permissions,
 test matrix (§69) asserting husband cannot read wife's private cycle data.
 

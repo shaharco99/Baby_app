@@ -4,7 +4,7 @@
 
 ## Context
 
-`docs/specs/02-auto-update.md` want git-tag-driven releases plus in-app update prompt. Spec written platform-generic — manifest example list Windows, Linux, macOS assets — needs translate to Android, where self-updating hit constraints spec don't mention.
+The original auto-update spec (condensed into `docs/TASK-HISTORY.md`, full text in git history) wanted git-tag-driven releases plus in-app update prompt. Spec written platform-generic — manifest example list Windows, Linux, macOS assets — needs translate to Android, where self-updating hit constraints spec don't mention.
 
 App distribute privately to two phones. Not through Google Play.
 
