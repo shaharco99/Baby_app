@@ -19,7 +19,15 @@
     <string name="feeding_empty_history">לא נרשם דבר בשבועיים האחרונים.</string>
     <string name="feeding_day_header_with_total">%1$s · %2$d מ״ל</string>
     <string name="feeding_amount_ml">%1$d מ״ל</string>
-    <string name="feeding_amount_field">כמות (מ״ל, לא חובה)</string>
+    <string name="feeding_amount_breast_field">הנקה (מ״ל)</string>
+    <string name="feeding_amount_formula_field">תמ״ל (מ״ל)</string>
+    <string name="feeding_amount_total">סה״כ %1$d מ״ל</string>
+    <string name="feeding_breakdown_breast">%1$d מ״ל הנקה</string>
+    <string name="feeding_breakdown_formula">%1$d מ״ל תמ״ל</string>
+    <string name="feeding_day_header_breakdown">%1$s: %2$d מ״ל בסך הכול, %3$d מ״ל הנקה ו‑%4$d מ״ל תמ״ל</string>
+    <string name="feeding_guidance_per_feed">בערך %1$d–%2$d מ״ל להאכלה</string>
+    <string name="feeding_guidance_day_total">מתוך בערך %1$d–%2$d מ״ל</string>
+    <string name="feeding_guidance_disclaimer">הערכה גסה לפי גיל התינוק, לא ייעוץ רפואי.</string>
     <string name="feeding_note_field">הערה</string>
     <string name="feeding_urine">שתן</string>
     <string name="feeding_stool">צואה</string>

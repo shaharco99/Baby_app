@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 class ForegroundSyncController(
     private val session: SessionState,
     private val poll: () -> Unit,
+    private val refreshReminders: suspend () -> Unit,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -33,6 +34,12 @@ class ForegroundSyncController(
     override fun onStart(owner: LifecycleOwner) {
         loop?.cancel()
         loop = scope.launch {
+            // The pending alarms are re-derived once on the way back in, before the first poll.
+            // A workspace that was already open when the app went away never emits on
+            // `workspaceIdFlow` again, so nothing else puts an alarm back that drifted while
+            // the app was in the background — a feed the partner logged and this device pulled
+            // on its own, say, or a reboot that rearmed a due time since superseded.
+            if (session.isUnlocked) refreshReminders()
             while (isActive) {
                 if (session.isUnlocked) poll()
                 delay(INTERVAL_MILLIS)

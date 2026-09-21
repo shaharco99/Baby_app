@@ -92,6 +92,8 @@ fun FeedingEntryEntity.toFeedingEntry() = FeedingEntry(
     babyId = babyId,
     fedAtEpochMillis = fedAt,
     feedType = feedType,
+    breastMl = breastMl,
+    formulaMl = formulaMl,
     amountMl = amountMl,
     hadUrine = hadUrine,
     hadStool = hadStool,
@@ -211,7 +213,11 @@ fun FeedingEntry.toEntity(workspaceId: String, record: RemoteRecord, now: Long) 
     babyId = babyId,
     fedAt = fedAtEpochMillis,
     feedType = feedType,
-    amountMl = amountMl,
+    breastMl = breastMl,
+    formulaMl = formulaMl,
+    // Written from the total rather than carried across: a record that arrived from an older
+    // build has only `amountMl`, and a newer one may have two amounts and a stale mirror.
+    amountMl = totalMl,
     hadUrine = hadUrine,
     hadStool = hadStool,
     note = note,

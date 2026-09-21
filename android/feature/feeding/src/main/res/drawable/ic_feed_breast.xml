@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A woman's head in profile, with curly hair — what a breastfeed is marked with.
+
+  A person rather than a body part on purpose: this sits in a shared log, on a day line, on a
+  phone that gets handed around, and a face reads as "her feed" without reading as anatomy.
+  Same 24dp grid and untinted fill as the bottle beside it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+
+    <!-- Curls, a ring of overlapping circles around the crown. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8.1,4.6m-2.1,0a2.1,2.1 0,1 1,4.2 0a2.1,2.1 0,1 1,-4.2 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,3.1m-2.3,0a2.3,2.3 0,1 1,4.6 0a2.3,2.3 0,1 1,-4.6 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M16,4.8m-2.1,0a2.1,2.1 0,1 1,4.2 0a2.1,2.1 0,1 1,-4.2 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M6.2,8.2m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M17.6,8.4m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+
+    <!-- Face and jaw. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,5.4c-2.8,0 -5,2.2 -5,5v1.4c0,2.8 2.2,5 5,5s5,-2.2 5,-5v-1.4C17,7.6 14.8,5.4 12,5.4z" />
+
+    <!-- Shoulders. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,17.6c-3.6,0 -6.6,2 -7,4.6C4.9,22.7 5.3,23 5.7,23h12.6c0.4,0 0.8,-0.3 0.7,-0.8C18.6,19.6 15.6,17.6 12,17.6z" />
+</vector>

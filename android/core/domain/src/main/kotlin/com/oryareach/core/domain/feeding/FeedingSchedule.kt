@@ -40,7 +40,22 @@ data class FeedingDay(
     val feeds: List<FeedingEntry>,
 ) {
     /** Null when no feed that day was measured; a partial day sums only what was. */
-    val totalMl: Int? get() = feeds.mapNotNull { it.amountMl }.takeIf { it.isNotEmpty() }?.sum()
+    val totalMl: Int? get() = feeds.mapNotNull { it.totalMl }.takeIf { it.isNotEmpty() }?.sum()
+
+    /**
+     * What came from each source that day, each null when that source was not used — which is
+     * what lets the day line show a breakdown only when there is one to show. A day fed from
+     * one source has nothing to break down and reads as a single total.
+     */
+    val breastMl: Int? get() = feeds.mapNotNull { it.breastMl }.takeIf { it.isNotEmpty() }?.sum()
+
+    val formulaMl: Int? get() = feeds.mapNotNull { it.formulaMl }.takeIf { it.isNotEmpty() }?.sum()
+
+    /**
+     * True only when both sources contributed. A day of breast feeds alone still has a
+     * [breastMl] equal to its total, and repeating that number beside itself says nothing.
+     */
+    val hasSourceBreakdown: Boolean get() = breastMl != null && formulaMl != null
 }
 
 /**
@@ -84,7 +99,7 @@ data class FeedingTally(
 
 fun feedingTally(entries: List<FeedingEntry>, timeZone: TimeZone): FeedingTally {
     val byTime = entries.sortedBy { it.fedAtEpochMillis }
-    val measured = byTime.mapNotNull { it.amountMl }
+    val measured = byTime.mapNotNull { it.totalMl }
 
     val nightFeeds = byTime.count { entry ->
         val hour = Instant.fromEpochMilliseconds(entry.fedAtEpochMillis)

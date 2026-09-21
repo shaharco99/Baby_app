@@ -1,5 +1,7 @@
 package com.oryareach.feature.feeding
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -57,19 +60,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.oryareach.core.domain.baby.ageInDays
 import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.domain.feeding.FeedGuidance
 import com.oryareach.core.domain.feeding.FeedingDay
 import com.oryareach.core.domain.feeding.FeedingTally
+import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
@@ -130,7 +139,11 @@ fun FeedingScreen(
                     return@Column
                 }
 
-                CountdownCard(countdown = uiState.countdown, actions = actions)
+                CountdownCard(
+                    countdown = uiState.countdown,
+                    guidance = uiState.guidance,
+                    actions = actions,
+                )
 
                 Button(onClick = actions::onLogFeedClick, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.feeding_log_feed))
@@ -139,8 +152,19 @@ fun FeedingScreen(
                 HistoryViewToggle(selected = uiState.historyView, actions = actions)
 
                 when (uiState.historyView) {
-                    HistoryView.LIST -> FeedingList(days = uiState.days, today = uiState.today, actions = actions)
-                    HistoryView.TABLE -> FeedingTable(days = uiState.days, today = uiState.today, actions = actions)
+                    HistoryView.LIST -> FeedingList(
+                        days = uiState.days,
+                        today = uiState.today,
+                        birthDate = uiState.baby?.birthDate,
+                        actions = actions,
+                    )
+
+                    HistoryView.TABLE -> FeedingTable(
+                        days = uiState.days,
+                        today = uiState.today,
+                        birthDate = uiState.baby?.birthDate,
+                        actions = actions,
+                    )
                 }
             }
         }
@@ -271,7 +295,11 @@ private fun NoBabyCard() {
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun CountdownCard(countdown: FeedCountdown?, actions: FeedingActions) {
+private fun CountdownCard(
+    countdown: FeedCountdown?,
+    guidance: FeedGuidance?,
+    actions: FeedingActions,
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -315,6 +343,28 @@ private fun CountdownCard(countdown: FeedCountdown?, actions: FeedingActions) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            // Roughly how much, beside roughly when. Absent while pregnant or when no birth
+            // date was entered — there is no age to look the band up by, and a guessed one
+            // would be worse than nothing at this hour.
+            if (guidance != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.feeding_guidance_per_feed,
+                        guidance.perFeedMinMl,
+                        guidance.perFeedMaxMl,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(R.string.feeding_guidance_disclaimer),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -336,7 +386,12 @@ private fun HistoryViewToggle(selected: HistoryView, actions: FeedingActions) {
 }
 
 @Composable
-private fun FeedingList(days: List<FeedingDay>, today: LocalDate?, actions: FeedingActions) {
+private fun FeedingList(
+    days: List<FeedingDay>,
+    today: LocalDate?,
+    birthDate: LocalDate?,
+    actions: FeedingActions,
+) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
@@ -345,8 +400,10 @@ private fun FeedingList(days: List<FeedingDay>, today: LocalDate?, actions: Feed
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         days.forEach { day ->
             item(key = "header-${day.date}") {
-                Text(
-                    text = dayHeader(day, today),
+                DayTotalLine(
+                    day = day,
+                    today = today,
+                    birthDate = birthDate,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 8.dp),
@@ -412,7 +469,10 @@ private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit
                     )
                 }
             }
-            feed.amountMl?.let {
+            // One number, in the place a feed's amount has always been drawn: a feed that was
+            // breast and formula together shows their sum rather than two figures fighting for
+            // the same slot. The per-source split lives on the day line above.
+            feed.totalMl?.let {
                 Text(stringResource(R.string.feeding_amount_ml, it), style = MaterialTheme.typography.bodyMedium)
             }
             IconButton(onClick = onDelete) {
@@ -428,7 +488,7 @@ private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit
  */
 @Composable
 private fun feedDescription(feed: FeedingEntry): String {
-    val amount = feed.amountMl?.let { stringResource(R.string.feeding_amount_ml, it) }
+    val amount = feed.totalMl?.let { stringResource(R.string.feeding_amount_ml, it) }
     val marks = feedMarks(feed).takeIf { it.isNotEmpty() }
     return listOfNotNull(
         formatClock(feed.fedAtEpochMillis),
@@ -472,7 +532,12 @@ private fun feedMarks(feed: FeedingEntry): String = listOfNotNull(
  * Compose doesn't have — a [Row] of day groups, each a fixed set of rows.
  */
 @Composable
-private fun FeedingTable(days: List<FeedingDay>, today: LocalDate?, actions: FeedingActions) {
+private fun FeedingTable(
+    days: List<FeedingDay>,
+    today: LocalDate?,
+    birthDate: LocalDate?,
+    actions: FeedingActions,
+) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
@@ -484,7 +549,9 @@ private fun FeedingTable(days: List<FeedingDay>, today: LocalDate?, actions: Fee
 
         LazyColumn {
             days.forEach { day ->
-                item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
+                item(key = "day-${day.date}") {
+                    DayTitleRow(day = day, today = today, birthDate = birthDate)
+                }
                 items(day.feeds.reversed(), key = { it.id }) { feed ->
                     HorizontalDivider()
                     FeedCellsRow(feed = feed, onEdit = { actions.onEditFeedClick(feed) })
@@ -514,17 +581,18 @@ private fun TableHeaderRow() {
 
 /** Separates one calendar day's feeds from the next, the thick divider on the paper sheet. */
 @Composable
-private fun DayTitleRow(day: FeedingDay, today: LocalDate?) {
+private fun DayTitleRow(day: FeedingDay, today: LocalDate?, birthDate: LocalDate?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
-        Text(
-            text = dayHeader(day, today),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
+        DayTotalLine(
+            day = day,
+            today = today,
+            birthDate = birthDate,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -535,7 +603,7 @@ private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
     val cells = listOf(
         formatClock(feed.fedAtEpochMillis),
         stringResource(feed.feedType.labelRes()),
-        feed.amountMl?.toString().orEmpty(),
+        feed.totalMl?.toString().orEmpty(),
         if (feed.hadUrine) MARK else "",
         if (feed.hadStool) MARK else "",
     )
@@ -610,14 +678,42 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
             }
         }
 
-        OutlinedTextField(
-            value = uiState.formAmountMl,
-            onValueChange = actions::onAmountChange,
-            label = { Text(stringResource(R.string.feeding_amount_field)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // Two fields, not one with a picker: a breastfeed topped up with a bottle is one feed
+        // with two numbers, and making that a mode to switch between is a step too many at 4am.
+        // Either, both, or neither may be filled; filling both is what "we did both" means.
+        if (uiState.formTakesAmounts) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                AmountField(
+                    value = uiState.formBreastMl,
+                    onValueChange = actions::onBreastMlChange,
+                    label = R.string.feeding_amount_breast_field,
+                    icon = R.drawable.ic_feed_breast,
+                    modifier = Modifier.weight(1f),
+                )
+                AmountField(
+                    value = uiState.formFormulaMl,
+                    onValueChange = actions::onFormulaMlChange,
+                    label = R.string.feeding_amount_formula_field,
+                    icon = R.drawable.ic_feed_bottle,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            // Only once both are filled: with one amount the total is the number already on
+            // screen, and echoing it back reads as a second, different figure.
+            if (uiState.formHasBothAmounts) {
+                uiState.formTotalMl?.let { total ->
+                    Text(
+                        text = stringResource(R.string.feeding_amount_total, total),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = uiState.formHadUrine, onCheckedChange = { actions.onToggleUrine() })
@@ -698,6 +794,55 @@ private fun Long.toUtcDateMillis(): Long =
 private fun Long.toPickedDate(): LocalDate =
     Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
 
+/**
+ * One of the two amount fields. The icon is the label that gets read at a glance — the words
+ * are there for a screen reader and for the first time someone sees the sheet.
+ */
+@Composable
+private fun AmountField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    @StringRes label: Int,
+    @DrawableRes icon: Int,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(stringResource(label)) },
+        leadingIcon = {
+            Icon(painter = painterResource(icon), contentDescription = null)
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        modifier = modifier,
+    )
+}
+
+/**
+ * An icon and a number, the shape the day line breaks its total down into. The icon carries the
+ * meaning; the surrounding line's `contentDescription` is what says it in words.
+ */
+@Composable
+private fun SourceAmount(@DrawableRes icon: Int, amountMl: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = amountMl.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 private fun formatClock(epochMillis: Long): String {
     val time = Instant.fromEpochMilliseconds(epochMillis)
         .toLocalDateTime(TimeZone.currentSystemDefault())
@@ -719,6 +864,69 @@ private fun dayHeader(day: FeedingDay, today: LocalDate?): String {
     return day.totalMl?.let { stringResource(R.string.feeding_day_header_with_total, date, it) } ?: date
 }
 
+/**
+ * The day's line: its name and total, then what each source contributed, then roughly what a
+ * day at that age comes to.
+ *
+ * The breakdown only appears when there is one — a day fed from a single source would otherwise
+ * repeat its own total beside itself. The guidance is computed from [FeedingDay.date], not from
+ * today: scrolling back through the log should show the band that applied on the day being read,
+ * which for a newborn is a different band every day.
+ *
+ * Laid out as a [Row] of separate pieces rather than one formatted string so the icons can sit
+ * between the numbers; the whole line is merged into a single announcement, because an icon
+ * tells a screen reader nothing on its own.
+ */
+@Composable
+private fun DayTotalLine(
+    day: FeedingDay,
+    today: LocalDate?,
+    birthDate: LocalDate?,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    val header = dayHeader(day, today)
+    val breakdown = day.takeIf { it.hasSourceBreakdown }
+    val guidance = birthDate?.let { feedGuidance(ageInDays(it, day.date)) }
+
+    val description = when {
+        breakdown == null -> header
+        else -> stringResource(
+            R.string.feeding_day_header_breakdown,
+            today?.let { dayLabel(day.date, it) } ?: day.date.toString(),
+            day.totalMl ?: 0,
+            breakdown.breastMl ?: 0,
+            breakdown.formulaMl ?: 0,
+        )
+    }
+
+    Row(
+        modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text = header, style = style, color = color)
+
+        if (breakdown != null) {
+            breakdown.breastMl?.let { SourceAmount(icon = R.drawable.ic_feed_breast, amountMl = it) }
+            breakdown.formulaMl?.let { SourceAmount(icon = R.drawable.ic_feed_bottle, amountMl = it) }
+        }
+
+        if (guidance != null && day.totalMl != null) {
+            Text(
+                text = stringResource(
+                    R.string.feeding_guidance_day_total,
+                    guidance.dailyMinMl,
+                    guidance.dailyMaxMl,
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 private val TableRowLabels = listOf(
     R.string.feeding_row_time,
     R.string.feeding_row_type,
@@ -734,18 +942,26 @@ private fun FeedingPreview() {
         FeedingScreen(
             uiState = FeedingUiState(
                 baby = Baby(id = "1", name = "Yarden", birthDate = LocalDate(2026, 12, 20)),
+                today = LocalDate(2026, 12, 21),
                 countdown = FeedCountdown(dueAtEpochMillis = 0, remainingMillis = 95 * 60_000L),
                 days = listOf(
                     FeedingDay(
                         date = LocalDate(2026, 12, 21),
                         feeds = listOf(
-                            FeedingEntry(id = "a", babyId = "1", fedAtEpochMillis = 1_766_300_000_000, amountMl = 60),
+                            // A feed that was breast and formula together: one row, one total.
+                            FeedingEntry(
+                                id = "a",
+                                babyId = "1",
+                                fedAtEpochMillis = 1_766_300_000_000,
+                                breastMl = 30,
+                                formulaMl = 30,
+                            ),
                             FeedingEntry(
                                 id = "b",
                                 babyId = "1",
                                 fedAtEpochMillis = 1_766_310_000_000,
                                 feedType = FeedType.FORMULA,
-                                amountMl = 90,
+                                formulaMl = 90,
                                 hadUrine = true,
                             ),
                         ),
@@ -762,7 +978,8 @@ private object NoopFeedingActions : FeedingActions {
     override fun onEditFeedClick(feed: FeedingEntry) = Unit
     override fun onDismissSheet() = Unit
     override fun onFeedTypeChange(value: FeedType) = Unit
-    override fun onAmountChange(value: String) = Unit
+    override fun onBreastMlChange(value: String) = Unit
+    override fun onFormulaMlChange(value: String) = Unit
     override fun onToggleUrine() = Unit
     override fun onToggleStool() = Unit
     override fun onNoteChange(value: String) = Unit

@@ -44,7 +44,8 @@ interface FeedingActions {
     fun onEditFeedClick(feed: FeedingEntry)
     fun onDismissSheet()
     fun onFeedTypeChange(value: FeedType)
-    fun onAmountChange(value: String)
+    fun onBreastMlChange(value: String)
+    fun onFormulaMlChange(value: String)
     fun onToggleUrine()
     fun onToggleStool()
     fun onNoteChange(value: String)
@@ -133,7 +134,8 @@ class FeedingViewModel(
             sheetVisible = true,
             editingFeedId = null,
             formFeedType = FeedType.BREAST_MILK,
-            formAmountMl = "",
+            formBreastMl = "",
+            formFormulaMl = "",
             formHadUrine = false,
             formHadStool = false,
             formNote = "",
@@ -148,7 +150,14 @@ class FeedingViewModel(
             sheetVisible = true,
             editingFeedId = feed.id,
             formFeedType = feed.feedType,
-            formAmountMl = feed.amountMl?.toString().orEmpty(),
+            // A feed written before the split has only the legacy amount; it belongs in
+            // whichever field its type says it came from, so editing it does not lose it.
+            formBreastMl = feed.breastMl?.toString()
+                ?: feed.amountMl.takeIf { feed.formulaMl == null && feed.feedType == FeedType.BREAST_MILK }
+                    ?.toString().orEmpty(),
+            formFormulaMl = feed.formulaMl?.toString()
+                ?: feed.amountMl.takeIf { feed.breastMl == null && feed.feedType == FeedType.FORMULA }
+                    ?.toString().orEmpty(),
             formHadUrine = feed.hadUrine,
             formHadStool = feed.hadStool,
             formNote = feed.note.orEmpty(),
@@ -162,9 +171,11 @@ class FeedingViewModel(
     override fun onFeedTypeChange(value: FeedType) = set { it.copy(formFeedType = value) }
 
     /** Digits only: the field feeds an Int, and a stray character would silently drop the amount. */
-    override fun onAmountChange(value: String) = set {
-        it.copy(formAmountMl = value.filter(Char::isDigit).take(MAX_AMOUNT_DIGITS))
-    }
+    override fun onBreastMlChange(value: String) = set { it.copy(formBreastMl = value.asAmount()) }
+
+    override fun onFormulaMlChange(value: String) = set { it.copy(formFormulaMl = value.asAmount()) }
+
+    private fun String.asAmount(): String = filter(Char::isDigit).take(MAX_AMOUNT_DIGITS)
 
     override fun onToggleUrine() = set { it.copy(formHadUrine = !it.formHadUrine) }
     override fun onToggleStool() = set { it.copy(formHadStool = !it.formHadStool) }
@@ -217,8 +228,9 @@ class FeedingViewModel(
                     workspaceId = workspace,
                     babyId = baby.id,
                     userId = auth.currentUserId().orEmpty(),
-                    feedType = state.formFeedType,
-                    amountMl = state.formAmountMl.toIntOrNull(),
+                    feedType = state.resolvedFeedType(),
+                    breastMl = state.enteredBreastMl(),
+                    formulaMl = state.enteredFormulaMl(),
                     hadUrine = state.formHadUrine,
                     hadStool = state.formHadStool,
                     note = state.formNote.ifBlank { null },
@@ -230,12 +242,14 @@ class FeedingViewModel(
                 // the reminder already scheduled off it stays correct as a result.
                 repository.update(
                     id = editingId,
-                    feedType = state.formFeedType,
-                    amountMl = state.formAmountMl.toIntOrNull(),
+                    feedType = state.resolvedFeedType(),
+                    breastMl = state.enteredBreastMl(),
+                    formulaMl = state.enteredFormulaMl(),
                     hadUrine = state.formHadUrine,
                     hadStool = state.formHadStool,
                     note = state.formNote.ifBlank { null },
                     fedAt = state.formFedAtEpochMillis,
+                    intervalMinutes = state.intervalMinutes,
                 )
             }
             set { it.copy(busy = false, sheetVisible = false, editingFeedId = null) }
@@ -249,7 +263,7 @@ class FeedingViewModel(
      */
     override fun onDeleteFeed(id: String) {
         viewModelScope.launch {
-            repository.delete(id)
+            repository.delete(id, _uiState.value.intervalMinutes)
             set { it.copy(undoDeleteId = id) }
         }
     }
@@ -257,7 +271,7 @@ class FeedingViewModel(
     override fun onUndoDelete() {
         val id = _uiState.value.undoDeleteId ?: return
         set { it.copy(undoDeleteId = null) }
-        viewModelScope.launch { repository.restore(id) }
+        viewModelScope.launch { repository.restore(id, _uiState.value.intervalMinutes) }
     }
 
     override fun onUndoDismissed() = set { it.copy(undoDeleteId = null) }

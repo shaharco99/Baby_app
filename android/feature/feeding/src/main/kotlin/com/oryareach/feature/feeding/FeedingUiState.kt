@@ -1,9 +1,12 @@
 package com.oryareach.feature.feeding
 
 import androidx.compose.runtime.Immutable
+import com.oryareach.core.domain.baby.ageInDays
 import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.domain.feeding.FeedGuidance
 import com.oryareach.core.domain.feeding.FeedingDay
 import com.oryareach.core.domain.feeding.FeedingTally
+import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
@@ -36,7 +39,12 @@ data class FeedingUiState(
      */
     val undoDeleteId: String? = null,
     val formFeedType: FeedType = FeedType.BREAST_MILK,
-    val formAmountMl: String = "",
+    /**
+     * The two amounts a milk feed can have. Both fillable at once — a breastfeed topped up with
+     * a bottle is one feed, not two, and it is entered as one row with two numbers.
+     */
+    val formBreastMl: String = "",
+    val formFormulaMl: String = "",
     val formHadUrine: Boolean = false,
     val formHadStool: Boolean = false,
     val formNote: String = "",
@@ -68,4 +76,57 @@ data class FeedingUiState(
      * about the row stays correctable.
      */
     val isEditing: Boolean get() = editingFeedId != null
+
+    /**
+     * What the feed being entered comes to. Shown under the two fields only when both are
+     * filled — this is the number that will land in the history row, and seeing it before
+     * saving beats discovering it afterwards.
+     */
+    val formTotalMl: Int?
+        get() = listOfNotNull(formBreastMl.toIntOrNull(), formFormulaMl.toIntOrNull())
+            .takeIf { it.isNotEmpty() }
+            ?.sum()
+
+    val formHasBothAmounts: Boolean
+        get() = formBreastMl.toIntOrNull() != null && formFormulaMl.toIntOrNull() != null
+
+    /** Milk has amounts to enter; a solid feed does not, so the two fields are hidden for it. */
+    val formTakesAmounts: Boolean get() = formFeedType != FeedType.SOLID
+
+    /**
+     * Roughly how much the next feed should be, for how old the child is *today*. Null while
+     * pregnant or when no birth date was entered — there is nothing to recommend then, and the
+     * card shows the countdown alone.
+     *
+     * The day lines compute their own, from the date of the day they are labelling rather than
+     * from today, so scrolling back shows the band that applied then.
+     */
+    val guidance: FeedGuidance?
+        get() {
+            val birth = baby?.birthDate ?: return null
+            val day = today ?: return null
+            return feedGuidance(ageInDays(birth, day))
+        }
+}
+
+/** Null for a solid feed, which has no amounts, and for a field left empty. */
+internal fun FeedingUiState.enteredBreastMl(): Int? =
+    formBreastMl.toIntOrNull().takeIf { formTakesAmounts }
+
+internal fun FeedingUiState.enteredFormulaMl(): Int? =
+    formFormulaMl.toIntOrNull().takeIf { formTakesAmounts }
+
+/**
+ * What to record as the feed's type once the amounts are known.
+ *
+ * The selector still decides for a solid feed, and it still stands when neither amount was
+ * measured. Otherwise the amounts are the better evidence: someone who types a formula amount
+ * without touching the selector meant a formula feed, and a feed with both amounts is recorded
+ * as a breastfeed with a top-up — the two columns, not this, are what the totals read.
+ */
+internal fun FeedingUiState.resolvedFeedType(): FeedType = when {
+    !formTakesAmounts -> formFeedType
+    enteredBreastMl() != null -> FeedType.BREAST_MILK
+    enteredFormulaMl() != null -> FeedType.FORMULA
+    else -> formFeedType
 }

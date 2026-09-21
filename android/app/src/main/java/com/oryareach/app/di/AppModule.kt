@@ -88,6 +88,10 @@ val appModule = module {
         com.oryareach.app.sync.ForegroundSyncController(
             session = get(),
             poll = { com.oryareach.app.sync.SyncWorker.pollNow(androidContext()) },
+            refreshReminders = {
+                get<FeedingReminderRefresher>().refresh()
+                get<PumpReminderRefresher>().refresh()
+            },
         )
     }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }

@@ -221,7 +221,7 @@ class PumpSessionRepository(
      * A session already gone from the server would come back as a new write, which is the right
      * outcome: the point is that nothing is lost by a mis-tap.
      */
-    suspend fun restore(id: String) {
+    suspend fun restore(id: String, intervalMinutes: Int) {
         val existing = sessions.findById(id) ?: return
         val timestamp = now()
         val entity = existing.copy(
@@ -244,17 +244,36 @@ class PumpSessionRepository(
             )
             enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
         }
+        rescheduleFromLatest(entity.sync.workspaceId, intervalMinutes)
         syncTrigger.syncNow()
     }
 
-    suspend fun delete(id: String) {
+    suspend fun delete(id: String, intervalMinutes: Int) {
+        // Read before the soft delete: afterwards the row is filtered out of every query, and
+        // the reminder still has to be re-derived for the workspace it belonged to.
+        val existing = sessions.findById(id) ?: return
         val timestamp = now()
         database.withTransaction {
             sessions.softDelete(id, timestamp)
             search.remove(id)
             enqueue(id, SyncOperationType.DELETE, newId(), timestamp)
         }
+        rescheduleFromLatest(existing.sync.workspaceId, intervalMinutes)
         syncTrigger.syncNow()
+    }
+
+    /**
+     * Re-derives the pending reminder after a delete or an undo, both of which change which
+     * session is the latest one. Distinct from [rescheduleReminder] in having no fallback: when
+     * the last session is gone there is nothing to count from, and a pending alarm would ring
+     * for an empty log.
+     *
+     * [update] deliberately does not call this — it can move a session's end, never its start,
+     * and the reminder is scheduled off the start.
+     */
+    private suspend fun rescheduleFromLatest(workspaceId: String, intervalMinutes: Int) {
+        val latest = sessions.findLatest(workspaceId)
+        if (latest == null) reminders.cancel() else reminders.scheduleNext(latest.startedAt, intervalMinutes)
     }
 
     /**

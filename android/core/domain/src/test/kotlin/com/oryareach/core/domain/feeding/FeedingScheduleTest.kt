@@ -137,7 +137,71 @@ class FeedingScheduleTest {
         tally.longestStretchMillis shouldBe null
     }
 
+    @Test
+    fun `a day's total sums both sources of a mixed feed`() {
+        val days = groupFeedsByDay(
+            listOf(
+                mixedFeed("a", "2026-09-18T09:00:00Z", breastMl = 30, formulaMl = 30),
+                mixedFeed("b", "2026-09-18T13:00:00Z", breastMl = 40),
+            ),
+            TimeZone.UTC,
+        )
+
+        days.single().totalMl shouldBe 100
+        days.single().breastMl shouldBe 70
+        days.single().formulaMl shouldBe 30
+        days.single().hasSourceBreakdown shouldBe true
+    }
+
+    @Test
+    fun `a day fed from one source has nothing to break down`() {
+        val day = groupFeedsByDay(
+            listOf(mixedFeed("a", "2026-09-18T09:00:00Z", breastMl = 30)),
+            TimeZone.UTC,
+        ).single()
+
+        day.totalMl shouldBe 30
+        day.formulaMl shouldBe null
+        day.hasSourceBreakdown shouldBe false
+    }
+
+    @Test
+    fun `a feed written before the split still counts through its legacy amount`() {
+        val day = groupFeedsByDay(
+            listOf(feed("old", "2026-09-18T09:00:00Z", amountMl = 60)),
+            TimeZone.UTC,
+        ).single()
+
+        day.totalMl shouldBe 60
+        day.hasSourceBreakdown shouldBe false
+    }
+
+    @Test
+    fun `the tally counts a mixed feed once, at its total`() {
+        val tally = feedingTally(
+            listOf(mixedFeed("a", "2026-09-18T03:00:00Z", breastMl = 30, formulaMl = 30)),
+            TimeZone.UTC,
+        )
+
+        tally.totalFeeds shouldBe 1
+        tally.nightFeeds shouldBe 1
+        tally.totalMl shouldBe 60
+    }
+
     private fun at(iso: String): Long = Instant.parse(iso).toEpochMilliseconds()
+
+    private fun mixedFeed(
+        id: String,
+        iso: String,
+        breastMl: Int? = null,
+        formulaMl: Int? = null,
+    ) = FeedingEntry(
+        id = id,
+        babyId = "baby",
+        fedAtEpochMillis = at(iso),
+        breastMl = breastMl,
+        formulaMl = formulaMl,
+    )
 
     private fun feed(id: String, iso: String, amountMl: Int? = null) = FeedingEntry(
         id = id,

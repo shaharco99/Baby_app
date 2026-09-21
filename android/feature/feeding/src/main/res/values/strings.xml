@@ -19,7 +19,15 @@
     <string name="feeding_empty_history">Nothing logged in the last two weeks.</string>
     <string name="feeding_day_header_with_total">%1$s · %2$d ml</string>
     <string name="feeding_amount_ml">%1$d ml</string>
-    <string name="feeding_amount_field">Amount (ml, optional)</string>
+    <string name="feeding_amount_breast_field">Breast (ml)</string>
+    <string name="feeding_amount_formula_field">Formula (ml)</string>
+    <string name="feeding_amount_total">Total %1$d ml</string>
+    <string name="feeding_breakdown_breast">%1$d ml breast</string>
+    <string name="feeding_breakdown_formula">%1$d ml formula</string>
+    <string name="feeding_day_header_breakdown">%1$s: %2$d ml in all, %3$d ml breast and %4$d ml formula</string>
+    <string name="feeding_guidance_per_feed">About %1$d–%2$d ml a feed</string>
+    <string name="feeding_guidance_day_total">of about %1$d–%2$d ml</string>
+    <string name="feeding_guidance_disclaimer">A rough guide for the baby\'s age, not medical advice.</string>
     <string name="feeding_note_field">Note</string>
     <string name="feeding_urine">Urine</string>
     <string name="feeding_stool">Stool</string>

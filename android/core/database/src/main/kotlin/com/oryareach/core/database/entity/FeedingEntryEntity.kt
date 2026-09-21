@@ -27,6 +27,11 @@ data class FeedingEntryEntity(
     /** Epoch millis — the countdown is arithmetic on an instant, not on a calendar day. */
     @ColumnInfo(name = "fed_at") val fedAt: Long,
     @ColumnInfo(name = "feed_type") val feedType: FeedType,
+    /** Null when no breast milk was given, or when it was given but not measured. */
+    @ColumnInfo(name = "breast_ml") val breastMl: Int?,
+    /** Null when no formula was given. */
+    @ColumnInfo(name = "formula_ml") val formulaMl: Int?,
+    /** Mirror of the total, kept only so a partner on an older build still reads a number. */
     @ColumnInfo(name = "amount_ml") val amountMl: Int?,
     @ColumnInfo(name = "had_urine") val hadUrine: Boolean,
     @ColumnInfo(name = "had_stool") val hadStool: Boolean,

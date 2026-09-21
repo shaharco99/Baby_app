@@ -585,3 +585,34 @@ val MIGRATION_18_19 = object : Migration(18, 19) {
         db.execSQL("ALTER TABLE `pump_sessions` ADD COLUMN `paused_at` INTEGER")
     }
 }
+
+/**
+ * A feed that was breast *and* formula.
+ *
+ * Both columns are additive and nullable, so no existing row has to be rewritten to be valid.
+ * The backfill moves each old single amount into the column its type says it belonged to, which
+ * is what keeps the day totals and the history rows reading the same before and after.
+ *
+ * `amount_ml` is deliberately left in place rather than dropped. It is now a mirror of the
+ * total, and it is the only amount a partner still on a pre-split build can read — dropping it
+ * would blank out every feed on the other phone until both are updated.
+ */
+val MIGRATION_19_20 = object : Migration(19, 20) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // No DEFAULT: NULL on every existing row is exactly "this source was not used", and
+        // Room's schema has no default here to match.
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `breast_ml` INTEGER")
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `formula_ml` INTEGER")
+
+        db.execSQL(
+            "UPDATE `feeding_entries` SET `breast_ml` = `amount_ml` " +
+                "WHERE `feed_type` = 'BREAST_MILK' AND `amount_ml` IS NOT NULL",
+        )
+        db.execSQL(
+            "UPDATE `feeding_entries` SET `formula_ml` = `amount_ml` " +
+                "WHERE `feed_type` = 'FORMULA' AND `amount_ml` IS NOT NULL",
+        )
+        // A SOLID feed keeps its amount in `amount_ml` alone: it is neither breast nor formula,
+        // and the total falls back to it.
+    }
+}

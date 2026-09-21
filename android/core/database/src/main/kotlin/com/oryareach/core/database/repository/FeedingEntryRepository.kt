@@ -53,7 +53,8 @@ class FeedingEntryRepository(
         babyId: String,
         userId: String,
         feedType: FeedType,
-        amountMl: Int?,
+        breastMl: Int?,
+        formulaMl: Int?,
         hadUrine: Boolean,
         hadStool: Boolean,
         note: String?,
@@ -66,7 +67,9 @@ class FeedingEntryRepository(
             babyId = babyId,
             fedAt = fedAt,
             feedType = feedType,
-            amountMl = amountMl,
+            breastMl = breastMl,
+            formulaMl = formulaMl,
+            amountMl = mirrorTotal(breastMl, formulaMl),
             hadUrine = hadUrine,
             hadStool = hadStool,
             note = note,
@@ -98,18 +101,22 @@ class FeedingEntryRepository(
     suspend fun update(
         id: String,
         feedType: FeedType,
-        amountMl: Int?,
+        breastMl: Int?,
+        formulaMl: Int?,
         hadUrine: Boolean,
         hadStool: Boolean,
         note: String?,
         fedAt: Long,
+        intervalMinutes: Int,
     ) {
         val existing = entries.findById(id) ?: return
         val timestamp = now()
         val entity = existing.copy(
             fedAt = fedAt,
             feedType = feedType,
-            amountMl = amountMl,
+            breastMl = breastMl,
+            formulaMl = formulaMl,
+            amountMl = mirrorTotal(breastMl, formulaMl),
             hadUrine = hadUrine,
             hadStool = hadStool,
             note = note,
@@ -131,6 +138,7 @@ class FeedingEntryRepository(
             )
             enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
         }
+        rescheduleFromLatest(entity.sync.workspaceId, entity.babyId, intervalMinutes)
         syncTrigger.syncNow()
     }
 
@@ -139,7 +147,7 @@ class FeedingEntryRepository(
      * tombstone and pushing it again — which is what lets the list offer an undo instead of
      * asking for a confirmation on every delete.
      */
-    suspend fun restore(id: String) {
+    suspend fun restore(id: String, intervalMinutes: Int) {
         val existing = entries.findById(id) ?: return
         val timestamp = now()
         val entity = existing.copy(
@@ -162,18 +170,47 @@ class FeedingEntryRepository(
             )
             enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
         }
+        rescheduleFromLatest(entity.sync.workspaceId, entity.babyId, intervalMinutes)
         syncTrigger.syncNow()
     }
 
-    suspend fun delete(id: String) {
+    suspend fun delete(id: String, intervalMinutes: Int) {
+        // Read before the soft delete: afterwards the row is filtered out of every query, and
+        // the reminder still has to be re-derived for the child it belonged to.
+        val existing = entries.findById(id) ?: return
         val timestamp = now()
         database.withTransaction {
             entries.softDelete(id, timestamp)
             search.remove(id)
             enqueue(id, SyncOperationType.DELETE, newId(), timestamp)
         }
+        rescheduleFromLatest(existing.sync.workspaceId, existing.babyId, intervalMinutes)
         syncTrigger.syncNow()
     }
+
+    /**
+     * Puts the pending reminder back where the database says it belongs.
+     *
+     * Every write path ends here rather than only [logFeed]: editing the latest feed's time,
+     * deleting it, or undoing that delete all move which feed the countdown runs from, and an
+     * alarm left pointing at a feed that no longer exists rings at the wrong moment — or, after
+     * the last feed is deleted, rings for a log with nothing in it.
+     */
+    private suspend fun rescheduleFromLatest(
+        workspaceId: String,
+        babyId: String,
+        intervalMinutes: Int,
+    ) {
+        val latest = entries.findLatest(workspaceId, babyId)
+        if (latest == null) reminders.cancel() else reminders.scheduleNext(latest.fedAt, intervalMinutes)
+    }
+
+    /**
+     * The legacy [FeedingEntryEntity.amountMl] mirror. Null when neither source was measured,
+     * so an unmeasured breastfeed still reads as unmeasured rather than as zero.
+     */
+    private fun mirrorTotal(breastMl: Int?, formulaMl: Int?): Int? =
+        listOfNotNull(breastMl, formulaMl).takeIf { it.isNotEmpty() }?.sum()
 
     private suspend fun enqueue(
         recordId: String,

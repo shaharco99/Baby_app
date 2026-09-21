@@ -375,7 +375,7 @@ class PumpingViewModel(
     override fun onDiscard() {
         val id = _uiState.value.editingSessionId ?: return
         viewModelScope.launch {
-            repository.delete(id)
+            repository.delete(id, _uiState.value.intervalMinutes)
             set {
                 it.copy(sheetVisible = false, editingSessionId = null, discardable = false)
             }
@@ -389,7 +389,7 @@ class PumpingViewModel(
      */
     override fun onDeleteSession(id: String) {
         viewModelScope.launch {
-            repository.delete(id)
+            repository.delete(id, _uiState.value.intervalMinutes)
             set { it.copy(undoDeleteId = id) }
         }
     }
@@ -397,7 +397,7 @@ class PumpingViewModel(
     override fun onUndoDelete() {
         val id = _uiState.value.undoDeleteId ?: return
         set { it.copy(undoDeleteId = null) }
-        viewModelScope.launch { repository.restore(id) }
+        viewModelScope.launch { repository.restore(id, _uiState.value.intervalMinutes) }
     }
 
     override fun onUndoDismissed() = set { it.copy(undoDeleteId = null) }
