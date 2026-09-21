@@ -405,7 +405,9 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
             enabled = uiState.canSubmitForm,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(R.string.shopping_save))
+            // Names the outcome rather than the mechanism, and changes with what the sheet is
+            // doing — the same pattern every other form in the app uses.
+            Text(stringResource(if (uiState.isEditing) R.string.shopping_save_changes else R.string.shopping_add_action))
         }
 
         Spacer(Modifier.height(8.dp))

@@ -64,4 +64,6 @@
     <string name="tasks_add_tag">הוספה</string>
     <string name="tasks_remove_tag">הסרת תגית</string>
     <string name="tasks_remove_attachment">הסרת קובץ מצורף</string>
+    <string name="tasks_add_action">הוספת משימה</string>
+    <string name="tasks_save_changes">שמירת שינויים</string>
 </resources>

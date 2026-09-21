@@ -811,7 +811,9 @@ private fun PumpSessionForm(uiState: PumpingUiState, actions: PumpingActions) {
             enabled = uiState.canSave,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(R.string.pumping_save))
+            // Names the outcome rather than the mechanism, and changes with what the sheet is
+            // doing — the same pattern every other form in the app uses.
+            Text(stringResource(if (uiState.isEditing) R.string.pumping_save_changes else R.string.pumping_add_action))
         }
 
         // Only for the session just stopped: a Start pressed by mistake shouldn't have to be

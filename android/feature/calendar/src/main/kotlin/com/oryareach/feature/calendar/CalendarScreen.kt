@@ -237,7 +237,9 @@ private fun DateForm(uiState: CalendarUiState, actions: CalendarActions) {
             enabled = uiState.canSubmitForm,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(R.string.dates_save))
+            // Names the outcome rather than the mechanism, and changes with what the sheet is
+            // doing — the same pattern every other form in the app uses.
+            Text(stringResource(if (uiState.isEditing) R.string.dates_save_changes else R.string.dates_add_action))
         }
 
         Spacer(Modifier.height(8.dp))

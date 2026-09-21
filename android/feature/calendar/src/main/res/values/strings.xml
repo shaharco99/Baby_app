@@ -22,6 +22,8 @@
     <string name="dates_delete_title">Delete date?</string>
     <string name="dates_delete_body">"%1$s will be deleted."</string>
     <string name="dates_cancel">Cancel</string>
-    <string name="dates_pick_confirm">OK</string>
+    <string name="dates_pick_confirm">Set</string>
     <string name="dates_pick_cancel">Cancel</string>
+    <string name="dates_add_action">Add date</string>
+    <string name="dates_save_changes">Save changes</string>
 </resources>

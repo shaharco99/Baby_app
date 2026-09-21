@@ -22,7 +22,7 @@
     <string name="home_partner_two_name_field">Partner 2\'s name</string>
     <string name="home_partner_two_name_default">Shahar</string>
     <string name="home_save">Save</string>
-    <string name="home_pick_confirm">OK</string>
+    <string name="home_pick_confirm">Set</string>
     <string name="home_pick_cancel">Cancel</string>
     <string name="home_edit_due_date">Edit last period and name</string>
     <string name="home_import_from_web">Import from web app</string>

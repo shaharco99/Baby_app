@@ -9,7 +9,7 @@
     <string name="pumping_save">Save</string>
     <string name="pumping_discard">Discard</string>
     <string name="pumping_delete">Delete</string>
-    <string name="pumping_pick_confirm">Choose</string>
+    <string name="pumping_pick_confirm">Set</string>
     <string name="pumping_pick_cancel">Cancel</string>
     <string name="pumping_when_value">%1$s at %2$s</string>
     <string name="pumping_when_locked">The time a session started can\'t be changed after it is saved.</string>
@@ -56,4 +56,6 @@
     <string name="pumping_empty_hint">Press Start when you begin, or add one that already happened.</string>
     <string name="pumping_deleted">Session deleted</string>
     <string name="pumping_undo_action">Undo</string>
+    <string name="pumping_add_action">Log session</string>
+    <string name="pumping_save_changes">Save changes</string>
 </resources>

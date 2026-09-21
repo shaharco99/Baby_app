@@ -24,4 +24,6 @@
     <string name="dates_cancel">ביטול</string>
     <string name="dates_pick_confirm">אישור</string>
     <string name="dates_pick_cancel">ביטול</string>
+    <string name="dates_add_action">הוספת תאריך</string>
+    <string name="dates_save_changes">שמירת שינויים</string>
 </resources>

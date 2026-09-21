@@ -64,4 +64,6 @@
     <string name="tasks_add_tag">Add</string>
     <string name="tasks_remove_tag">Remove tag</string>
     <string name="tasks_remove_attachment">Remove attachment</string>
+    <string name="tasks_add_action">Add task</string>
+    <string name="tasks_save_changes">Save changes</string>
 </resources>

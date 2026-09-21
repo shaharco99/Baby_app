@@ -6,7 +6,7 @@
     <string name="feeding_delete">Delete</string>
     <string name="feeding_edit">Edit</string>
     <string name="feeding_edit_feed">Edit feed</string>
-    <string name="feeding_pick_confirm">Choose</string>
+    <string name="feeding_pick_confirm">Set</string>
     <string name="feeding_pick_cancel">Cancel</string>
     <string name="feeding_when_value">%1$s at %2$s</string>
     <string name="feeding_when_locked">The time a feed happened can\'t be changed after it is saved.</string>

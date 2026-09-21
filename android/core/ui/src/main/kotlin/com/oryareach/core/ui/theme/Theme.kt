@@ -50,6 +50,40 @@ private val LightColorScheme = lightColorScheme(
     onError = Palette.Light.primaryForeground,
     outline = Palette.Light.border,
     outlineVariant = Palette.Light.border,
+
+    // The container roles. Leaving these unset is not neutral: Material falls back to its
+    // baseline purple, and every component that defaults to one silently leaves the palette —
+    // the add button on Tasks and Shopping, the selected half of every segmented control and
+    // filter chip, every FilledTonalButton, the undo snackbar, dialog surfaces. The app looked
+    // like two products depending on which control you were looking at.
+    //
+    // `primaryContainer` is the accent itself rather than a washed-out version of it: the
+    // brand's whole action vocabulary is that one colour, so the add button should read as the
+    // same thing as "Log a feed". The quieter roles take `accent`, which is what that palette
+    // entry was always for.
+    primaryContainer = Palette.Light.primary,
+    onPrimaryContainer = Palette.Light.primaryForeground,
+    secondaryContainer = Palette.Light.accent,
+    onSecondaryContainer = Palette.Light.accentForeground,
+    tertiaryContainer = Palette.Light.accent,
+    onTertiaryContainer = Palette.Light.accentForeground,
+    errorContainer = Palette.Light.destructive,
+    onErrorContainer = Palette.Light.primaryForeground,
+
+    // Named for what actually renders them, not for a five-step elevation story this product
+    // does not tell: it has one card colour, and depth comes from borders and `accent`.
+    // `surfaceContainerHighest` is what a filled Card uses, so it has to be `card` or every
+    // card in the app changes colour.
+    surfaceContainerLowest = Palette.Light.background,
+    surfaceContainerLow = Palette.Light.card,
+    surfaceContainerHigh = Palette.Light.card,
+    surfaceContainerHighest = Palette.Light.card,
+
+    // The inverse of a light theme is the dark one. Used by the snackbar, which was the one
+    // lavender rectangle on an otherwise warm screen.
+    inverseSurface = Palette.Dark.card,
+    inverseOnSurface = Palette.Dark.foreground,
+    inversePrimary = Palette.Dark.primary,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -70,6 +104,26 @@ private val DarkColorScheme = darkColorScheme(
     onError = Palette.Dark.primaryForeground,
     outline = Palette.Dark.border,
     outlineVariant = Palette.Dark.border,
+
+    // See the light scheme above for why these are not optional.
+    primaryContainer = Palette.Dark.primary,
+    onPrimaryContainer = Palette.Dark.primaryForeground,
+    secondaryContainer = Palette.Dark.accent,
+    onSecondaryContainer = Palette.Dark.accentForeground,
+    tertiaryContainer = Palette.Dark.accent,
+    onTertiaryContainer = Palette.Dark.accentForeground,
+    errorContainer = Palette.Dark.destructive,
+    onErrorContainer = Palette.Dark.primaryForeground,
+
+    // See the light scheme: Card reads `surfaceContainerHighest`, so it is the card colour.
+    surfaceContainerLowest = Palette.Dark.background,
+    surfaceContainerLow = Palette.Dark.card,
+    surfaceContainerHigh = Palette.Dark.card,
+    surfaceContainerHighest = Palette.Dark.card,
+
+    inverseSurface = Palette.Light.card,
+    inverseOnSurface = Palette.Light.foreground,
+    inversePrimary = Palette.Light.primary,
 )
 
 /**
