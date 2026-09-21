@@ -385,6 +385,13 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# The wake-up ping that tells the partner's device to sync (see
+# supabase/functions/notify-workspace, docs/architecture/012-push-wake-up.md).
+# verify_jwt stays on: the function checks membership as the caller, so it needs their token.
+[functions.notify-workspace]
+enabled = true
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
