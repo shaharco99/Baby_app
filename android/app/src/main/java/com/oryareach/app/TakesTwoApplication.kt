@@ -6,6 +6,8 @@ import com.oryareach.app.di.SessionState
 import com.oryareach.app.di.appModule
 import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.ReminderAlarms
+import com.oryareach.app.push.PushConfig
+import com.oryareach.app.push.PushRegistrar
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.app.sync.ForegroundSyncController
@@ -30,6 +32,7 @@ class TakesTwoApplication : Application(), KoinComponent {
     private val feedingReminders: FeedingReminderRefresher by inject()
     private val pumpReminders: PumpReminderRefresher by inject()
     private val session: SessionState by inject()
+    private val pushRegistrar: PushRegistrar by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -39,6 +42,10 @@ class TakesTwoApplication : Application(), KoinComponent {
             androidContext(this@TakesTwoApplication)
             modules(appModule, networkModule)
         }
+
+        // Brought up before anything registers a token. A no-op when this build has no Firebase
+        // project configured, which is the normal state of a fork or a fresh clone.
+        PushConfig.initialize(this)
 
         // A safety net for changes made on the other device while this one was idle. A sync
         // with no workspace open is a fast no-op, so scheduling this unconditionally is fine.
@@ -56,9 +63,12 @@ class TakesTwoApplication : Application(), KoinComponent {
         // opens. Not at process start: the workspace is still locked then, so the refreshers
         // would find no workspace and do nothing. Off the main thread and never awaited.
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            session.workspaceIdFlow.filterNotNull().collect {
+            session.workspaceIdFlow.filterNotNull().collect { workspaceId ->
                 feedingReminders.refresh()
                 pumpReminders.refresh()
+                // The same moment is when this device becomes wakeable: it now belongs to a
+                // workspace, so the partner's phone has somewhere to send its wake-up.
+                pushRegistrar.onWorkspaceOpened(workspaceId)
             }
         }
     }

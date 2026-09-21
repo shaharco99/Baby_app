@@ -10,9 +10,15 @@ import kotlinx.coroutines.flow.asStateFlow
  * What the app knows about the current session: which workspace is open, and whether the
  * workspace key is unlocked.
  *
- * Held in memory only. The key is never written to disk in this form — the only persisted
- * copy is wrapped by an Android Keystore key, and it is dropped here whenever the app locks
- * so that a locked app genuinely cannot read its own data.
+ * Held in memory only. The key is never written to disk in this form — the only persisted copy
+ * is wrapped by an Android Keystore key, and it is dropped here whenever the app locks.
+ *
+ * What that buys is a lock on the UI, not on the data at rest, and it is worth being exact
+ * about which. The Keystore-wrapped copy is readable by this app without any user
+ * authentication (see `KeystoreSealedBox`), as is the SQLCipher passphrase
+ * (`KeystoreDatabasePassphrase`) — so background sync deliberately falls back to
+ * `DeviceIdentity` when this holder is empty, which is what lets a push wake the app and move
+ * a stale reminder while it is locked. See docs/architecture/012-push-wake-up.md.
  */
 class SessionState : SessionController {
 

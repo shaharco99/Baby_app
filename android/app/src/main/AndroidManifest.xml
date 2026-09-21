@@ -44,6 +44,16 @@
             </intent-filter>
         </activity>
 
+        <!-- The wake-up from the partner's phone. Data-only, so it is delivered here rather
+             than being posted by the system; nothing is shown, the app just syncs. -->
+        <service
+            android:name=".push.PushMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".notifications.ReminderAlarmReceiver"
             android:exported="false" />

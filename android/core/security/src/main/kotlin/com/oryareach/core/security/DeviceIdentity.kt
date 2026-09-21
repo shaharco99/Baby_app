@@ -38,6 +38,18 @@ class DeviceIdentity(
             if (value == null) store.remove(KEY_REGISTERED_ID) else store.putString(KEY_REGISTERED_ID, value)
         }
 
+    /**
+     * A stable id for this installation, generated on first use.
+     *
+     * Its own value rather than [registeredKeyId]: that one only exists once the device has
+     * been paired, and the push registration has to survive being unpaired and paired again
+     * without stranding a row on the server that nothing will ever clean up.
+     */
+    @get:Synchronized
+    val pushDeviceId: String
+        get() = store.getString(KEY_PUSH_DEVICE_ID)
+            ?: java.util.UUID.randomUUID().toString().also { store.putString(KEY_PUSH_DEVICE_ID, it) }
+
     fun saveWorkspaceKey(key: WorkspaceKey) {
         store.put(KEY_WORKSPACE, key.bytes())
     }
@@ -64,5 +76,6 @@ class DeviceIdentity(
         const val KEY_REGISTERED_ID = "device-key-id"
         const val KEY_WORKSPACE = "workspace-key"
         const val KEY_WORKSPACE_ID = "workspace-id"
+        const val KEY_PUSH_DEVICE_ID = "push-device-id"
     }
 }

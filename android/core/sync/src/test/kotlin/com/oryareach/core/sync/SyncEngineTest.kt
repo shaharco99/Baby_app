@@ -27,6 +27,47 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `wakes the partner's devices once something has actually been pushed`() = runTest {
+        var woken = 0
+        val store = FakeSyncStore(pending = mutableListOf(request("a")))
+        val remote = FakeRemote(
+            pushHandler = { batch -> batch.map { PushResult.Applied(it.recordId, 2) } },
+        )
+
+        SyncEngine(store, remote, wakeUp = { woken++ }).sync().shouldBeSuccess()
+
+        woken shouldBe 1
+    }
+
+    @Test
+    fun `a cycle that pushed nothing wakes nobody`() = runTest {
+        var woken = 0
+        val store = FakeSyncStore(pending = mutableListOf())
+        val remote = FakeRemote(
+            pullPages = mutableListOf(listOf(remoteRecord("a", version = 2, updatedAt = 100))),
+        )
+
+        SyncEngine(store, remote, wakeUp = { woken++ }).sync().shouldBeSuccess()
+
+        woken shouldBe 0
+    }
+
+    @Test
+    fun `a conflict is not something to wake the partner over`() = runTest {
+        var woken = 0
+        val store = FakeSyncStore(pending = mutableListOf(request("a")))
+        val remote = FakeRemote(
+            pushHandler = { batch ->
+                batch.map { PushResult.Conflict(it.recordId, remoteRecord(it.recordId, 2, 100)) }
+            },
+        )
+
+        SyncEngine(store, remote, wakeUp = { woken++ }).sync().shouldBeSuccess()
+
+        woken shouldBe 0
+    }
+
+    @Test
     fun `pushes before pulling so a local edit is never overwritten`() = runTest {
         val store = FakeSyncStore(pending = mutableListOf(request("a")))
         val remote = FakeRemote(

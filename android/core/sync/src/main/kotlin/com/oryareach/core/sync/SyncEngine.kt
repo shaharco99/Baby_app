@@ -16,12 +16,17 @@ import com.oryareach.core.common.AppResult
 class SyncEngine(
     private val store: SyncStore,
     private val remote: RecordRemoteDataSource,
+    private val wakeUp: PartnerWakeUp = PartnerWakeUp.None,
     private val pushBatchSize: Int = DEFAULT_PUSH_BATCH,
     private val pullBatchSize: Int = DEFAULT_PULL_BATCH,
 ) {
 
     suspend fun sync(): AppResult<SyncOutcome> = try {
         val push = push()
+        // Before the pull, and only when something actually landed on the server: the partner's
+        // device should start syncing while this one is still finishing, and a cycle that
+        // pushed nothing has nothing to wake anyone for.
+        if (push.pushed > 0) wakeUp.wakePartners()
         val pull = pull()
         AppResult.Success(
             SyncOutcome(

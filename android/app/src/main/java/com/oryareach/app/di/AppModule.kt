@@ -4,6 +4,7 @@ import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.AlarmFeedingReminderScheduler
 import com.oryareach.app.notifications.AlarmPumpReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
+import com.oryareach.app.push.PushRegistrar
 import com.oryareach.app.sync.WorkManagerSyncTrigger
 import com.oryareach.core.calendar.CalendarEventSource
 import com.oryareach.core.calendar.GoogleAccessTokenProvider
@@ -35,6 +36,7 @@ import com.oryareach.core.database.repository.SearchRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.database.sync.RoomSyncStore
+import com.oryareach.core.network.di.pushDeviceIdQualifier
 import com.oryareach.core.network.di.workspaceIdQualifier
 import com.oryareach.core.security.KeystoreDatabasePassphrase
 import com.oryareach.core.security.LocalDataWiper
@@ -99,7 +101,11 @@ val appModule = module {
     single<PumpReminderScheduler> { AlarmPumpReminderScheduler(androidContext()) }
 
     // Consumed by :core:network, which must not depend on the session type.
-    single(workspaceIdQualifier) { { get<SessionState>().workspaceId } }
+    // The Keystore fallback matters here too: a push arrives with no open session, and a null
+    // workspace id would make the pull a no-op.
+    single(workspaceIdQualifier) {
+        { get<SessionState>().workspaceId ?: get<DeviceIdentity>().workspaceId }
+    }
 
     single<DatabasePassphrase> { KeystoreDatabasePassphrase(androidContext()) }
 
@@ -117,20 +123,46 @@ val appModule = module {
     single { get<OrYareachDatabase>().syncStateDao() }
     single { get<OrYareachDatabase>().cachedCalendarEventDao() }
 
-    single<WorkspaceKeyProvider> { get<SessionState>().keyProvider() }
+    /**
+     * The workspace key, with a Keystore-backed fallback for background work.
+     *
+     * [SessionState] holds the key only while the app is open and unlocked, which is correct for
+     * everything on screen. It is not enough for sync: a push arrives while the app is closed,
+     * and without a key the pulled records cannot be decrypted, so the reminder cannot be
+     * re-derived and the alarm stays wrong — the bug this whole path exists to fix.
+     *
+     * The fallback reads the same Keystore-sealed copy the pairing screen already re-derives
+     * from on every launch. It does not weaken the lock as much as it first appears: the
+     * SQLCipher passphrase is likewise Keystore-sealed with no user authentication required
+     * (see KeystoreDatabasePassphrase), so anything running as this app could already read the
+     * database. The lock is, and always was, a lock on the UI rather than on the data at rest.
+     * What it does change is that background sync now proceeds while the app is locked, which is
+     * deliberate — see docs/architecture/012-push-wake-up.md.
+     */
+    single<WorkspaceKeyProvider> {
+        val session = get<SessionState>()
+        val identity = get<DeviceIdentity>()
+        WorkspaceKeyProvider { session.keyProvider().current() ?: identity.workspaceKey() }
+    }
     single { RecordCodec(keys = get()) }
 
     single<SyncStore> {
         RoomSyncStore(
             database = get(),
             codec = get(),
-            workspaceId = { get<SessionState>().workspaceId },
+            // Same fallback, same reason: a closed app has no SessionState to read from.
+            workspaceId = { get<SessionState>().workspaceId ?: get<DeviceIdentity>().workspaceId },
         )
     }
 
-    single { SyncEngine(store = get(), remote = get()) }
+    single { SyncEngine(store = get(), remote = get(), wakeUp = get()) }
 
     single { DeviceIdentity(get()) }
+
+    // Push: waking the partner's device after a write, and being woken by theirs. The Supabase
+    // half is bound in networkModule, which is the only module that can see the client.
+    single(pushDeviceIdQualifier) { { get<DeviceIdentity>().pushDeviceId } }
+    single { PushRegistrar(context = androidContext(), identity = get(), tokens = get()) }
 
     // Google Calendar (phase 1, docs/specs/03-google-calendar-integration.md) — entirely
     // separate from the workspace pairing/session above: a device-local Google credential that
@@ -277,6 +309,7 @@ val appModule = module {
             session = get(),
             auth = get(),
             localDataWiper = get(),
+            pushTokens = get(),
             googleCalendarAuth = get(),
             googleCalendarSync = get(),
             babies = get(),

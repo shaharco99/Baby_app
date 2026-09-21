@@ -18,6 +18,7 @@ import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.security.GoogleCalendarAuthManager
 import com.oryareach.core.security.GoogleCalendarConnectResult
 import com.oryareach.core.security.GoogleIdentitySignIn
+import com.oryareach.core.network.push.PushTokenRepository
 import com.oryareach.core.security.LocalDataWiper
 import com.oryareach.core.security.SessionController
 import com.oryareach.core.settings.ReminderScheduler
@@ -79,6 +80,7 @@ class SettingsViewModel(
     private val session: SessionController,
     private val auth: AuthRepository,
     private val localDataWiper: LocalDataWiper,
+    private val pushTokens: PushTokenRepository,
     private val googleCalendarAuth: GoogleCalendarAuthManager,
     private val googleCalendarSync: GoogleCalendarSyncRepository,
     private val babies: BabyRepository,
@@ -193,6 +195,10 @@ class SettingsViewModel(
         set { it.copy(busy = true) }
 
         viewModelScope.launch {
+            // Before `forget()`, which takes the device id with it: a row left behind would
+            // have the partner's phone pushing to a device that is no longer in the workspace,
+            // on every write, forever.
+            pushTokens.unregister(identity.pushDeviceId)
             auth.signOut()
             identity.forget()
             session.signOut()

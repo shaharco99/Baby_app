@@ -91,15 +91,25 @@ class SyncWorker(
                 .enqueueUniqueWork(POLL, ExistingWorkPolicy.KEEP, request)
         }
 
-        /** Safety net for changes made on the other device while this one was idle. */
+        /**
+         * Safety net for changes made on the other device while this one was idle.
+         *
+         * Hourly rather than six-hourly since the push wake-up landed: push is now the thing
+         * that keeps the reminder honest, and this exists to bound how long a *dropped* push
+         * can leave an alarm wrong. Six hours was a reasonable period for the only background
+         * path there was; it is far too long for a backstop to one.
+         */
         fun schedulePeriodic(context: Context) {
-            val request = PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS)
+            val request = PeriodicWorkRequestBuilder<SyncWorker>(1, TimeUnit.HOURS)
                 .setConstraints(constraints)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 5, TimeUnit.MINUTES)
                 .build()
 
             WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
+                // UPDATE, not KEEP: KEEP would leave an existing installation on whatever
+                // period it was registered with, so the shortened interval would only ever
+                // reach a fresh install.
+                .enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
     }
 }

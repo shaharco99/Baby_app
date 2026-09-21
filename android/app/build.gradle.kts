@@ -1,7 +1,35 @@
+import java.util.Properties
+
 plugins {
     id("oryareach.android.application")
     id("oryareach.android.compose")
 }
+
+/**
+ * Firebase Cloud Messaging, used only to wake this device when the partner's phone writes
+ * something. Configured here rather than through `google-services.json` and its Gradle plugin:
+ * the plugin fails the build outright when the file is missing, and the file would have to
+ * either live in the repository or be a second CI secret with its own decode step.
+ *
+ * Read the same way as the Supabase connection details in `:core:network` — local.properties
+ * first, then a Gradle property so CI can pass it with -P. Leave them unset and push is simply
+ * off: the app builds, syncs and reminds exactly as it did before, it just waits for the next
+ * foreground poll instead of being woken. See PushMessagingService.
+ */
+val localProperties: Provider<Properties> =
+    providers.fileContents(rootProject.layout.projectDirectory.file("local.properties"))
+        .asText
+        .map { text ->
+            val parsed = Properties()
+            parsed.load(text.reader())
+            parsed
+        }
+
+fun pushSetting(name: String): String =
+    localProperties.map { it.getProperty(name).orEmpty() }
+        .orElse("")
+        .get()
+        .ifBlank { providers.gradleProperty(name).getOrElse("") }
 
 /**
  * Release signing comes from the environment so the keystore never enters the repository.
@@ -20,6 +48,14 @@ android {
     // versionName / versionCode come from the newest v* git tag, set by the convention plugin.
     defaultConfig {
         applicationId = "com.oryareach.app"
+
+        // The four values `google-services.json` would otherwise carry. None of them is a
+        // secret — they identify the Firebase project to the client; the credential that can
+        // actually send a message lives only in the edge function.
+        buildConfigField("String", "FCM_PROJECT_ID", "\"${pushSetting("fcmProjectId")}\"")
+        buildConfigField("String", "FCM_APPLICATION_ID", "\"${pushSetting("fcmApplicationId")}\"")
+        buildConfigField("String", "FCM_API_KEY", "\"${pushSetting("fcmApiKey")}\"")
+        buildConfigField("String", "FCM_SENDER_ID", "\"${pushSetting("fcmSenderId")}\"")
     }
 
     signingConfigs {
@@ -71,6 +107,9 @@ dependencies {
     implementation(project(":feature:shopping"))
     implementation(project(":feature:home"))
     implementation(project(":feature:folders"))
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)

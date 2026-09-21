@@ -19,6 +19,7 @@ coroutines = "1.11.0"
 credentials = "1.5.0"
 datastore = "1.2.1"
 datetime = "0.8.0"
+firebaseBom = "34.5.0"
 googleid = "1.1.1"
 junit = "4.13.2"
 koin = "4.2.2"
@@ -94,8 +95,11 @@ room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
+supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
