@@ -1,5 +1,12 @@
 # Turning the push wake-up on — step by step
 
+> **Status, 2026-09-21: Steps 1–6 are done.** Migration 0011 is applied, the Firebase project
+> `takes-two-of-us` exists with `com.oryareach.app` registered, the four keys are in
+> `android/local.properties`, `notify-workspace` is deployed with its secrets, and the Xiaomi is
+> built, installed and registered. **What is left is Step 7 (two taps on the Xiaomi) and Step 8
+> (the real test, which needs the Pixel).** The rest of this file is kept as the record of how it
+> was set up, and for the day a phone is replaced.
+
 **What this fixes:** right now, when you log a feed on one phone, the *other* phone keeps its
 old reminder time until someone opens the app. This makes the other phone find out within
 seconds, even with the app closed.

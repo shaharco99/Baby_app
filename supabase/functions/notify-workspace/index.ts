@@ -56,16 +56,22 @@ Deno.serve(async (request: Request): Promise<Response> => {
     global: { headers: { Authorization: authorization } },
   });
 
+  // `limit(1)` and a length check rather than `maybeSingle()`: a member can see *every* row of
+  // their own workspace, so this returns one row per partner — two, for a couple — and
+  // `maybeSingle()` treats more than one as an error. That made the lookup fail for exactly the
+  // callers it was meant to let through, and `PartnerWakeUp` swallows failures, so it failed
+  // silently. RLS is what scopes this; the row count never mattered.
   const { data: membership, error: membershipError } = await asCaller
     .from("workspace_members")
     .select("workspace_id")
     .eq("workspace_id", body.workspaceId)
-    .maybeSingle();
+    .limit(1);
 
   if (membershipError) {
+    console.error("membership lookup failed", membershipError.message);
     return json({ error: "membership lookup failed" }, 500);
   }
-  if (!membership) {
+  if (!membership || membership.length === 0) {
     // Deliberately the same answer a missing workspace gets: whether a workspace exists is not
     // something a non-member should be able to probe.
     return json({ error: "not a member of that workspace" }, 403);
@@ -81,6 +87,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     .eq("workspace_id", body.workspaceId);
 
   if (tokensError) {
+    console.error("token lookup failed", tokensError.message);
     return json({ error: "token lookup failed" }, 500);
   }
 
@@ -106,10 +113,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
     await asService.from("device_push_tokens").delete().in("device_id", stale);
   }
 
-  return json({
-    woke: results.filter((r) => r === "sent").length,
-    dropped: stale.length,
-  });
+  const woke = results.filter((r) => r === "sent").length;
+  // One line per invocation, with no workspace content in it: without this the only way to tell
+  // a working wake-up from a silently failing one is to watch the other phone.
+  console.log(`woke ${woke} of ${targets.length}, dropped ${stale.length}`);
+
+  return json({ woke, dropped: stale.length });
 });
 
 type SendResult = "sent" | "unregistered" | "failed";
