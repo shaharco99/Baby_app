@@ -354,7 +354,7 @@ select bag_eq(
     $$ select tablename::text from pg_tables where schemaname = 'public' $$,
     $$ values ('profiles'), ('workspaces'), ('workspace_members'), ('device_keys'),
               ('wrapped_workspace_keys'), ('couple_invitations'), ('records'),
-              ('document_blobs') $$,
+              ('document_blobs'), ('device_push_tokens') $$,
     'the public schema holds exactly the expected tables'
 );
 

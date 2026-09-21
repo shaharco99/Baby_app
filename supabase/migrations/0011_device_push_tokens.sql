@@ -11,8 +11,14 @@
 -- nothing but the workspace id — the woken device syncs and re-derives its own alarm from its
 -- own decrypted database. The server still never learns what changed, which is the whole point
 -- of the design and is why this is a wake-up and not a notification.
+--
+-- Written guarded, which no other migration here is. The table was created by hand during the
+-- push work, before this file was applied, so a plain `create table` would now fail against the
+-- live project and leave the two permanently out of step. The guards make this a no-op there and
+-- still create everything from scratch. The live schema was read back column by column and
+-- matches this file exactly.
 
-create table public.device_push_tokens (
+create table if not exists public.device_push_tokens (
     -- The device's own identifier, the same one `device_keys` are labelled by on the client.
     -- Primary key rather than a surrogate: a device has exactly one current token, and
     -- re-registering is an upsert rather than a row that accumulates.
@@ -28,8 +34,9 @@ create table public.device_push_tokens (
 );
 
 -- The edge function's only query: every token in this workspace. Also the column RLS filters on.
-create index device_push_tokens_workspace_idx on public.device_push_tokens (workspace_id);
+create index if not exists device_push_tokens_workspace_idx on public.device_push_tokens (workspace_id);
 
+drop trigger if exists device_push_tokens_touch on public.device_push_tokens;
 create trigger device_push_tokens_touch
     before update on public.device_push_tokens
     for each row execute function public.touch_updated_at();
@@ -38,21 +45,25 @@ alter table public.device_push_tokens enable row level security;
 
 -- A member may see which devices in their own workspace are registered. The token itself is of
 -- no use to them, and seeing the row is what lets a device tell whether it is registered.
+drop policy if exists device_push_tokens_select on public.device_push_tokens;
 create policy device_push_tokens_select on public.device_push_tokens
     for select to authenticated
     using (public.is_workspace_member(workspace_id));
 
 -- A device may only register itself, and only into a workspace it belongs to.
+drop policy if exists device_push_tokens_insert on public.device_push_tokens;
 create policy device_push_tokens_insert on public.device_push_tokens
     for insert to authenticated
     with check (user_id = auth.uid() and public.is_workspace_member(workspace_id));
 
+drop policy if exists device_push_tokens_update_own on public.device_push_tokens;
 create policy device_push_tokens_update_own on public.device_push_tokens
     for update to authenticated
     using (user_id = auth.uid() and public.is_workspace_member(workspace_id))
     with check (user_id = auth.uid() and public.is_workspace_member(workspace_id));
 
 -- Signing out, or losing a device, should take its token with it.
+drop policy if exists device_push_tokens_delete_own on public.device_push_tokens;
 create policy device_push_tokens_delete_own on public.device_push_tokens
     for delete to authenticated
     using (user_id = auth.uid());

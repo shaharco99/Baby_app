@@ -4,9 +4,9 @@ One file for everything that used to live in `docs/FOLLOWUP.md` and `docs/specs/
 open, what was already done (so nobody redoes it), and the specs that have been fully absorbed
 into the code. Point Claude at this file to pick up where the last session left off.
 
-Branch `feature/android-app`. Latest release **v1.7.0** (2026-09-19, CI green); both phones run
-it. Supabase migrations **0001–0010 applied**, **0011 written but not yet applied** — migrations
-are applied by hand, and tagging a release before applying one breaks sync silently.
+Branch `feature/android-app`. Supabase migrations **0001–0011 all applied**. Migrations are
+applied by hand and **must always be written idempotent** — see the rule in `CLAUDE.md`; tagging a
+release before applying one breaks sync silently.
 
 `git log --oneline feature/android-app` is the real history. This file is the condensed version.
 
@@ -14,33 +14,32 @@ are applied by hand, and tagging a release before applying one breaks sync silen
 
 ## Still open
 
-1. **Doze (deep sleep) reminder check.** Parked by the user. Pixel first, by hand and with no
-   computer: log a feed, leave the phone unplugged, locked and still for the 3h until the
-   reminder. The forced `adb` route does not work on the Xiaomi — `dumpsys deviceidle force-idle
-   deep` and `step deep` both stop at INACTIVE (`mMotionActive=true`, 143 pending alarms). Cause
-   never pinned down; suspects are Android's "no deep idle within 30 min of a wake-from-idle
-   alarm" rule and MIUI's own power manager. Don't keep retrying it on MIUI.
-2. **Partner email on the pairing screen, on a real phone.** Function and pgTAP test are green.
-   It only appears on a phone that has joined a workspace but has not been approved yet.
-3. **`device_keys` stale-on-reuse fix, on a real phone.** Needs a leave-and-rejoin, which is
-   disruptive. Low priority.
-4. **`supabase/tests/005_device_push_tokens.sql` has never been executed.** Written with the rest
-   of the push work; no Supabase CLI was available at the time.
-5. **Migration 0011 (`device_push_tokens`) is not applied** to the live project. The push wake-up
-   currently works because the table was created by hand; applying the migration keeps the file
-   and the database in step.
-6. **The drawer work of 2026-09-21 has not been looked at on a device.** It builds, tests and
-   lints clean, but `assembleDebug` passing proves nothing about layout.
+1. **Doze (deep sleep) reminder check.** Parked by the user, and only they can do it: log a feed on
+   the Pixel, then leave it unplugged, locked and still for the 3h until the reminder. The forced
+   `adb` route does not work — `dumpsys deviceidle force-idle deep` and `step deep` both stop at
+   INACTIVE on the Xiaomi (`mMotionActive=true`, 143 pending alarms). Cause never pinned down;
+   suspects are Android's "no deep idle within 30 min of a wake-from-idle alarm" rule and MIUI's own
+   power manager. Don't keep retrying it on MIUI.
+2. **Partner email on the pairing screen, on a real phone.** The function and its pgTAP test are
+   green. Seeing it needs a phone that has joined a workspace but has not been approved yet, so it
+   means unpairing and re-joining. Parked by the user 2026-09-21 as too disruptive for the payoff.
+3. **`device_keys` stale-on-reuse fix, on a real phone.** Needs a full leave-and-rejoin. The fix is
+   in and the live rows were checked in the database. Parked for the same reason.
 
 **Small open items:**
 - No Macrobenchmark startup module. It needs a spare device or an emulator; a benchmark build
   breaks the release-only rule on the real phones.
 - Supabase security advisor: leaked-password protection is off and few MFA options are enabled.
-  Both are dashboard toggles. The "SECURITY DEFINER callable by authenticated" warnings are
-  intended — every such RPC checks membership itself.
+  Both are dashboard toggles, so they are the user's to flip. The "SECURITY DEFINER callable by
+  authenticated" warnings are intended — every such RPC checks membership itself.
 
 **Kept as Android does them, by the user's choice — do not "fix":** the Material date picker's
 month arrows in Hebrew (next is on the left), and the top-bar back arrow (points right in Hebrew).
+
+**Closed 2026-09-21:** migration 0011 applied (the table had been created by hand during the push
+work, so the file was rewritten guarded and now matches the live schema column for column);
+`supabase/tests/005_device_push_tokens.sql` executed for the first time and green; the whole pgTAP
+suite runs clean from a `db reset`, 66/66.
 
 ---
 
