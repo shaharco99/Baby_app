@@ -34,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.oryareach.core.model.Baby
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -251,7 +253,7 @@ private fun ChildRow(child: Baby, active: Boolean, onSetActive: () -> Unit, onEd
                 text = when {
                     active && child.isBorn -> stringResource(R.string.settings_child_active_born)
                     active -> stringResource(R.string.settings_child_active_expected)
-                    child.isBorn -> stringResource(R.string.settings_child_born, child.birthDate.toString())
+                    child.isBorn -> stringResource(R.string.settings_child_born, child.birthDate?.let { dateLabel(it) }.orEmpty())
                     else -> stringResource(R.string.settings_child_expected)
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -663,7 +665,20 @@ private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
-        Switch(checked = checked, onCheckedChange = null)
+        // Spelled out rather than taking the defaults. Material reads the unchecked track from
+        // `surfaceContainerHighest`, which in this palette is the card colour — the same colour
+        // this switch sits on, so an off switch became an invisible one. Off is now the page
+        // background, which reads as a slot cut into the card, and the thumb is the text colour
+        // rather than the border token so it is visible in both themes.
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                uncheckedTrackColor = MaterialTheme.colorScheme.background,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+            ),
+        )
     }
 }
 

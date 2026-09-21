@@ -75,6 +75,7 @@ import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.domain.home.dailyMessageIndex
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
 import com.oryareach.core.model.Baby
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.NightPalette
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
@@ -686,8 +687,8 @@ private fun BirthStatsCard(baby: Baby, actions: HomeActions) {
             baby.birthDate?.let { date ->
                 Text(
                     text = baby.birthTime
-                        ?.let { stringResource(R.string.home_birth_date_and_time, date.toString(), it.toString()) }
-                        ?: stringResource(R.string.home_birth_date, date.toString()),
+                        ?.let { stringResource(R.string.home_birth_date_and_time, dateLabel(date), it.toString()) }
+                        ?: stringResource(R.string.home_birth_date, dateLabel(date)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

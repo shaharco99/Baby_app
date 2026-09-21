@@ -96,6 +96,7 @@ import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
@@ -888,7 +889,7 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
 @Composable
 private fun WhenFedRow(uiState: FeedingUiState, actions: FeedingActions) {
     val fedAt = uiState.formFedAtEpochMillis.toLocalDateTime()
-    val date = fedAt.date.toString()
+    val date = dateLabel(fedAt.date)
     val time = "%02d:%02d".format(fedAt.hour, fedAt.minute)
 
     if (uiState.isEditing) {

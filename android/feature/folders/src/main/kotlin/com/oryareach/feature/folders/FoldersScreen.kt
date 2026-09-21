@@ -154,7 +154,12 @@ fun FoldersScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     .semantics { heading() },
             )
-            Breadcrumb(uiState = uiState, actions = actions)
+            // Only once there is somewhere to go back to. At the root the trail is a single
+            // crumb reading "Documents", directly under a heading reading "Documents" — the
+            // same word twice, carrying nothing.
+            if (uiState.breadcrumb.isNotEmpty()) {
+                Breadcrumb(uiState = uiState, actions = actions)
+            }
 
             if (uiState.importing) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())

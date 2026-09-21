@@ -81,6 +81,7 @@ import com.oryareach.core.domain.pumping.MilkStash
 import com.oryareach.core.domain.pumping.PumpingDay
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
@@ -835,7 +836,7 @@ private fun PumpSessionForm(uiState: PumpingUiState, actions: PumpingActions) {
 @Composable
 private fun WhenStartedRow(uiState: PumpingUiState, actions: PumpingActions) {
     val startedAt = uiState.formStartedAtEpochMillis.toLocalDateTime()
-    val date = startedAt.date.toString()
+    val date = dateLabel(startedAt.date)
     val time = "%02d:%02d".format(startedAt.hour, startedAt.minute)
 
     if (uiState.isEditing) {

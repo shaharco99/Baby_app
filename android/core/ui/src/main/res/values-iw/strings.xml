@@ -15,4 +15,20 @@
         <item>שבת</item>
         <item>ראשון</item>
     </string-array>
+    <string name="month_label_value">%1$s %2$d</string>
+    <string-array name="month_label_names">
+        <item>ינואר</item>
+        <item>פברואר</item>
+        <item>מרץ</item>
+        <item>אפריל</item>
+        <item>מאי</item>
+        <item>יוני</item>
+        <item>יולי</item>
+        <item>אוגוסט</item>
+        <item>ספטמבר</item>
+        <item>אוקטובר</item>
+        <item>נובמבר</item>
+        <item>דצמבר</item>
+    </string-array>
+    <string name="date_label_value">%1$d ב%2$s %3$d</string>
 </resources>

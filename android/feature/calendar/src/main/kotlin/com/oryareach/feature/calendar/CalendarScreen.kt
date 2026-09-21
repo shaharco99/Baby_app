@@ -66,7 +66,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.oryareach.core.model.EntityType
 import com.oryareach.core.model.ImportantDate
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.asLtrIsolate
+import com.oryareach.core.ui.text.monthLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -131,7 +133,7 @@ fun CalendarScreen(
                             FilledTonalIconButton(onClick = actions::onPreviousMonth) {
                                 Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
                             }
-                            Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleLarge)
+                            Text(monthLabel(uiState.visibleMonth), style = MaterialTheme.typography.titleLarge)
                             FilledTonalIconButton(onClick = actions::onNextMonth) {
                                 Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
                             }
@@ -415,7 +417,7 @@ private fun DaySheetContent(
 ) {
     val date = uiState.selectedDate ?: return
     Column(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(date.toString().asLtrIsolate(), style = MaterialTheme.typography.titleLarge)
+        Text(dateLabel(date), style = MaterialTheme.typography.titleLarge)
 
         if (uiState.eventsForSelectedDate.isEmpty()) {
             Text(

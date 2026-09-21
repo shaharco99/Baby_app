@@ -72,7 +72,9 @@ import com.oryareach.core.model.Mood
 import com.oryareach.core.model.PainLevel
 import com.oryareach.core.model.Symptom
 import com.oryareach.core.scanner.rememberDocumentScanner
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.asLtrIsolate
+import com.oryareach.core.ui.text.monthLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
@@ -201,7 +203,7 @@ private fun OngoingCard(uiState: CycleUiState, actions: CycleActions) {
             val ongoing = uiState.ongoing
             Text(
                 text = if (ongoing != null) {
-                    stringResource(R.string.cycle_ongoing_started, ongoing.startDate.toString().asLtrIsolate())
+                    stringResource(R.string.cycle_ongoing_started, dateLabel(ongoing.startDate))
                 } else {
                     stringResource(R.string.cycle_no_ongoing)
                 },
@@ -328,7 +330,7 @@ private fun CalendarCard(uiState: CycleUiState, actions: CycleActions) {
                     IconButton(onClick = actions::onPreviousMonth) {
                         Icon(Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.cycle_calendar_previous_month))
                     }
-                    Text(uiState.visibleMonth.toString().asLtrIsolate(), style = MaterialTheme.typography.titleSmall)
+                    Text(monthLabel(uiState.visibleMonth), style = MaterialTheme.typography.titleSmall)
                     IconButton(onClick = actions::onNextMonth) {
                         Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.cycle_calendar_next_month))
                     }
@@ -469,11 +471,11 @@ private fun HistoryRow(cycle: MenstrualCycle, uiState: CycleUiState, actions: Cy
                 val text = cycle.endDate?.let { end ->
                     stringResource(
                         R.string.cycle_history_row_range,
-                        cycle.startDate.toString().asLtrIsolate(),
+                        dateLabel(cycle.startDate),
                         end.toString().asLtrIsolate(),
                         cycle.periodLengthDays ?: 0,
                     )
-                } ?: stringResource(R.string.cycle_history_row_ongoing, cycle.startDate.toString().asLtrIsolate())
+                } ?: stringResource(R.string.cycle_history_row_ongoing, dateLabel(cycle.startDate))
 
                 Text(
                     text = text,
@@ -555,7 +557,7 @@ private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick:
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = stringResource(R.string.cycle_day_sheet_title, date.toString().asLtrIsolate()),
+            text = stringResource(R.string.cycle_day_sheet_title, dateLabel(date)),
             style = MaterialTheme.typography.titleLarge,
         )
 
