@@ -974,7 +974,7 @@ private fun WhenStartedRow(uiState: PumpingUiState, actions: PumpingActions) {
 private fun dayHeader(day: PumpingDay, today: LocalDate?): String {
     // Today and yesterday by name, anything older by weekday: at 3am that places a row faster
     // than an ISO date does. Shared with the feeding log, hence `:core:ui`.
-    val date = today?.let { dayLabel(day.date, it) } ?: day.date.toString()
+    val date = today?.let { dayLabel(day.date, it) } ?: dateLabel(day.date)
     val minutes = day.totalMinutes ?: return date
     val ml = day.totalMl ?: return stringResource(R.string.pumping_day_header, date, minutes)
     return stringResource(R.string.pumping_day_header_with_ml, date, minutes, ml)

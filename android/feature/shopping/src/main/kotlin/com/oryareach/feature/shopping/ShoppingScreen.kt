@@ -75,6 +75,7 @@ import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
 import com.oryareach.core.domain.shopping.warrantyEndDate
 import com.oryareach.core.ui.component.DrawerHeader
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -306,7 +307,7 @@ private fun ShoppingRow(
                     )
                     item.warrantyEndDate()?.let { end ->
                         Text(
-                            text = stringResource(R.string.shopping_warranty_ends, end.toString()),
+                            text = stringResource(R.string.shopping_warranty_ends, dateLabel(end)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -444,7 +445,7 @@ private fun ShoppingForm(uiState: ShoppingUiState, actions: ShoppingActions) {
         val warrantyEnd = warrantyEndDate(uiState.formPurchaseDate, uiState.formWarrantyMonths.toIntOrNull())
         if (warrantyEnd != null) {
             Text(
-                text = stringResource(R.string.shopping_warranty_ends, warrantyEnd.toString()),
+                text = stringResource(R.string.shopping_warranty_ends, dateLabel(warrantyEnd)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -478,7 +479,7 @@ private fun PurchaseDateField(value: LocalDate?, onChange: (LocalDate?) -> Unit)
 
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = { pickerVisible = true }, modifier = Modifier.weight(1f)) {
-            Text(value?.toString() ?: stringResource(R.string.shopping_field_purchase_date))
+            Text(value?.let { dateLabel(it) } ?: stringResource(R.string.shopping_field_purchase_date))
         }
         if (value != null) {
             IconButton(onClick = { onChange(null) }) {

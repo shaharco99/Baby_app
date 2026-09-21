@@ -75,7 +75,6 @@ import com.oryareach.core.model.Symptom
 import com.oryareach.core.scanner.rememberDocumentScanner
 import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
-import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.text.monthLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.DateTimeUnit
@@ -268,25 +267,32 @@ private fun PredictionCard(prediction: CyclePrediction) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
+                // `dateLabel`, not `toString()`: a `LocalDate`'s toString is its ISO form, so
+                // these three lines read "Next period: 2026-10-15". Spelled out they no longer
+                // need the LTR isolate either — a month name has no digits to reorder.
                 prediction.nextPeriodStart?.let {
                     Text(
-                        stringResource(R.string.cycle_prediction_next_period, it.toString().asLtrIsolate()),
+                        stringResource(R.string.cycle_prediction_next_period, dateLabel(it)),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                if (prediction.fertileWindowStart != null && prediction.fertileWindowEnd != null) {
+                // Bound to locals: these are properties of another module, so Kotlin will not
+                // smart-cast them to non-null however they are checked.
+                val fertileStart = prediction.fertileWindowStart
+                val fertileEnd = prediction.fertileWindowEnd
+                if (fertileStart != null && fertileEnd != null) {
                     Text(
                         stringResource(
                             R.string.cycle_prediction_fertile_window,
-                            prediction.fertileWindowStart.toString().asLtrIsolate(),
-                            prediction.fertileWindowEnd.toString().asLtrIsolate(),
+                            dateLabel(fertileStart),
+                            dateLabel(fertileEnd),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 prediction.ovulationDate?.let {
                     Text(
-                        stringResource(R.string.cycle_prediction_ovulation, it.toString().asLtrIsolate()),
+                        stringResource(R.string.cycle_prediction_ovulation, dateLabel(it)),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -366,6 +372,9 @@ private fun CalendarCard(uiState: CycleUiState, actions: CycleActions) {
     }
 }
 
+/** How faintly a predicted period day is tinted, in the grid and in the legend alike. */
+private const val PREDICTED_DAY_ALPHA = 0.15f
+
 @Composable
 private fun LegendRow(color: Color, label: String, filled: Boolean, small: Boolean = false, square: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -374,9 +383,11 @@ private fun LegendRow(color: Color, label: String, filled: Boolean, small: Boole
             modifier = Modifier
                 .size(size)
                 .let { if (square) it else it.clip(CircleShape) }
-                .then(
-                    if (filled) Modifier.background(color) else Modifier.background(Color.Transparent),
-                ),
+                // The unfilled swatch used to be `Color.Transparent`, which is to say nothing at
+                // all: "Predicted period" sat in the legend with a blank where its colour should
+                // be. A predicted day in the grid is `primary` at [PREDICTED_DAY_ALPHA], so that
+                // is what the legend shows, from the same constant so the two cannot drift.
+                .background(if (filled) color else color.copy(alpha = PREDICTED_DAY_ALPHA)),
         )
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -448,7 +459,7 @@ private fun DayCell(
                 .then(
                     when {
                         isActual -> Modifier.background(MaterialTheme.colorScheme.error)
-                        isPredicted -> Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                        isPredicted -> Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = PREDICTED_DAY_ALPHA))
                         else -> Modifier
                     },
                 )
@@ -489,7 +500,7 @@ private fun HistoryRow(cycle: MenstrualCycle, uiState: CycleUiState, actions: Cy
                     stringResource(
                         R.string.cycle_history_row_range,
                         dateLabel(cycle.startDate),
-                        end.toString().asLtrIsolate(),
+                        dateLabel(end),
                         cycle.periodLengthDays ?: 0,
                     )
                 } ?: stringResource(R.string.cycle_history_row_ongoing, dateLabel(cycle.startDate))

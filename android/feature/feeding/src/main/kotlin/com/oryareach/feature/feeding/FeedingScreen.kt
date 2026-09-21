@@ -1008,11 +1008,14 @@ private fun WhenFedRow(uiState: FeedingUiState, actions: FeedingActions) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        OutlinedButton(onClick = actions::onOpenDatePicker, modifier = Modifier.weight(1f)) {
-            Text(date)
+        // Not an even split: the date is "21 September 2026" and the time is "14:58". Sharing
+        // the width equally wrapped the date onto two lines and left the time pill two thirds
+        // empty beside it. `maxLines = 1` holds that even in the longest month names.
+        OutlinedButton(onClick = actions::onOpenDatePicker, modifier = Modifier.weight(2f)) {
+            Text(date, maxLines = 1)
         }
         OutlinedButton(onClick = actions::onOpenTimePicker, modifier = Modifier.weight(1f)) {
-            Text(time)
+            Text(time, maxLines = 1)
         }
     }
 }
@@ -1117,7 +1120,7 @@ private val ColumnWeights = listOf(1.1f, 1.6f, 1f, 0.7f, 0.7f)
  */
 @Composable
 private fun dayHeader(day: FeedingDay, today: LocalDate?): String {
-    val date = today?.let { dayLabel(day.date, it) } ?: day.date.toString()
+    val date = today?.let { dayLabel(day.date, it) } ?: dateLabel(day.date)
     return day.totalMl?.let { stringResource(R.string.feeding_day_header_with_total, date, it) } ?: date
 }
 
@@ -1152,7 +1155,7 @@ private fun DayTotalLine(
         breakdown == null -> header
         else -> stringResource(
             R.string.feeding_day_header_breakdown,
-            today?.let { dayLabel(day.date, it) } ?: day.date.toString(),
+            today?.let { dayLabel(day.date, it) } ?: dateLabel(day.date),
             day.totalMl ?: 0,
             breakdown.breastMl ?: 0,
             breakdown.formulaMl ?: 0,

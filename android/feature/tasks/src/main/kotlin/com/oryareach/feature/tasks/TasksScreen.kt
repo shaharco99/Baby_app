@@ -80,6 +80,7 @@ import com.oryareach.core.model.Task
 import com.oryareach.core.model.TaskCategory
 import com.oryareach.core.scanner.rememberDocumentScanner
 import com.oryareach.core.ui.component.DrawerHeader
+import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -517,7 +518,7 @@ private fun DueDateField(value: LocalDate?, onChange: (LocalDate?) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = { pickerVisible = true }, modifier = Modifier.weight(1f)) {
             Text(
-                value?.toString() ?: stringResource(R.string.tasks_field_due_date),
+                value?.let { dateLabel(it) } ?: stringResource(R.string.tasks_field_due_date),
             )
         }
         if (value != null) {

@@ -214,7 +214,7 @@ private fun DateForm(uiState: CalendarUiState, actions: CalendarActions) {
         )
 
         OutlinedButton(onClick = actions::onOpenDatePicker, modifier = Modifier.fillMaxWidth()) {
-            Text(uiState.formDate?.toString() ?: stringResource(R.string.dates_field_pick_date))
+            Text(uiState.formDate?.let { dateLabel(it) } ?: stringResource(R.string.dates_field_pick_date))
         }
 
         OutlinedTextField(

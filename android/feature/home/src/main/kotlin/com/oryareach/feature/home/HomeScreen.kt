@@ -723,7 +723,7 @@ private fun BirthDetailsForm(uiState: HomeUiState, actions: HomeActions) {
         Text(stringResource(R.string.home_birth_details_title), style = MaterialTheme.typography.titleMedium)
 
         OutlinedButton(onClick = actions::onOpenBirthDatePicker, modifier = Modifier.fillMaxWidth()) {
-            Text(uiState.editingBirthDate?.toString() ?: stringResource(R.string.home_birth_date_field))
+            Text(uiState.editingBirthDate?.let { dateLabel(it) } ?: stringResource(R.string.home_birth_date_field))
         }
 
         OutlinedButton(onClick = actions::onOpenBirthTimePicker, modifier = Modifier.fillMaxWidth()) {
@@ -766,7 +766,7 @@ private fun DueDateForm(uiState: HomeUiState, actions: HomeActions) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         OutlinedButton(onClick = actions::onOpenDatePicker, modifier = Modifier.fillMaxWidth()) {
-            Text(uiState.editingLastPeriodDate?.toString() ?: stringResource(R.string.home_due_date_field))
+            Text(uiState.editingLastPeriodDate?.let { dateLabel(it) } ?: stringResource(R.string.home_due_date_field))
         }
 
         OutlinedTextField(

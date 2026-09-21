@@ -64,4 +64,6 @@
     <string name="settings_feed_interval">Feeding reminder every</string>
     <string name="settings_interval_value">%1$d min</string>
     <string name="settings_pump_interval">Pumping reminder every</string>
+    <string name="settings_child_active_born_on">Active · born %1$s</string>
+    <string name="settings_child_born_unknown">Born</string>
 </resources>

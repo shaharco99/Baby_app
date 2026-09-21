@@ -64,4 +64,6 @@
     <string name="settings_feed_interval">תזכורת האכלה כל</string>
     <string name="settings_interval_value">%1$d דק׳</string>
     <string name="settings_pump_interval">תזכורת שאיבה כל</string>
+    <string name="settings_child_active_born_on">פעיל/ה · נולד/ה ב-%1$s</string>
+    <string name="settings_child_born_unknown">נולד/ה</string>
 </resources>

@@ -253,10 +253,18 @@ private fun ChildRow(child: Baby, active: Boolean, onSetActive: () -> Unit, onEd
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
+                // The born cases both carry the date. The active one used to end at the word
+                // "born", so Emily's row read "Active · born" and stopped mid-sentence, while
+                // the inactive row right above it gave a date. A birth date can still be missing,
+                // and then there is genuinely nothing to add.
                 text = when {
-                    active && child.isBorn -> stringResource(R.string.settings_child_active_born)
+                    active && child.isBorn -> child.birthDate
+                        ?.let { stringResource(R.string.settings_child_active_born_on, dateLabel(it)) }
+                        ?: stringResource(R.string.settings_child_active_born)
                     active -> stringResource(R.string.settings_child_active_expected)
-                    child.isBorn -> stringResource(R.string.settings_child_born, child.birthDate?.let { dateLabel(it) }.orEmpty())
+                    child.isBorn -> child.birthDate
+                        ?.let { stringResource(R.string.settings_child_born, dateLabel(it)) }
+                        ?: stringResource(R.string.settings_child_born_unknown)
                     else -> stringResource(R.string.settings_child_expected)
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -346,11 +354,11 @@ private fun ChildFormDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedButton(onClick = { pickingDueDate = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(dueDate?.toString() ?: stringResource(R.string.settings_child_due_date))
+                    Text(dueDate?.let { dateLabel(it) } ?: stringResource(R.string.settings_child_due_date))
                 }
                 if (baby != null) {
                     OutlinedButton(onClick = { pickingBirthDate = true }, modifier = Modifier.fillMaxWidth()) {
-                        Text(birthDate?.toString() ?: stringResource(R.string.settings_child_birth_date))
+                        Text(birthDate?.let { dateLabel(it) } ?: stringResource(R.string.settings_child_birth_date))
                     }
                     OutlinedTextField(
                         value = weight,
