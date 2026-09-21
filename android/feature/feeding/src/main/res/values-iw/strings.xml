@@ -34,6 +34,13 @@
     <string name="feeding_stool">צואה</string>
     <string name="feeding_urine_short">שתן</string>
     <string name="feeding_stool_short">צואה</string>
+    <string name="feeding_type_milk">חלב</string>
+    <string name="feeding_log_feed_action">רישום</string>
+    <string name="feeding_save_changes">שמירת שינויים</string>
+    <string name="feeding_guidance_more">על הכמויות האלו</string>
+    <string name="feeding_guidance_title">על הכמויות האלו</string>
+    <string name="feeding_guidance_close">הבנתי</string>
+    <string name="feeding_guidance_source">הטווחים לפי האיגוד האמריקאי לרפואת ילדים ולא לצה ליג. כל תינוק שונה — האחות או הרופא מכירים את שלכם.</string>
     <string name="feeding_type_breast_milk">הנקה</string>
     <string name="feeding_type_formula">בקבוק</string>
     <string name="feeding_type_solid">מוצק</string>

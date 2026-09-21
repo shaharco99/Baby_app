@@ -3,6 +3,7 @@ package com.oryareach.feature.feeding
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.HorizontalDivider
@@ -54,16 +56,25 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
@@ -73,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.oryareach.core.domain.baby.ageInDays
 import com.oryareach.core.domain.feeding.FeedCountdown
@@ -301,6 +313,8 @@ private fun CountdownCard(
     guidance: FeedGuidance?,
     actions: FeedingActions,
 ) {
+    var guidanceNoteVisible by rememberSaveable { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -339,34 +353,68 @@ private fun CountdownCard(
                     MaterialTheme.colorScheme.onSurface
                 },
             )
-            Text(
-                text = stringResource(R.string.feeding_due_at, formatClock(countdown.dueAtEpochMillis)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            // Roughly how much, beside roughly when. Absent while pregnant or when no birth
-            // date was entered — there is no age to look the band up by, and a guessed one
+            // When and how much on one line. They were three stacked lines plus two of
+            // disclaimer, which pushed the history off the bottom of the screen — and the
+            // disclaimer does not need re-reading every time someone checks the clock.
+            // Absent while pregnant or with no birth date: no age, no band, and a guessed one
             // would be worse than nothing at this hour.
-            if (guidance != null) {
-                Spacer(Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
-                    text = stringResource(
-                        R.string.feeding_guidance_per_feed,
-                        guidance.perFeedMinMl,
-                        guidance.perFeedMaxMl,
-                    ),
+                    text = listOfNotNull(
+                        stringResource(R.string.feeding_due_at, formatClock(countdown.dueAtEpochMillis)),
+                        guidance?.let {
+                            stringResource(
+                                R.string.feeding_guidance_per_feed,
+                                it.perFeedMinMl,
+                                it.perFeedMaxMl,
+                            )
+                        },
+                    ).joinToString(SEPARATOR),
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(R.string.feeding_guidance_disclaimer),
-                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
+
+                if (guidance != null) {
+                    IconButton(
+                        onClick = { guidanceNoteVisible = true },
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = stringResource(R.string.feeding_guidance_more),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
+    }
+
+    if (guidanceNoteVisible) {
+        AlertDialog(
+            onDismissRequest = { guidanceNoteVisible = false },
+            confirmButton = {
+                TextButton(onClick = { guidanceNoteVisible = false }) {
+                    Text(stringResource(R.string.feeding_guidance_close))
+                }
+            },
+            title = { Text(stringResource(R.string.feeding_guidance_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.feeding_guidance_disclaimer))
+                    Text(
+                        text = stringResource(R.string.feeding_guidance_source),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+        )
     }
 }
 
@@ -408,6 +456,7 @@ private fun FeedingList(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 8.dp),
+                    showBar = day.date == today,
                 )
             }
             // Newest first, and the table reads the same way: the feed you just logged is the
@@ -452,8 +501,17 @@ private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit
                 text = formatClock(feed.fedAtEpochMillis),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(feed.feedType.labelRes()), style = MaterialTheme.typography.bodyMedium)
+            // The icons, not the words: the day line above already says "breast" and "formula"
+            // in pictures, and a row that spells it out reads as a different fact rather than
+            // the same one. A feed that was both shows both.
+            //
+            // Its own slot beside the time, rather than the first line of the text column —
+            // there it sat alone above the small grey marks and read as a stray mark itself.
+            FeedTypeMarks(feed)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
                 val marks = feedMarks(feed)
                 if (marks.isNotEmpty()) {
                     Text(
@@ -479,6 +537,53 @@ private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit
             IconButton(onClick = onDelete) {
                 Icon(imageVector = Icons.Outlined.Delete, contentDescription = deleteLabel)
             }
+        }
+    }
+}
+
+/**
+ * Which sources a feed came from, as icons.
+ *
+ * Shape rather than colour carries the distinction. The palette's `blush` and `moss` were the
+ * obvious pair to tint these with, but both fall under 3:1 against the light theme's card, so
+ * the colour would have been decoration with an accessibility cost. A person and a bottle are
+ * already unmistakable, in either theme and without colour vision.
+ *
+ * Falls back to the type's own word for a solid feed, which has no amounts to infer from.
+ */
+@Composable
+private fun FeedTypeMarks(feed: FeedingEntry) {
+    val icons = listOfNotNull(
+        R.drawable.ic_feed_breast.takeIf { feed.breastMl != null },
+        R.drawable.ic_feed_bottle.takeIf { feed.formulaMl != null },
+    ).ifEmpty {
+        // Nothing measured: fall back to what the feed says it was.
+        when (feed.feedType) {
+            FeedType.BREAST_MILK -> listOf(R.drawable.ic_feed_breast)
+            FeedType.FORMULA -> listOf(R.drawable.ic_feed_bottle)
+            FeedType.SOLID -> emptyList()
+        }
+    }
+
+    val label = stringResource(feed.feedType.labelRes())
+
+    if (icons.isEmpty()) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        return
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icons.forEach { icon ->
+            Icon(
+                painter = painterResource(icon),
+                // The row's own description already names the feed; repeating it per icon
+                // would have a screen reader say "breast, breast".
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
@@ -601,14 +706,6 @@ private fun DayTitleRow(day: FeedingDay, today: LocalDate?, birthDate: LocalDate
 
 @Composable
 private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
-    val cells = listOf(
-        formatClock(feed.fedAtEpochMillis),
-        stringResource(feed.feedType.labelRes()),
-        feed.totalMl?.toString().orEmpty(),
-        if (feed.hadUrine) MARK else "",
-        if (feed.hadStool) MARK else "",
-    )
-
     val description = feedDescription(feed)
 
     // A cell is too small a target for its own button, so the whole row opens the feed.
@@ -622,10 +719,31 @@ private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
             }
             .clickable(onClick = onEdit),
     ) {
-        cells.forEachIndexed { index, text ->
-            if (index > 0) VerticalDivider()
-            TableCell(text = text, modifier = Modifier.weight(ColumnWeights[index]))
-        }
+        TableCell(text = formatClock(feed.fedAtEpochMillis), modifier = Modifier.weight(ColumnWeights[0]))
+        VerticalDivider()
+        // The one cell that is not text. Same icons as the list and the day line, so the two
+        // views say the same thing the same way.
+        TableCellBox(modifier = Modifier.weight(ColumnWeights[1])) { FeedTypeMarks(feed) }
+        VerticalDivider()
+        TableCell(text = feed.totalMl?.toString().orEmpty(), modifier = Modifier.weight(ColumnWeights[2]))
+        VerticalDivider()
+        TableCell(text = if (feed.hadUrine) MARK else "", modifier = Modifier.weight(ColumnWeights[3]))
+        VerticalDivider()
+        TableCell(text = if (feed.hadStool) MARK else "", modifier = Modifier.weight(ColumnWeights[4]))
+    }
+}
+
+/** A cell that holds something other than a line of text, at the same size as [TableCell]. */
+@Composable
+private fun TableCellBox(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Box(
+        modifier = modifier
+            .height(36.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
     }
 }
 
@@ -665,16 +783,21 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
 
         WhenFedRow(uiState = uiState, actions = actions)
 
-        // Segmented buttons rather than a dropdown: three options, tapped constantly, and the
-        // one being picked is worth seeing without opening anything.
+        // Milk or solid, and nothing finer.
+        //
+        // This used to offer Breast / Formula / Solid, which contradicted the two amount
+        // fields below it: typing into Formula while the control still showed Breast selected.
+        // The type is already derived from which amounts were filled (see
+        // `FeedingUiState.resolvedFeedType`), so the three-way choice was both decorative and
+        // wrong. Milk vs solid is the only part the amounts cannot answer.
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            FeedType.entries.forEachIndexed { index, type ->
+            MilkOrSolid.entries.forEachIndexed { index, option ->
                 SegmentedButton(
-                    selected = type == uiState.formFeedType,
-                    onClick = { actions.onFeedTypeChange(type) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = FeedType.entries.size),
+                    selected = option.matches(uiState.formFeedType),
+                    onClick = { actions.onFeedTypeChange(option.feedType) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = MilkOrSolid.entries.size),
                 ) {
-                    Text(stringResource(type.labelRes()))
+                    Text(stringResource(option.labelRes))
                 }
             }
         }
@@ -716,12 +839,20 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
             }
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = uiState.formHadUrine, onCheckedChange = { actions.onToggleUrine() })
-            Text(stringResource(R.string.feeding_urine))
-            Spacer(Modifier.width(16.dp))
-            Checkbox(checked = uiState.formHadStool, onCheckedChange = { actions.onToggleStool() })
-            Text(stringResource(R.string.feeding_stool))
+        // Chips, not checkboxes. A checkbox is a 20dp target; these get tapped one-handed, in
+        // the dark, holding a baby. The whole chip is the target, and it reads as pressed
+        // rather than needing a tick to be spotted.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = uiState.formHadUrine,
+                onClick = actions::onToggleUrine,
+                label = { Text(stringResource(R.string.feeding_urine)) },
+            )
+            FilterChip(
+                selected = uiState.formHadStool,
+                onClick = actions::onToggleStool,
+                label = { Text(stringResource(R.string.feeding_stool)) },
+            )
         }
 
         OutlinedTextField(
@@ -736,7 +867,13 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
             enabled = !uiState.busy,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(stringResource(R.string.feeding_save))
+            // Names the outcome rather than the mechanism, and matches the button that opened
+            // the sheet: "Log a feed" on the screen, "Log feed" here.
+            Text(
+                stringResource(
+                    if (uiState.isEditing) R.string.feeding_save_changes else R.string.feeding_log_feed_action,
+                ),
+            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -794,6 +931,20 @@ private fun Long.toUtcDateMillis(): Long =
 
 private fun Long.toPickedDate(): LocalDate =
     Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
+
+/**
+ * The only type choice the sheet still asks for. Breast and formula are read off the amount
+ * fields instead — see the comment where this is used.
+ */
+private enum class MilkOrSolid(val feedType: FeedType, @StringRes val labelRes: Int) {
+    MILK(FeedType.BREAST_MILK, R.string.feeding_type_milk),
+    SOLID(FeedType.SOLID, R.string.feeding_type_solid),
+    ;
+
+    /** Either milk type counts as milk; the amounts decide which. */
+    fun matches(current: FeedType): Boolean =
+        if (this == SOLID) current == FeedType.SOLID else current != FeedType.SOLID
+}
 
 /**
  * One of the two amount fields. The icon is the label that gets read at a glance — the words
@@ -856,6 +1007,9 @@ private fun formatClock(epochMillis: Long): String {
 
 private const val MARK = "✓"
 
+/** Between two facts on one line — when the feed is due, and roughly how much. */
+private const val SEPARATOR = " · "
+
 /** Time and type carry the most text; the two marks are a tick or nothing. */
 private val ColumnWeights = listOf(1.1f, 1.6f, 1f, 0.7f, 0.7f)
 
@@ -890,6 +1044,7 @@ private fun DayTotalLine(
     style: TextStyle,
     color: Color,
     modifier: Modifier = Modifier,
+    showBar: Boolean = false,
 ) {
     val header = dayHeader(day, today)
     val breakdown = day.takeIf { it.hasSourceBreakdown }
@@ -906,35 +1061,110 @@ private fun DayTotalLine(
         )
     }
 
-    // FlowRow, not Row: "Yesterday", both breakdown chips and the guidance band together
-    // overflow a phone's width, and a Row clips the last item mid-word rather than moving it
-    // down. Wrapping is the honest answer — every part of the line stays readable.
-    FlowRow(
+    Column(
         modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        itemVerticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(text = header, style = style, color = color)
+        // FlowRow, not Row: "Yesterday", both breakdown chips and the guidance band together
+        // overflow a phone's width, and a Row clips the last item mid-word rather than moving
+        // it down. Wrapping is the honest answer — every part of the line stays readable.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = header, style = style, color = color)
 
-        if (breakdown != null) {
-            breakdown.breastMl?.let { SourceAmount(icon = R.drawable.ic_feed_breast, amountMl = it) }
-            breakdown.formulaMl?.let { SourceAmount(icon = R.drawable.ic_feed_bottle, amountMl = it) }
+            if (breakdown != null) {
+                breakdown.breastMl?.let { SourceAmount(icon = R.drawable.ic_feed_breast, amountMl = it) }
+                breakdown.formulaMl?.let { SourceAmount(icon = R.drawable.ic_feed_bottle, amountMl = it) }
+            }
+
+            if (guidance != null && day.totalMl != null) {
+                Text(
+                    text = stringResource(
+                        R.string.feeding_guidance_day_total,
+                        guidance.dailyMinMl,
+                        guidance.dailyMaxMl,
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
-        if (guidance != null && day.totalMl != null) {
-            Text(
-                text = stringResource(
-                    R.string.feeding_guidance_day_total,
-                    guidance.dailyMinMl,
-                    guidance.dailyMaxMl,
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        // Only today, and only once something has been measured. "240 of about 280–540" is a
+        // comparison the numbers make you do in your head; the bar just shows it. Finished days
+        // are a record rather than something to act on, so they stay as figures — putting a bar
+        // on every header would turn a log into a wall of charts.
+        if (showBar && guidance != null && day.totalMl != null) {
+            DayRangeBar(totalMl = day.totalMl!!, guidance = guidance)
         }
     }
 }
+
+/**
+ * Where the day sits against the recommended band.
+ *
+ * The track is the whole band, nothing to its top; the tick is the bottom of it. So the three
+ * states you can be in are the three things the bar can look like: short of the tick, past the
+ * tick, or full and in the error colour because the day has gone over.
+ *
+ * The first attempt shaded the whole min-to-max band, which read as a second, lighter fill
+ * sitting next to the real one — two bars in one. A single tick says the same thing without
+ * competing with the number beside it.
+ *
+ * Redundant to a screen reader on purpose: the line above already states both figures.
+ *
+ * Mirrored by hand for Hebrew. A `Canvas` is the one thing on this screen Compose does not flip
+ * for you — every row beside it mirrored correctly while the bar kept filling from the left,
+ * against the direction the line above it reads.
+ */
+@Composable
+private fun DayRangeBar(totalMl: Int, guidance: FeedGuidance) {
+    val target = guidance.dailyMaxMl.coerceAtLeast(1)
+    val over = totalMl > target
+    val filled = (totalMl.toFloat() / target).coerceIn(0f, 1f)
+    val tick = (guidance.dailyMinMl.toFloat() / target).coerceIn(0f, 1f)
+
+    val track = MaterialTheme.colorScheme.surfaceVariant
+    val fill = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val tickColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(BAR_HEIGHT)
+            .clearAndSetSemantics { },
+    ) {
+        val rtl = layoutDirection == LayoutDirection.Rtl
+        /** How far along the bar a fraction sits, measured from the reading edge. */
+        fun x(fraction: Float) = if (rtl) size.width * (1f - fraction) else size.width * fraction
+
+        val radius = CornerRadius(size.height / 2, size.height / 2)
+        drawRoundRect(color = track, cornerRadius = radius)
+
+        if (filled > 0f) {
+            drawRoundRect(
+                color = fill,
+                cornerRadius = radius,
+                topLeft = Offset(if (rtl) x(filled) else 0f, 0f),
+                size = Size(size.width * filled, size.height),
+            )
+        }
+
+        // Inset so the tick cannot land half outside the rounded end.
+        val tickX = x(tick).coerceIn(TICK_WIDTH, size.width - TICK_WIDTH)
+        drawRect(
+            color = tickColor,
+            topLeft = Offset(tickX - TICK_WIDTH / 2, 0f),
+            size = Size(TICK_WIDTH, size.height),
+        )
+    }
+}
+
+private val BAR_HEIGHT = 6.dp
+private const val TICK_WIDTH = 2f
 
 private val TableRowLabels = listOf(
     R.string.feeding_row_time,
