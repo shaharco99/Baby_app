@@ -1,11 +1,19 @@
 # Turning the push wake-up on — step by step
 
-> **Status, 2026-09-21: Steps 1–6 are done.** Migration 0011 is applied, the Firebase project
-> `takes-two-of-us` exists with `com.oryareach.app` registered, the four keys are in
-> `android/local.properties`, `notify-workspace` is deployed with its secrets, and the Xiaomi is
-> built, installed and registered. **What is left is Step 7 (two taps on the Xiaomi) and Step 8
-> (the real test, which needs the Pixel).** The rest of this file is kept as the record of how it
-> was set up, and for the day a phone is replaced.
+> **Status, 2026-09-21: done, and verified on both phones.** Migration 0011 is applied, the
+> Firebase project `takes-two-of-us` exists, the keys are in `android/local.properties`,
+> `notify-workspace` is deployed, and both the Pixel and the Xiaomi are registered.
+>
+> Verified in both directions with the receiving app killed: a feed logged or deleted on one
+> phone moved the other's pending alarm to the predicted time, in about ten seconds to the
+> Pixel and about five to the Xiaomi, without the receiving app being opened.
+>
+> **Step 7 turned out not to be needed.** The Xiaomi received wake-ups without Autostart or the
+> battery exemption being changed. Leave that step here anyway: it was tested on a phone that
+> was plugged in and had been used minutes earlier, which is the easy case. If the Xiaomi ever
+> starts missing wake-ups after sitting idle overnight, Step 7 is the first thing to try.
+>
+> The rest of this file is the record of how it was set up, and for the day a phone is replaced.
 
 **What this fixes:** right now, when you log a feed on one phone, the *other* phone keeps its
 old reminder time until someone opens the app. This makes the other phone find out within
