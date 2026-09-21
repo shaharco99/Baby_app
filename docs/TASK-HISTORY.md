@@ -43,11 +43,10 @@ work, so the file was rewritten guarded and now matches the live schema column f
 suite runs clean from a `db reset`, 66/66; v1.8.0 and v1.8.1 released and installed on both phones,
 with the drawer work looked at in English/dark and Hebrew/light.
 
-**Seen but not confirmed on a phone:** the v1.8.1 fixes were checked on the Xiaomi (the child row's
-date, the log sheet's date pill, the legend swatch). The Pixel locked before its turn and was left
-alone, so the Hebrew rendering of those three is unverified. The cycle fixes cannot be seen on
-either phone at all — there is no cycle history logged, which is how the ISO end date and the
-transparent legend swatch survived this long.
+**Still unverified by eye:** the cycle history row's end date and the three prediction lines. They
+cannot be seen on either phone — there is no cycle history logged, which is exactly how an ISO end
+date survived this long. Confirming them would mean inventing period data, so they stand on the
+build and the code alone. Everything else in v1.8.1 was checked on both phones in both languages.
 
 ---
 
@@ -129,6 +128,11 @@ appeared with its X, and was gone by t+13s — it used to sit there forever.
 All test data was created and removed: one task, one feed. The feed's delete restored the
 countdown to 15:27 and the day total to 215 ml, and the Pixel had both changes without being
 touched, which is the push wake-up doing its job again.
+
+**v1.8.1 confirmed on both phones.** On the Pixel in Hebrew: "פעיל/ה · נולד/ה ב-16 בספטמבר 2026"
+on one line, "21 בספטמבר 2026" on one line in the wider of the two pills (the date sits rightmost, as
+RTL puts it first), and all four legend swatches visible in light theme, including the one that
+used to be transparent.
 
 **Found and fixed in v1.8.1:** ISO dates were only half cleaned up before — a cycle history row
 spelled its start date and printed the end one as "2026-09-20", the prediction card printed all
