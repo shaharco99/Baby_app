@@ -4,7 +4,8 @@ One file for everything that used to live in `docs/FOLLOWUP.md` and `docs/specs/
 open, what was already done (so nobody redoes it), and the specs that have been fully absorbed
 into the code. Point Claude at this file to pick up where the last session left off.
 
-Branch `feature/android-app`. Supabase migrations **0001–0011 all applied**. Migrations are
+Branch `feature/android-app`, pushed. Latest release **v1.8.1** (2026-09-21, all workflows
+green); both phones run it. Supabase migrations **0001–0011 all applied**. Migrations are
 applied by hand and **must always be written idempotent** — see the rule in `CLAUDE.md`; tagging a
 release before applying one breaks sync silently.
 
@@ -39,7 +40,14 @@ month arrows in Hebrew (next is on the left), and the top-bar back arrow (points
 **Closed 2026-09-21:** migration 0011 applied (the table had been created by hand during the push
 work, so the file was rewritten guarded and now matches the live schema column for column);
 `supabase/tests/005_device_push_tokens.sql` executed for the first time and green; the whole pgTAP
-suite runs clean from a `db reset`, 66/66.
+suite runs clean from a `db reset`, 66/66; v1.8.0 and v1.8.1 released and installed on both phones,
+with the drawer work looked at in English/dark and Hebrew/light.
+
+**Seen but not confirmed on a phone:** the v1.8.1 fixes were checked on the Xiaomi (the child row's
+date, the log sheet's date pill, the legend swatch). The Pixel locked before its turn and was left
+alone, so the Hebrew rendering of those three is unverified. The cycle fixes cannot be seen on
+either phone at all — there is no cycle history logged, which is how the ISO end date and the
+transparent legend swatch survived this long.
 
 ---
 
@@ -103,6 +111,32 @@ the list actually emitted — open rows, then the bar, then the drawer's content
 `SnackbarDuration.Indefinite` as soon as an `actionLabel` is passed, so "feed deleted · undo" sat
 over the list until it was tapped. Both logs now state `SnackbarDuration.Long` and
 `withDismissAction = true`.
+
+---
+
+## 2026-09-21 (later) — v1.8.0 and v1.8.1 on both phones
+
+Released from the tag, as `011-release-signing-and-updates.md` sets out: CI runs tests and lint,
+builds the signed APK and publishes it. Both phones took it as an update, never an uninstall.
+
+**Verified on the Xiaomi (English, dark) and the Pixel (Hebrew, light):** every drawer shut on
+arrival and opened on tap; a task ticked done moved into its drawer and the count went 11 to 12;
+the shopping drawer's count agreed with the budget card's "5/6"; the log kept today and yesterday
+open and folded two earlier days; the drawer stayed open across the list/table switch; and Friday
+18.9 showed its own guidance band (80–180 ml, day 2) rather than today's. The undo snackbar
+appeared with its X, and was gone by t+13s — it used to sit there forever.
+
+All test data was created and removed: one task, one feed. The feed's delete restored the
+countdown to 15:27 and the day total to 215 ml, and the Pixel had both changes without being
+touched, which is the push wake-up doing its job again.
+
+**Found and fixed in v1.8.1:** ISO dates were only half cleaned up before — a cycle history row
+spelled its start date and printed the end one as "2026-09-20", the prediction card printed all
+three of its dates that way, and the date-picker buttons across the task, shopping, calendar, home
+and child forms all showed the ISO form, as did the shopping warranty line. The cycle legend's
+"Predicted period" swatch was `Color.Transparent`, so the legend listed four things and showed
+three colours. Settings said "Active · born" and stopped mid-sentence. The log sheet's date pill
+wrapped onto two lines beside a two-thirds-empty time pill.
 
 ---
 
