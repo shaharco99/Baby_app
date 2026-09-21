@@ -68,6 +68,7 @@ import com.oryareach.feature.calendar.CalendarViewModel
 import com.oryareach.feature.conflicts.ConflictsViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.scope.Scope
 import org.koin.dsl.module
 
 /**
@@ -80,6 +81,21 @@ import org.koin.dsl.module
  * Everything here is lazy. The database is not opened, and no network client is built, until
  * something actually needs them — so the app starts even when Supabase is unconfigured.
  */
+/**
+ * The workspace this device belongs to, for work that runs with no one looking.
+ *
+ * [SessionState] only knows while the app is open, and a push wakes a brand-new process with an
+ * empty one. Everything on the background path has to fall back to the Keystore-sealed copy or
+ * it quietly does nothing: the sync store drops what it pulled, and the reminder refreshers
+ * return before touching the alarm — which is exactly how a woken phone kept ringing at the old
+ * time while every other part of the chain reported success.
+ *
+ * One function rather than the same expression written out at each call site, because the first
+ * three were fixed and the two that actually move the alarm were missed.
+ */
+private fun Scope.backgroundWorkspaceId(): String? =
+    get<SessionState>().workspaceId ?: get<DeviceIdentity>().workspaceId
+
 val appModule = module {
 
     single { SessionState() }
@@ -104,7 +120,8 @@ val appModule = module {
     // The Keystore fallback matters here too: a push arrives with no open session, and a null
     // workspace id would make the pull a no-op.
     single(workspaceIdQualifier) {
-        { get<SessionState>().workspaceId ?: get<DeviceIdentity>().workspaceId }
+        val scope = this
+        { scope.backgroundWorkspaceId() }
     }
 
     single<DatabasePassphrase> { KeystoreDatabasePassphrase(androidContext()) }
@@ -151,7 +168,7 @@ val appModule = module {
             database = get(),
             codec = get(),
             // Same fallback, same reason: a closed app has no SessionState to read from.
-            workspaceId = { get<SessionState>().workspaceId ?: get<DeviceIdentity>().workspaceId },
+            workspaceId = { backgroundWorkspaceId() },
         )
     }
 
@@ -196,20 +213,22 @@ val appModule = module {
     single { DocumentRepository(database = get(), syncTrigger = get(), blobStore = get(), keys = get()) }
     single { SearchRepository(database = get()) }
     single {
+        val scope = this
         FeedingReminderRefresher(
             babies = get(),
             feeds = get(),
             settings = get(),
             scheduler = get(),
-            workspaceId = { get<SessionState>().workspaceId },
+            workspaceId = { scope.backgroundWorkspaceId() },
         )
     }
     single {
+        val scope = this
         PumpReminderRefresher(
             sessions = get(),
             settings = get(),
             scheduler = get(),
-            workspaceId = { get<SessionState>().workspaceId },
+            workspaceId = { scope.backgroundWorkspaceId() },
         )
     }
     single { ConflictRepository(database = get(), codec = get()) }

@@ -9,6 +9,7 @@ import com.oryareach.app.notifications.ReminderAlarms
 import com.oryareach.app.push.PushConfig
 import com.oryareach.app.push.PushRegistrar
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
+import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.app.sync.ForegroundSyncController
 import com.oryareach.app.sync.SyncWorker
@@ -33,6 +34,7 @@ class TakesTwoApplication : Application(), KoinComponent {
     private val pumpReminders: PumpReminderRefresher by inject()
     private val session: SessionState by inject()
     private val pushRegistrar: PushRegistrar by inject()
+    private val identity: DeviceIdentity by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -64,6 +66,18 @@ class TakesTwoApplication : Application(), KoinComponent {
         // would find no workspace and do nothing. Off the main thread and never awaited.
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             session.workspaceIdFlow.filterNotNull().collect { workspaceId ->
+                // Persist which workspace this device belongs to, every time one opens.
+                //
+                // It used to be written only by the pairing flow, which a paired device never
+                // runs again — so on an install that paired before background sync needed it,
+                // `DeviceIdentity.workspaceId` stayed null forever. That is the value the
+                // Keystore fallback in AppModule reads when SessionState is empty, so a
+                // push-woken app pulled its partner's changes and then dropped them on the
+                // floor: `RoomSyncStore.applyRemote` returns early without a workspace, the
+                // reminder was re-derived from a database that had not changed, and the alarm
+                // stayed wrong. Writing it here heals those installs on their next launch.
+                identity.workspaceId = workspaceId
+
                 feedingReminders.refresh()
                 pumpReminders.refresh()
                 // The same moment is when this device becomes wakeable: it now belongs to a
