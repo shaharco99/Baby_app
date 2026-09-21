@@ -8,6 +8,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -809,7 +810,11 @@ private fun AmountField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
+        // The unit is a suffix rather than part of the label: at half the sheet's width,
+        // "Breast (ml)" wraps onto two lines while the field is empty, which is most of the
+        // time someone is looking at it.
         label = { Text(stringResource(label)) },
+        suffix = { Text(stringResource(R.string.feeding_unit_ml)) },
         leadingIcon = {
             Icon(painter = painterResource(icon), contentDescription = null)
         },
@@ -901,10 +906,14 @@ private fun DayTotalLine(
         )
     }
 
-    Row(
+    // FlowRow, not Row: "Yesterday", both breakdown chips and the guidance band together
+    // overflow a phone's width, and a Row clips the last item mid-word rather than moving it
+    // down. Wrapping is the honest answer — every part of the line stays readable.
+    FlowRow(
         modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
-        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = header, style = style, color = color)
 

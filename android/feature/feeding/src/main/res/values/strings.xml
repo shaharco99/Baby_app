@@ -19,8 +19,9 @@
     <string name="feeding_empty_history">Nothing logged in the last two weeks.</string>
     <string name="feeding_day_header_with_total">%1$s · %2$d ml</string>
     <string name="feeding_amount_ml">%1$d ml</string>
-    <string name="feeding_amount_breast_field">Breast (ml)</string>
-    <string name="feeding_amount_formula_field">Formula (ml)</string>
+    <string name="feeding_unit_ml">ml</string>
+    <string name="feeding_amount_breast_field">Breast</string>
+    <string name="feeding_amount_formula_field">Formula</string>
     <string name="feeding_amount_total">Total %1$d ml</string>
     <string name="feeding_breakdown_breast">%1$d ml breast</string>
     <string name="feeding_breakdown_formula">%1$d ml formula</string>
