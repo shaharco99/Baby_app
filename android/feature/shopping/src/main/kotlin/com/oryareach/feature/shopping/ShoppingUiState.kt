@@ -57,6 +57,17 @@ data class ShoppingUiState(
     // Still-needed items first, bought ones last — a bought item is done, so it shouldn't
     // compete with what's still outstanding for the top of the list.
     val sortedItems: List<ShoppingItem> get() = items.sortedBy { it.status.sortOrder }
+
+    /**
+     * What is still outstanding, and what has been bought — the two halves the list draws
+     * separately, the second one inside a drawer that is shut by default.
+     *
+     * Ordering a bought item back to the top by changing its status still works: these read
+     * from [sortedItems], so an item moves between the two halves the moment its status does.
+     */
+    val openItems: List<ShoppingItem> get() = sortedItems.filter { it.status != ShoppingStatus.BOUGHT }
+
+    val boughtItems: List<ShoppingItem> get() = sortedItems.filter { it.status == ShoppingStatus.BOUGHT }
 }
 
 private val ShoppingStatus.sortOrder: Int

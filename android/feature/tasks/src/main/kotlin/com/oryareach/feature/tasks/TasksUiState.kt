@@ -58,6 +58,16 @@ data class TasksUiState(
             .let { list -> activeTagFilter?.let { tag -> list.filter { tag in it.tags } } ?: list }
             .let { list -> activePriorityFilter?.let { p -> list.filter { it.priority == p } } ?: list }
             .let { list -> activeAssigneeFilter?.let { a -> list.filter { it.assignee == a } } ?: list }
+
+    /**
+     * The two halves the list draws separately: what is still to do, and what is finished.
+     *
+     * Both read from [visibleTasks], so the filters above still apply inside the drawer — a
+     * drawer that ignored the active tag would be a second, contradictory list.
+     */
+    val openTasks: List<Task> get() = visibleTasks.filter { !it.done }
+
+    val doneTasks: List<Task> get() = visibleTasks.filter { it.done }
 }
 
 sealed interface TasksEffect {

@@ -59,4 +59,5 @@
     <string name="shopping_field_custom_assignee_name">שם (אופציונלי)</string>
     <string name="shopping_add_action">הוספת פריט</string>
     <string name="shopping_save_changes">שמירת שינויים</string>
+    <string name="shopping_bought_drawer">כבר נקנה</string>
 </resources>

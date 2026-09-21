@@ -53,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +73,7 @@ import com.oryareach.core.model.Mood
 import com.oryareach.core.model.PainLevel
 import com.oryareach.core.model.Symptom
 import com.oryareach.core.scanner.rememberDocumentScanner
+import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.text.monthLabel
@@ -91,6 +93,10 @@ fun CycleScreen(
 ) {
     var deleteConfirmCycle by remember { mutableStateOf<MenstrualCycle?>(null) }
     var deleteConfirmEntry by remember { mutableStateOf(false) }
+    // Shut by default: the cards above it — where things stand now, what is predicted, the
+    // averages — are what this screen is opened for, and a year of past cycles underneath them
+    // only means scrolling past the same rows every time.
+    var historyExpanded by rememberSaveable { mutableStateOf(false) }
 
     androidx.compose.material3.Scaffold(
         modifier = modifier.fillMaxSize().safeDrawingPadding(),
@@ -119,15 +125,14 @@ fun CycleScreen(
             item { StatisticsCard(statistics = uiState.statistics) }
             item { CalendarCard(uiState = uiState, actions = actions) }
 
-            item {
-                Text(
-                    text = stringResource(R.string.cycle_history_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-
             if (uiState.history.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.cycle_history_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
                 item {
                     Text(
                         text = stringResource(R.string.cycle_history_empty),
@@ -136,13 +141,23 @@ fun CycleScreen(
                     )
                 }
             } else {
-                items(uiState.history, key = MenstrualCycle::id) { cycle ->
-                    HistoryRow(
-                        cycle = cycle,
-                        uiState = uiState,
-                        actions = actions,
-                        onDeleteClick = { deleteConfirmCycle = cycle },
+                item(key = HISTORY_DRAWER_KEY) {
+                    DrawerHeader(
+                        title = stringResource(R.string.cycle_history_title),
+                        count = uiState.history.size,
+                        expanded = historyExpanded,
+                        onToggle = { historyExpanded = !historyExpanded },
                     )
+                }
+                if (historyExpanded) {
+                    items(uiState.history, key = MenstrualCycle::id) { cycle ->
+                        HistoryRow(
+                            cycle = cycle,
+                            uiState = uiState,
+                            actions = actions,
+                            onDeleteClick = { deleteConfirmCycle = cycle },
+                        )
+                    }
                 }
             }
         }
@@ -189,6 +204,8 @@ fun CycleScreen(
         )
     }
 }
+
+private const val HISTORY_DRAWER_KEY = "history-drawer"
 
 @Composable
 private fun OngoingCard(uiState: CycleUiState, actions: CycleActions) {

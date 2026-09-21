@@ -3,6 +3,7 @@ package com.oryareach.feature.settings
 import android.content.ClipData
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.oryareach.core.model.Baby
+import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
@@ -423,15 +426,53 @@ private fun DatePickerDialogFor(initial: LocalDate?, onDismiss: () -> Unit, onPi
     }
 }
 
+/**
+ * One group of settings.
+ *
+ * [collapsible] folds the group shut by default, for the ones nobody opens this screen to get
+ * to — the paired devices, the recovery phrase, the calendar connection. They were all drawn in
+ * full, so the settings anyone actually changes sat below four screens of things they don't.
+ * A collapsible group keeps its own title as the tap target, so nothing moves or disappears:
+ * the heading is where it always was, with a chevron on it.
+ */
 @Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
+private fun SectionCard(
+    title: String,
+    collapsible: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    var expanded by rememberSaveable(title) { mutableStateOf(!collapsible) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
-            content()
+        if (!collapsible) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
+                content()
+            }
+            return@Card
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            DrawerHeader(
+                title = title,
+                count = null,
+                expanded = expanded,
+                onToggle = { expanded = !expanded },
+            )
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = { content() },
+                )
+            }
         }
     }
 }
@@ -440,7 +481,7 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 private fun AccountSection(uiState: SettingsUiState, actions: SettingsActions) {
     val context = LocalContext.current
 
-    SectionCard(title = stringResource(R.string.settings_account_title)) {
+    SectionCard(title = stringResource(R.string.settings_account_title), collapsible = true) {
         Text(
             text = stringResource(R.string.settings_account_google_body),
             style = MaterialTheme.typography.bodySmall,
@@ -544,7 +585,7 @@ private fun NotificationsSection(uiState: SettingsUiState, actions: SettingsActi
 
 @Composable
 private fun RecoverySection(actions: SettingsActions) {
-    SectionCard(title = stringResource(R.string.settings_recovery_title)) {
+    SectionCard(title = stringResource(R.string.settings_recovery_title), collapsible = true) {
         Text(
             text = stringResource(R.string.settings_recovery_body),
             style = MaterialTheme.typography.bodySmall,
@@ -558,7 +599,7 @@ private fun RecoverySection(actions: SettingsActions) {
 
 @Composable
 private fun DevicesSection(actions: SettingsActions) {
-    SectionCard(title = stringResource(R.string.settings_devices_title)) {
+    SectionCard(title = stringResource(R.string.settings_devices_title), collapsible = true) {
         OutlinedButton(onClick = actions::onManageDevicesClick, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.settings_manage_devices))
         }
@@ -569,7 +610,7 @@ private fun DevicesSection(actions: SettingsActions) {
 private fun GoogleCalendarSection(uiState: SettingsUiState, actions: SettingsActions) {
     val context = LocalContext.current
 
-    SectionCard(title = stringResource(R.string.settings_google_calendar_title)) {
+    SectionCard(title = stringResource(R.string.settings_google_calendar_title), collapsible = true) {
         Text(
             text = stringResource(R.string.settings_google_calendar_body),
             style = MaterialTheme.typography.bodySmall,

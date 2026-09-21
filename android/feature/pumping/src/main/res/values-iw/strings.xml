@@ -58,4 +58,5 @@
     <string name="pumping_undo_action">ביטול</string>
     <string name="pumping_add_action">רישום שאיבה</string>
     <string name="pumping_save_changes">שמירת שינויים</string>
+    <string name="pumping_older_days_drawer">ימים קודמים</string>
 </resources>

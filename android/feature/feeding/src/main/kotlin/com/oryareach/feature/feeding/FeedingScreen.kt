@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -44,6 +45,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -90,6 +92,7 @@ import com.oryareach.core.domain.baby.ageInDays
 import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.feeding.FeedGuidance
 import com.oryareach.core.domain.feeding.FeedingDay
+import com.oryareach.core.domain.log.splitLogDays
 import com.oryareach.core.domain.feeding.FeedingTally
 import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.domain.feeding.formatCountdown
@@ -97,6 +100,7 @@ import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.ui.text.dateLabel
+import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
@@ -115,16 +119,28 @@ fun FeedingScreen(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    // Hoisted above the list/table switch on purpose: the two views are the same log read two
+    // ways, so opening the older days in one and finding them shut in the other would read as
+    // the app having forgotten.
+    var olderDaysExpanded by rememberSaveable { mutableStateOf(false) }
     val undoLabel = stringResource(R.string.feeding_undo_action)
     val deletedLabel = stringResource(R.string.feeding_deleted)
 
     // The snackbar owns the undo window: when it goes, so does the offer.
+    //
+    // `duration` and `withDismissAction` are both stated rather than left to default, because
+    // the default is wrong here in a way that is easy to miss: Material 3's `showSnackbar`
+    // picks `Indefinite` as soon as an `actionLabel` is passed, so this bar sat on the screen
+    // forever, over the list, until the undo was tapped. `Long` gives roughly ten seconds —
+    // long enough to notice a mistaken delete, short enough to get out of the way — and the
+    // dismiss action adds an X for closing it on the spot. A sideways swipe also dismisses it.
     LaunchedEffect(uiState.undoDeleteId) {
         val id = uiState.undoDeleteId ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
             message = deletedLabel,
             actionLabel = undoLabel,
-            withDismissAction = false,
+            withDismissAction = true,
+            duration = SnackbarDuration.Long,
         )
         if (result == SnackbarResult.ActionPerformed) actions.onUndoDelete() else actions.onUndoDismissed()
     }
@@ -171,6 +187,8 @@ fun FeedingScreen(
                         today = uiState.today,
                         birthDate = uiState.baby?.birthDate,
                         actions = actions,
+                        olderExpanded = olderDaysExpanded,
+                        onToggleOlder = { olderDaysExpanded = !olderDaysExpanded },
                     )
 
                     HistoryView.TABLE -> FeedingTable(
@@ -178,6 +196,8 @@ fun FeedingScreen(
                         today = uiState.today,
                         birthDate = uiState.baby?.birthDate,
                         actions = actions,
+                        olderExpanded = olderDaysExpanded,
+                        onToggleOlder = { olderDaysExpanded = !olderDaysExpanded },
                     )
                 }
             }
@@ -441,35 +461,63 @@ private fun FeedingList(
     today: LocalDate?,
     birthDate: LocalDate?,
     actions: FeedingActions,
+    olderExpanded: Boolean,
+    onToggleOlder: () -> Unit,
 ) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
     }
 
+    // Today and yesterday stay open; everything before them goes in the drawer. A newborn is
+    // fed eight to twelve times a day, so a fortnight of log is well over a hundred rows to
+    // scroll past before reaching the oldest one worth reading.
+    val split = splitLogDays(days)
+
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        days.forEach { day ->
-            item(key = "header-${day.date}") {
-                DayTotalLine(
-                    day = day,
-                    today = today,
-                    birthDate = birthDate,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 8.dp),
-                    showBar = day.date == today,
+        split.recent.forEach { day -> listDay(day, today, birthDate, actions) }
+
+        if (split.older.isNotEmpty()) {
+            item(key = OLDER_DAYS_DRAWER_KEY) {
+                OlderDaysHeader(
+                    dayCount = split.older.size,
+                    expanded = olderExpanded,
+                    onToggle = onToggleOlder,
                 )
             }
-            // Newest first, and the table reads the same way: the feed you just logged is the
-            // one you are looking for, so it belongs at the top of its day in both views.
-            items(day.feeds.reversed(), key = { it.id }) { feed ->
-                FeedRow(
-                    feed = feed,
-                    onEdit = { actions.onEditFeedClick(feed) },
-                    onDelete = { actions.onDeleteFeed(feed.id) },
-                )
+            if (olderExpanded) {
+                split.older.forEach { day -> listDay(day, today, birthDate, actions) }
             }
         }
+    }
+}
+
+/** One day in the list view: its total line, then its feeds. */
+private fun LazyListScope.listDay(
+    day: FeedingDay,
+    today: LocalDate?,
+    birthDate: LocalDate?,
+    actions: FeedingActions,
+) {
+    item(key = "header-${day.date}") {
+        DayTotalLine(
+            day = day,
+            today = today,
+            birthDate = birthDate,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 8.dp),
+            showBar = day.date == today,
+        )
+    }
+    // Newest first, and the table reads the same way: the feed you just logged is the
+    // one you are looking for, so it belongs at the top of its day in both views.
+    items(day.feeds.reversed(), key = { it.id }) { feed ->
+        FeedRow(
+            feed = feed,
+            onEdit = { actions.onEditFeedClick(feed) },
+            onDelete = { actions.onDeleteFeed(feed.id) },
+        )
     }
 }
 
@@ -644,28 +692,77 @@ private fun FeedingTable(
     today: LocalDate?,
     birthDate: LocalDate?,
     actions: FeedingActions,
+    olderExpanded: Boolean,
+    onToggleOlder: () -> Unit,
 ) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
     }
 
+    val split = splitLogDays(days)
+
     Column(modifier = Modifier.fillMaxWidth()) {
         TableHeaderRow()
         HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outline)
 
         LazyColumn {
-            days.forEach { day ->
-                item(key = "day-${day.date}") {
-                    DayTitleRow(day = day, today = today, birthDate = birthDate)
+            split.recent.forEach { day -> tableDay(day, today, birthDate, actions) }
+
+            if (split.older.isNotEmpty()) {
+                item(key = OLDER_DAYS_DRAWER_KEY) {
+                    OlderDaysHeader(
+                        dayCount = split.older.size,
+                        expanded = olderExpanded,
+                        onToggle = onToggleOlder,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
                 }
-                items(day.feeds.reversed(), key = { it.id }) { feed ->
-                    HorizontalDivider()
-                    FeedCellsRow(feed = feed, onEdit = { actions.onEditFeedClick(feed) })
+                if (olderExpanded) {
+                    split.older.forEach { day -> tableDay(day, today, birthDate, actions) }
                 }
             }
         }
     }
+}
+
+/** One day in the table view: its title row, then a thin row per feed. */
+private fun LazyListScope.tableDay(
+    day: FeedingDay,
+    today: LocalDate?,
+    birthDate: LocalDate?,
+    actions: FeedingActions,
+) {
+    item(key = "day-${day.date}") {
+        DayTitleRow(day = day, today = today, birthDate = birthDate)
+    }
+    items(day.feeds.reversed(), key = { it.id }) { feed ->
+        HorizontalDivider()
+        FeedCellsRow(feed = feed, onEdit = { actions.onEditFeedClick(feed) })
+    }
+}
+
+private const val OLDER_DAYS_DRAWER_KEY = "older-days-drawer"
+
+/**
+ * The drawer bar over the part of the log that is history rather than working memory. Counts
+ * days rather than feeds: days are what the log is organised by, and "11 days" places the
+ * drawer's contents in time the way "94 feeds" does not.
+ */
+@Composable
+private fun OlderDaysHeader(
+    dayCount: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DrawerHeader(
+        title = stringResource(R.string.feeding_older_days_drawer),
+        count = dayCount,
+        expanded = expanded,
+        onToggle = onToggle,
+        modifier = modifier,
+    )
 }
 
 /** The column titles, once at the top — every feed below reads against these. */

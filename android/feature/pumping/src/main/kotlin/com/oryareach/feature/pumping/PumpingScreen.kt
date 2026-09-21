@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +45,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -57,7 +59,11 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -79,8 +85,10 @@ import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.domain.pumping.MilkStash
 import com.oryareach.core.domain.pumping.PumpingDay
+import com.oryareach.core.domain.log.splitLogDays
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
+import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
@@ -103,16 +111,28 @@ fun PumpingScreen(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    // Hoisted above the list/table switch on purpose: the two views are the same log read two
+    // ways, so opening the older days in one and finding them shut in the other would read as
+    // the app having forgotten.
+    var olderDaysExpanded by rememberSaveable { mutableStateOf(false) }
     val undoLabel = stringResource(R.string.pumping_undo_action)
     val deletedLabel = stringResource(R.string.pumping_deleted)
 
     // The snackbar owns the undo window: when it goes, so does the offer.
+    //
+    // `duration` and `withDismissAction` are both stated rather than left to default, because
+    // the default is wrong here in a way that is easy to miss: Material 3's `showSnackbar`
+    // picks `Indefinite` as soon as an `actionLabel` is passed, so this bar sat on the screen
+    // forever, over the list, until the undo was tapped. `Long` gives roughly ten seconds —
+    // long enough to notice a mistaken delete, short enough to get out of the way — and the
+    // dismiss action adds an X for closing it on the spot. A sideways swipe also dismisses it.
     LaunchedEffect(uiState.undoDeleteId) {
         val id = uiState.undoDeleteId ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
             message = deletedLabel,
             actionLabel = undoLabel,
-            withDismissAction = false,
+            withDismissAction = true,
+            duration = SnackbarDuration.Long,
         )
         if (result == SnackbarResult.ActionPerformed) actions.onUndoDelete() else actions.onUndoDismissed()
     }
@@ -141,8 +161,21 @@ fun PumpingScreen(
                 HistoryViewToggle(selected = uiState.historyView, actions = actions)
 
                 when (uiState.historyView) {
-                    PumpHistoryView.LIST -> PumpingList(days = uiState.days, today = uiState.today, actions = actions)
-                    PumpHistoryView.TABLE -> PumpingTable(days = uiState.days, today = uiState.today, actions = actions)
+                    PumpHistoryView.LIST -> PumpingList(
+                        days = uiState.days,
+                        today = uiState.today,
+                        actions = actions,
+                        olderExpanded = olderDaysExpanded,
+                        onToggleOlder = { olderDaysExpanded = !olderDaysExpanded },
+                    )
+
+                    PumpHistoryView.TABLE -> PumpingTable(
+                        days = uiState.days,
+                        today = uiState.today,
+                        actions = actions,
+                        olderExpanded = olderDaysExpanded,
+                        onToggleOlder = { olderDaysExpanded = !olderDaysExpanded },
+                    )
                 }
             }
         }
@@ -501,33 +534,77 @@ private fun HistoryViewToggle(selected: PumpHistoryView, actions: PumpingActions
 }
 
 @Composable
-private fun PumpingList(days: List<PumpingDay>, today: LocalDate?, actions: PumpingActions) {
+private fun PumpingList(
+    days: List<PumpingDay>,
+    today: LocalDate?,
+    actions: PumpingActions,
+    olderExpanded: Boolean,
+    onToggleOlder: () -> Unit,
+) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
     }
 
+    // Today and yesterday stay open; everything before them goes in the drawer, the same way
+    // the feeding log does it.
+    val split = splitLogDays(days)
+
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        days.forEach { day ->
-            item(key = "header-${day.date}") {
-                Text(
-                    text = dayHeader(day, today),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+        split.recent.forEach { day -> listDay(day, today, actions) }
+
+        if (split.older.isNotEmpty()) {
+            item(key = OLDER_DAYS_DRAWER_KEY) {
+                OlderDaysHeader(dayCount = split.older.size, expanded = olderExpanded, onToggle = onToggleOlder)
             }
-            // Newest first, and the table reads the same way: the session you just finished is
-            // the one you are looking for, so it belongs at the top of its day in both views.
-            items(day.sessions.reversed(), key = { it.id }) { session ->
-                SessionRow(
-                    session = session,
-                    onEdit = { actions.onEditClick(session) },
-                    onDelete = { actions.onDeleteSession(session.id) },
-                )
+            if (olderExpanded) {
+                split.older.forEach { day -> listDay(day, today, actions) }
             }
         }
     }
+}
+
+/** One day in the list view: its header, then its sessions. */
+private fun LazyListScope.listDay(day: PumpingDay, today: LocalDate?, actions: PumpingActions) {
+    item(key = "header-${day.date}") {
+        Text(
+            text = dayHeader(day, today),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+    // Newest first, and the table reads the same way: the session you just finished is
+    // the one you are looking for, so it belongs at the top of its day in both views.
+    items(day.sessions.reversed(), key = { it.id }) { session ->
+        SessionRow(
+            session = session,
+            onEdit = { actions.onEditClick(session) },
+            onDelete = { actions.onDeleteSession(session.id) },
+        )
+    }
+}
+
+private const val OLDER_DAYS_DRAWER_KEY = "older-days-drawer"
+
+/**
+ * The drawer bar over the part of the log that is history rather than working memory. Counts
+ * days rather than sessions, for the same reason the feeding log does.
+ */
+@Composable
+private fun OlderDaysHeader(
+    dayCount: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DrawerHeader(
+        title = stringResource(R.string.pumping_older_days_drawer),
+        count = dayCount,
+        expanded = expanded,
+        onToggle = onToggle,
+        modifier = modifier,
+    )
 }
 
 /**
@@ -616,25 +693,50 @@ private fun sessionDescription(session: PumpSession): String {
  * per calendar day, one thin row per session. Hand-laid-out, because Compose has no table.
  */
 @Composable
-private fun PumpingTable(days: List<PumpingDay>, today: LocalDate?, actions: PumpingActions) {
+private fun PumpingTable(
+    days: List<PumpingDay>,
+    today: LocalDate?,
+    actions: PumpingActions,
+    olderExpanded: Boolean,
+    onToggleOlder: () -> Unit,
+) {
     if (days.isEmpty()) {
         EmptyHistory()
         return
     }
+
+    val split = splitLogDays(days)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         TableHeaderRow()
         HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outline)
 
         LazyColumn {
-            days.forEach { day ->
-                item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
-                items(day.sessions.reversed(), key = { it.id }) { session ->
-                    HorizontalDivider()
-                    SessionCellsRow(session = session, onEdit = { actions.onEditClick(session) })
+            split.recent.forEach { day -> tableDay(day, today, actions) }
+
+            if (split.older.isNotEmpty()) {
+                item(key = OLDER_DAYS_DRAWER_KEY) {
+                    OlderDaysHeader(
+                        dayCount = split.older.size,
+                        expanded = olderExpanded,
+                        onToggle = onToggleOlder,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
+                if (olderExpanded) {
+                    split.older.forEach { day -> tableDay(day, today, actions) }
                 }
             }
         }
+    }
+}
+
+/** One day in the table view: its title row, then a thin row per session. */
+private fun LazyListScope.tableDay(day: PumpingDay, today: LocalDate?, actions: PumpingActions) {
+    item(key = "day-${day.date}") { DayTitleRow(day = day, today = today) }
+    items(day.sessions.reversed(), key = { it.id }) { session ->
+        HorizontalDivider()
+        SessionCellsRow(session = session, onEdit = { actions.onEditClick(session) })
     }
 }
 

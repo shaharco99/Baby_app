@@ -58,6 +58,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +74,7 @@ import com.oryareach.core.model.ShoppingCategory
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.ShoppingStatus
 import com.oryareach.core.domain.shopping.warrantyEndDate
+import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -90,9 +92,18 @@ fun ShoppingScreen(
 ) {
     var deleteConfirmItem by remember { mutableStateOf<ShoppingItem?>(null) }
     val listState = rememberLazyListState()
+    // Shut on arrival, every time. Deliberately not remembered across visits: the list is worth
+    // reading for what is still missing, and a drawer left open would quietly undo that.
+    var boughtExpanded by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(highlightId, uiState.sortedItems) {
-        val index = uiState.sortedItems.indexOfFirst { it.id == highlightId }
+    // Search can send us to a bought item, which lives inside the drawer. Opening it first is
+    // the difference between landing on the row and landing on nothing.
+    LaunchedEffect(highlightId) {
+        if (highlightId != null && uiState.boughtItems.any { it.id == highlightId }) boughtExpanded = true
+    }
+
+    LaunchedEffect(highlightId, uiState.openItems, uiState.boughtItems, boughtExpanded) {
+        val index = shoppingRowIndex(uiState, boughtExpanded, highlightId)
         if (index >= 0) {
             listState.animateScrollToItem(index)
             kotlinx.coroutines.delay(1500)
@@ -138,16 +149,44 @@ fun ShoppingScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                    // Extra bottom room keeps the last row's delete button clear of the
+                    // floating action button, which otherwise sits right on top of it.
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = 16.dp,
+                        bottom = 96.dp + 72.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(uiState.sortedItems, key = ShoppingItem::id) { item ->
+                    items(uiState.openItems, key = ShoppingItem::id) { item ->
                         ShoppingRow(
                             item = item,
                             actions = actions,
                             onDeleteClick = { deleteConfirmItem = item },
                             highlighted = item.id == highlightId,
                         )
+                    }
+
+                    if (uiState.boughtItems.isNotEmpty()) {
+                        item(key = BOUGHT_DRAWER_KEY) {
+                            DrawerHeader(
+                                title = stringResource(R.string.shopping_bought_drawer),
+                                count = uiState.boughtItems.size,
+                                expanded = boughtExpanded,
+                                onToggle = { boughtExpanded = !boughtExpanded },
+                            )
+                        }
+                        if (boughtExpanded) {
+                            items(uiState.boughtItems, key = ShoppingItem::id) { item ->
+                                ShoppingRow(
+                                    item = item,
+                                    actions = actions,
+                                    onDeleteClick = { deleteConfirmItem = item },
+                                    highlighted = item.id == highlightId,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -178,6 +217,24 @@ fun ShoppingScreen(
             },
         )
     }
+}
+
+private const val BOUGHT_DRAWER_KEY = "bought-drawer"
+
+/**
+ * Where a row sits in the list the `LazyColumn` actually emitted, so the scroll lands on it.
+ *
+ * Not the item's index in any one list: the open items come first, then the drawer's own bar,
+ * then — only while it is open — the bought ones. Returns -1 when there is nothing to scroll to.
+ */
+private fun shoppingRowIndex(uiState: ShoppingUiState, boughtExpanded: Boolean, id: String?): Int {
+    if (id == null) return -1
+    val open = uiState.openItems.indexOfFirst { it.id == id }
+    if (open >= 0) return open
+    if (!boughtExpanded) return -1
+    val bought = uiState.boughtItems.indexOfFirst { it.id == id }
+    if (bought < 0) return -1
+    return uiState.openItems.size + 1 + bought
 }
 
 @Composable

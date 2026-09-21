@@ -60,6 +60,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +79,7 @@ import com.oryareach.core.model.RecurrenceFrequency
 import com.oryareach.core.model.Task
 import com.oryareach.core.model.TaskCategory
 import com.oryareach.core.scanner.rememberDocumentScanner
+import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -96,9 +98,18 @@ fun TasksScreen(
     val hospitalBagTitles = androidx.compose.ui.res.stringArrayResource(R.array.hospital_bag_preset).toList()
     var deleteConfirmTask by remember { mutableStateOf<Task?>(null) }
     val listState = rememberLazyListState()
+    // Shut on arrival, every time. Deliberately not remembered across visits: this list is read
+    // for what is still to do, and a drawer left open would quietly undo that.
+    var doneExpanded by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(highlightId, uiState.visibleTasks) {
-        val index = uiState.visibleTasks.indexOfFirst { it.id == highlightId }
+    // Search can send us to a finished task, which lives inside the drawer. Opening it first is
+    // the difference between landing on the row and landing on nothing.
+    LaunchedEffect(highlightId) {
+        if (highlightId != null && uiState.doneTasks.any { it.id == highlightId }) doneExpanded = true
+    }
+
+    LaunchedEffect(highlightId, uiState.openTasks, uiState.doneTasks, doneExpanded) {
+        val index = taskRowIndex(uiState, doneExpanded, highlightId)
         if (index >= 0) {
             listState.animateScrollToItem(index)
             kotlinx.coroutines.delay(1500)
@@ -198,13 +209,34 @@ fun TasksScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(uiState.visibleTasks, key = Task::id) { task ->
+                    items(uiState.openTasks, key = Task::id) { task ->
                         TaskRow(
                             task = task,
                             actions = actions,
                             onDeleteClick = { deleteConfirmTask = task },
                             highlighted = task.id == highlightId,
                         )
+                    }
+
+                    if (uiState.doneTasks.isNotEmpty()) {
+                        item(key = DONE_DRAWER_KEY) {
+                            DrawerHeader(
+                                title = stringResource(R.string.tasks_done_drawer),
+                                count = uiState.doneTasks.size,
+                                expanded = doneExpanded,
+                                onToggle = { doneExpanded = !doneExpanded },
+                            )
+                        }
+                        if (doneExpanded) {
+                            items(uiState.doneTasks, key = Task::id) { task ->
+                                TaskRow(
+                                    task = task,
+                                    actions = actions,
+                                    onDeleteClick = { deleteConfirmTask = task },
+                                    highlighted = task.id == highlightId,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -235,6 +267,24 @@ fun TasksScreen(
             },
         )
     }
+}
+
+private const val DONE_DRAWER_KEY = "done-drawer"
+
+/**
+ * Where a row sits in the list the `LazyColumn` actually emitted, so the scroll lands on it.
+ *
+ * Not the task's index in any one list: the open tasks come first, then the drawer's own bar,
+ * then — only while it is open — the finished ones. Returns -1 when there is nothing to scroll to.
+ */
+private fun taskRowIndex(uiState: TasksUiState, doneExpanded: Boolean, id: String?): Int {
+    if (id == null) return -1
+    val open = uiState.openTasks.indexOfFirst { it.id == id }
+    if (open >= 0) return open
+    if (!doneExpanded) return -1
+    val done = uiState.doneTasks.indexOfFirst { it.id == id }
+    if (done < 0) return -1
+    return uiState.openTasks.size + 1 + done
 }
 
 @Composable

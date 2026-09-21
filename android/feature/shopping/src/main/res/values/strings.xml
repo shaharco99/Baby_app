@@ -59,4 +59,5 @@
     <string name="shopping_field_custom_assignee_name">Name (optional)</string>
     <string name="shopping_add_action">Add item</string>
     <string name="shopping_save_changes">Save changes</string>
+    <string name="shopping_bought_drawer">Already bought</string>
 </resources>

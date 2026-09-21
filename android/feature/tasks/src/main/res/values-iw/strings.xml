@@ -66,4 +66,5 @@
     <string name="tasks_remove_attachment">הסרת קובץ מצורף</string>
     <string name="tasks_add_action">הוספת משימה</string>
     <string name="tasks_save_changes">שמירת שינויים</string>
+    <string name="tasks_done_drawer">בוצעו</string>
 </resources>
