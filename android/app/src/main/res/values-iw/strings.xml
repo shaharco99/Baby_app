@@ -10,6 +10,9 @@
     <string name="pump_reminder_channel_name">תזכורות שאיבה</string>
     <string name="pump_reminder_title">שניים מאיתנו</string>
     <string name="pump_reminder_body">הגיע הזמן לשאיבה הבאה.</string>
+    <string name="vitamin_reminder_channel_name">תזכורות ויטמין</string>
+    <string name="vitamin_reminder_title">Takes Two of Us</string>
+    <string name="vitamin_reminder_body">הגיע הזמן לוויטמין היומי.</string>
     <string name="lock_title">האפליקציה נעולה</string>
     <string name="lock_unlock">פתיחת נעילה</string>
     <string name="lock_prompt_title">פתיחת נעילה של שנינו ביחד</string>

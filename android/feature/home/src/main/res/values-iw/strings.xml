@@ -192,4 +192,27 @@
     <string name="home_pump_overdue_label">השאיבה באיחור של</string>
     <string name="home_pumping_now">שואבת כרגע</string>
     <string name="home_pump_paused">שאיבה בהשהיה</string>
+    <string name="home_age_primary">בגיל %1$s</string>
+    <string name="home_age_separator">, </string>
+    <string name="home_age_detail">%1$s · %2$s</string>
+    <plurals name="home_age_days">
+        <item quantity="one">יום</item>
+        <item quantity="two">יומיים</item>
+        <item quantity="other">%1$d ימים</item>
+    </plurals>
+    <plurals name="home_age_weeks">
+        <item quantity="one">שבוע</item>
+        <item quantity="two">שבועיים</item>
+        <item quantity="other">%1$d שבועות</item>
+    </plurals>
+    <plurals name="home_age_months">
+        <item quantity="one">חודש</item>
+        <item quantity="two">חודשיים</item>
+        <item quantity="other">%1$d חודשים</item>
+    </plurals>
+    <plurals name="home_age_years">
+        <item quantity="one">שנה</item>
+        <item quantity="two">שנתיים</item>
+        <item quantity="other">%1$d שנים</item>
+    </plurals>
 </resources>

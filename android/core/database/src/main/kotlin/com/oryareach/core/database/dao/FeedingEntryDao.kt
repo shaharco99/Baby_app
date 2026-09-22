@@ -80,4 +80,22 @@ interface FeedingEntryDao {
 
     @Query("SELECT MAX(updated_at) FROM feeding_entries WHERE workspace_id = :workspaceId")
     suspend fun latestUpdatedAt(workspaceId: String): Long?
+
+    /**
+     * How many feeds each person has logged for this child.
+     *
+     * Grouped in SQL rather than counted in memory because the caller wants the whole log, not
+     * the fortnight on screen, and there is no reason to carry every row up for a count.
+     */
+    @Query(
+        """
+        SELECT created_by AS createdBy, COUNT(*) AS count FROM feeding_entries
+        WHERE workspace_id = :workspaceId AND baby_id = :babyId AND deleted_at IS NULL
+        GROUP BY created_by
+        """,
+    )
+    suspend fun countByCreator(workspaceId: String, babyId: String): List<CreatorCount>
 }
+
+/** One person's share of a log. [createdBy] is the auth user id that wrote the rows. */
+data class CreatorCount(val createdBy: String, val count: Int)

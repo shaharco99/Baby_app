@@ -2,10 +2,13 @@ package com.oryareach.feature.home
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector4D
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +68,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -82,6 +87,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.coroutines.delay
+import com.oryareach.core.domain.baby.BabyAge
 import kotlinx.coroutines.launch
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
@@ -130,7 +136,11 @@ fun HomeScreen(
                 }
 
                 if (uiState.isBabyMode) {
-                    BirthStatsCard(baby = requireNotNull(uiState.activeBaby), actions = actions)
+                    BirthStatsCard(
+                        baby = requireNotNull(uiState.activeBaby),
+                        age = uiState.babyAge,
+                        actions = actions,
+                    )
 
                     FeedCountdownCard(countdown = uiState.feedCountdown, onClick = onNavigateToFeeding)
 
@@ -215,6 +225,11 @@ fun HomeScreen(
 
     if (uiState.bookOfLoveVisible) {
         val tips = androidx.compose.ui.res.stringArrayResource(R.array.home_book_of_love_tips)
+        // Picked once per opening, not per composition. `tips.random()` read straight into the
+        // Text swapped the tip out from under whoever was reading it on any recomposition — a
+        // sync tick, a countdown second — which is exactly what the other two eggs avoid by
+        // indexing on a stable count.
+        val tip = androidx.compose.runtime.remember { tips.random() }
         AlertDialog(
             onDismissRequest = actions::onDismissBookOfLove,
             confirmButton = {
@@ -236,7 +251,7 @@ fun HomeScreen(
                 }
             },
             title = { Text(stringResource(R.string.home_book_of_love_title)) },
-            text = { Text(tips.random()) },
+            text = { Text(tip) },
         )
     }
 
@@ -351,14 +366,9 @@ private fun MoonCountdown(uiState: HomeUiState, actions: HomeActions) {
             .combinedClickable(
                 onClick = {},
                 onLongClick = {
-                    scope.launch {
-                        // Quick flicker between the two "story world" tones, then settle back —
-                        // a Split Fiction nod (the game's sci-fi/fantasy split-screen worlds).
-                        backgroundColor.animateTo(NightPalette.glitchWorldOne, tween(70))
-                        backgroundColor.animateTo(NightPalette.glitchWorldTwo, tween(70))
-                        backgroundColor.animateTo(NightPalette.glitchWorldOne, tween(70))
-                        backgroundColor.animateTo(NightPalette.sky, tween(150))
-                    }
+                    // A Split Fiction nod (the game's sci-fi/fantasy split-screen worlds). The
+                    // birth card runs the same flicker, so it lives in one place.
+                    scope.launch { glitchFlicker(backgroundColor, settleTo = NightPalette.sky) }
                     scope.launch {
                         // The moon itself glitches — sliced horizontal bands jittering
                         // sideways plus an RGB channel split — before snapping back, the
@@ -675,9 +685,100 @@ private fun FeedCountdownCard(countdown: FeedCountdown?, onClick: () -> Unit) {
     }
 }
 
+/**
+ * The two lines under the birth date: how old the child is, said in the units people actually
+ * use. The first is the plain day count, which is the one that matters in the early weeks; the
+ * second adds weeks and the calendar breakdown, and is left off entirely in the first week,
+ * where it would only repeat the line above it.
+ *
+ * Components that are zero are dropped rather than printed — "0 years, 0 months, 6 days" is a
+ * form, not a sentence.
+ */
 @Composable
-private fun BirthStatsCard(baby: Baby, actions: HomeActions) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun AgeLines(age: BabyAge) {
+    val separator = stringResource(R.string.home_age_separator)
+    val days = pluralStringResource(R.plurals.home_age_days, age.totalDays, age.totalDays)
+
+    val weekPart = if (age.weeks > 0) {
+        listOfNotNull(
+            pluralStringResource(R.plurals.home_age_weeks, age.weeks, age.weeks),
+            pluralStringResource(R.plurals.home_age_days, age.daysInWeek, age.daysInWeek)
+                .takeIf { age.daysInWeek > 0 },
+        ).joinToString(separator)
+    } else {
+        null
+    }
+
+    val calendarPart = listOfNotNull(
+        pluralStringResource(R.plurals.home_age_years, age.years, age.years).takeIf { age.years > 0 },
+        pluralStringResource(R.plurals.home_age_months, age.months, age.months).takeIf { age.months > 0 },
+        pluralStringResource(R.plurals.home_age_days, age.days, age.days).takeIf { age.days > 0 },
+    ).joinToString(separator).takeIf { age.years > 0 || age.months > 0 }
+
+    Text(
+        text = stringResource(R.string.home_age_primary, days),
+        style = MaterialTheme.typography.titleMedium,
+    )
+
+    val detail = when {
+        weekPart != null && calendarPart != null ->
+            stringResource(R.string.home_age_detail, weekPart, calendarPart)
+        else -> weekPart ?: calendarPart
+    }
+    detail?.let {
+        Text(
+            text = it,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * The colour half of the Split Fiction nod: a quick flicker between the two story-world tones
+ * before settling back. Shared by the moon and the birth card so the gesture feels the same on
+ * either side of the birth, and so there is only one place to change the timing.
+ */
+private suspend fun glitchFlicker(
+    background: Animatable<Color, AnimationVector4D>,
+    settleTo: Color,
+) {
+    background.animateTo(NightPalette.glitchWorldOne, tween(70))
+    background.animateTo(NightPalette.glitchWorldTwo, tween(70))
+    background.animateTo(NightPalette.glitchWorldOne, tween(70))
+    background.animateTo(settleTo, tween(150))
+}
+
+/**
+ * The card that takes the moon's place once the child is born — so it also takes the moon's
+ * easter egg. Long-pressing flickers between the two "story world" tones and opens the Book of
+ * Love when the partner has been around in the last few minutes, exactly as long-pressing the
+ * moon does during the pregnancy. Without this the egg was simply unreachable from the day of
+ * the birth onwards, because [MoonCountdown] is only drawn on the other branch.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun BirthStatsCard(baby: Baby, age: BabyAge?, actions: HomeActions) {
+    val cardColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    val background = androidx.compose.runtime.remember(cardColor) {
+        androidx.compose.animation.Animatable(cardColor)
+    }
+    val scope = rememberCoroutineScope()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {},
+                onLongClick = {
+                    scope.launch { glitchFlicker(background, settleTo = cardColor) }
+                    actions.onMoonLongPress()
+                },
+            ),
+        colors = CardDefaults.cardColors(containerColor = background.value),
+    ) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = baby.name?.let { stringResource(R.string.home_arrived_title_named, it) }
@@ -693,6 +794,7 @@ private fun BirthStatsCard(baby: Baby, actions: HomeActions) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            age?.let { AgeLines(age = it) }
             baby.birthWeightGrams?.let { grams ->
                 Text(
                     text = stringResource(R.string.home_birth_weight, grams),

@@ -1,6 +1,7 @@
 package com.oryareach.feature.pumping
 
 import androidx.compose.runtime.Immutable
+import com.oryareach.core.ui.component.DropBurst
 import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.pumping.MilkStash
 import com.oryareach.core.domain.pumping.PumpingDay
@@ -11,16 +12,6 @@ import kotlinx.datetime.LocalDate
 
 /** The history has two shapes; the toggle above it picks which one is drawn. */
 enum class PumpHistoryView { LIST, TABLE }
-
-/**
- * One burst of falling milk drops, shown when a session is saved.
- *
- * [id] is what makes a second burst a second burst: the animation is keyed to it, so saving twice
- * restarts the drops rather than leaving the first run to finish alone. [count] is how many drops
- * fall, which is the measured amount's only job here.
- */
-@Immutable
-data class MilkDrops(val id: Long, val count: Int)
 
 @Immutable
 data class PumpingUiState(
@@ -80,7 +71,7 @@ data class PumpingUiState(
     val busy: Boolean = false,
     val refreshing: Boolean = false,
     /** Set for one burst of falling drops after a session is put away, then cleared. */
-    val milkDrops: MilkDrops? = null,
+    val milkDrops: DropBurst? = null,
     /**
      * The id of a session just deleted, while the undo is still on offer. The row is soft-deleted
      * either way — this is only what keeps the snackbar on screen.

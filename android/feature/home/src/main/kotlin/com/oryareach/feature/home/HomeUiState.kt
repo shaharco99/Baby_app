@@ -5,6 +5,7 @@ import com.oryareach.core.domain.feeding.FeedCountdown
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.PumpSession
+import com.oryareach.core.domain.baby.BabyAge
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 
@@ -26,6 +27,11 @@ data class HomeUiState(
     val children: List<Baby> = emptyList(),
     /** The child everything currently points at. Null only before the one-time seed runs. */
     val activeBaby: Baby? = null,
+    /**
+     * Baby mode only: how old this child is today, in all four units at once. Computed in the
+     * ViewModel rather than the card, so the date math stays out of the composable.
+     */
+    val babyAge: BabyAge? = null,
     /** Baby mode only: how long until this child's next feed. Null until a first feed exists. */
     val feedCountdown: FeedCountdown? = null,
     /**

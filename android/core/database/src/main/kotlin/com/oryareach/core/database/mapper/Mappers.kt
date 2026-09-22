@@ -9,6 +9,7 @@ import com.oryareach.core.database.entity.FolderEntity
 import com.oryareach.core.database.entity.ImportantDateEntity
 import com.oryareach.core.database.entity.MenstrualCycleEntity
 import com.oryareach.core.database.entity.PumpSessionEntity
+import com.oryareach.core.database.entity.VitaminDoseEntity
 import com.oryareach.core.database.entity.ShoppingItemEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.TaskEntity
@@ -21,6 +22,7 @@ import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
 import com.oryareach.core.model.PumpSession
+import com.oryareach.core.model.VitaminDose
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.model.Task
@@ -75,6 +77,7 @@ fun AppSettingsEntity.toAppSettings() = AppSettings(
     activeBabyId = activeBabyId,
     feedIntervalMinutes = feedIntervalMinutes,
     pumpIntervalMinutes = pumpIntervalMinutes,
+    vitaminDMinuteOfDay = vitaminDMinuteOfDay,
 )
 
 fun BabyEntity.toBaby() = Baby(
@@ -109,6 +112,14 @@ fun PumpSessionEntity.toPumpSession() = PumpSession(
     note = note,
     pausedMillis = pausedMillis,
     pausedAtEpochMillis = pausedAt,
+)
+
+fun VitaminDoseEntity.toVitaminDose() = VitaminDose(
+    id = id,
+    babyId = babyId,
+    givenAtEpochMillis = givenAt,
+    kind = kind,
+    note = note,
 )
 
 fun FolderEntity.toFolder() = Folder(id = id, name = name, parentId = parentId, path = path)
@@ -194,6 +205,7 @@ fun AppSettings.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     activeBabyId = activeBabyId,
     feedIntervalMinutes = feedIntervalMinutes,
     pumpIntervalMinutes = pumpIntervalMinutes,
+    vitaminDMinuteOfDay = vitaminDMinuteOfDay,
     sync = record.toSyncMeta(workspaceId, now),
 )
 
@@ -233,6 +245,15 @@ fun PumpSession.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     note = note,
     pausedMillis = pausedMillis,
     pausedAt = pausedAtEpochMillis,
+    sync = record.toSyncMeta(workspaceId, now),
+)
+
+fun VitaminDose.toEntity(workspaceId: String, record: RemoteRecord, now: Long) = VitaminDoseEntity(
+    id = id,
+    babyId = babyId,
+    givenAt = givenAtEpochMillis,
+    kind = kind,
+    note = note,
     sync = record.toSyncMeta(workspaceId, now),
 )
 

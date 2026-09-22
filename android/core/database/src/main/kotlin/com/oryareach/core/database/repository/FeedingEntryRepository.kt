@@ -3,6 +3,7 @@ package com.oryareach.core.database.repository
 import androidx.room.withTransaction
 import com.oryareach.core.database.OrYareachDatabase
 import com.oryareach.core.database.SearchIndexer
+import com.oryareach.core.database.dao.CreatorCount
 import com.oryareach.core.database.entity.FeedingEntryEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.SyncOperationEntity
@@ -47,6 +48,10 @@ class FeedingEntryRepository(
 
     suspend fun findLatest(workspaceId: String, babyId: String): FeedingEntry? =
         entries.findLatest(workspaceId, babyId)?.toFeedingEntry()
+
+    /** How many feeds each partner has logged, over the whole log. */
+    suspend fun countByCreator(workspaceId: String, babyId: String): List<CreatorCount> =
+        entries.countByCreator(workspaceId, babyId)
 
     suspend fun logFeed(
         workspaceId: String,

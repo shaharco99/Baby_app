@@ -13,6 +13,7 @@ import com.oryareach.core.database.dao.FolderDao
 import com.oryareach.core.database.dao.ImportantDateDao
 import com.oryareach.core.database.dao.MenstrualCycleDao
 import com.oryareach.core.database.dao.PumpSessionDao
+import com.oryareach.core.database.dao.VitaminDoseDao
 import com.oryareach.core.database.dao.SearchDao
 import com.oryareach.core.database.dao.ShoppingItemDao
 import com.oryareach.core.database.dao.SyncOperationDao
@@ -28,6 +29,7 @@ import com.oryareach.core.database.entity.FolderEntity
 import com.oryareach.core.database.entity.ImportantDateEntity
 import com.oryareach.core.database.entity.MenstrualCycleEntity
 import com.oryareach.core.database.entity.PumpSessionEntity
+import com.oryareach.core.database.entity.VitaminDoseEntity
 import com.oryareach.core.database.entity.SearchIndexEntity
 import com.oryareach.core.database.entity.ShoppingItemEntity
 import com.oryareach.core.database.entity.SyncConflictEntity
@@ -48,13 +50,14 @@ import com.oryareach.core.database.entity.TaskEntity
         BabyEntity::class,
         FeedingEntryEntity::class,
         PumpSessionEntity::class,
+        VitaminDoseEntity::class,
         SearchIndexEntity::class,
         SyncOperationEntity::class,
         SyncCursorEntity::class,
         SyncConflictEntity::class,
         CachedCalendarEventEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -65,6 +68,7 @@ abstract class OrYareachDatabase : RoomDatabase() {
     abstract fun babyDao(): BabyDao
     abstract fun feedingEntryDao(): FeedingEntryDao
     abstract fun pumpSessionDao(): PumpSessionDao
+    abstract fun vitaminDoseDao(): VitaminDoseDao
     abstract fun shoppingItemDao(): ShoppingItemDao
     abstract fun importantDateDao(): ImportantDateDao
     abstract fun appSettingsDao(): AppSettingsDao

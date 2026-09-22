@@ -11,6 +11,7 @@ import com.oryareach.app.push.PushRegistrar
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.database.reminder.PumpReminderRefresher
+import com.oryareach.core.database.reminder.VitaminReminderRefresher
 import com.oryareach.app.sync.ForegroundSyncController
 import com.oryareach.app.sync.SyncWorker
 import com.oryareach.core.network.di.networkModule
@@ -32,6 +33,7 @@ class TakesTwoApplication : Application(), KoinComponent {
     private val foregroundSync: ForegroundSyncController by inject()
     private val feedingReminders: FeedingReminderRefresher by inject()
     private val pumpReminders: PumpReminderRefresher by inject()
+    private val vitaminReminders: VitaminReminderRefresher by inject()
     private val session: SessionState by inject()
     private val pushRegistrar: PushRegistrar by inject()
     private val identity: DeviceIdentity by inject()
@@ -80,6 +82,7 @@ class TakesTwoApplication : Application(), KoinComponent {
 
                 feedingReminders.refresh()
                 pumpReminders.refresh()
+                vitaminReminders.refresh()
                 // The same moment is when this device becomes wakeable: it now belongs to a
                 // workspace, so the partner's phone has somewhere to send its wake-up.
                 pushRegistrar.onWorkspaceOpened(workspaceId)

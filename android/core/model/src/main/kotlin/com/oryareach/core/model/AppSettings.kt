@@ -30,6 +30,15 @@ data class AppSettings(
      * counted from the start because that is how pump schedules are spaced.
      */
     val pumpIntervalMinutes: Int = DEFAULT_PUMP_INTERVAL_MINUTES,
+    /**
+     * When the daily vitamin D reminder fires, as minutes past local midnight. Null means no
+     * reminder is set.
+     *
+     * Shared between the partners rather than kept per device, for the same reason the child is:
+     * there is one baby and one dose a day, so both phones should be asking about the same one
+     * at the same time, and either partner can move it.
+     */
+    val vitaminDMinuteOfDay: Int? = null,
 ) {
     companion object {
         const val DEFAULT_FEED_INTERVAL_MINUTES = 180

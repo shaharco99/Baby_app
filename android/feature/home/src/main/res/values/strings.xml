@@ -272,4 +272,23 @@
     <string name="home_pump_overdue_label">Pump overdue by</string>
     <string name="home_pumping_now">Pumping now</string>
     <string name="home_pump_paused">Pumping, paused</string>
+    <string name="home_age_primary">%1$s old</string>
+    <string name="home_age_separator">, </string>
+    <string name="home_age_detail">%1$s · %2$s</string>
+    <plurals name="home_age_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="home_age_weeks">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
+    </plurals>
+    <plurals name="home_age_months">
+        <item quantity="one">%1$d month</item>
+        <item quantity="other">%1$d months</item>
+    </plurals>
+    <plurals name="home_age_years">
+        <item quantity="one">%1$d year</item>
+        <item quantity="other">%1$d years</item>
+    </plurals>
 </resources>

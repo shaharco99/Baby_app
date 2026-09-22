@@ -29,5 +29,7 @@ data class AppSettingsEntity(
         AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
     @ColumnInfo(name = "pump_interval_minutes") val pumpIntervalMinutes: Int =
         AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES,
+    /** Minutes past local midnight for the daily vitamin reminder; null means it is off. */
+    @ColumnInfo(name = "vitamin_d_minute_of_day") val vitaminDMinuteOfDay: Int? = null,
     @Embedded val sync: SyncMetaEntity,
 )

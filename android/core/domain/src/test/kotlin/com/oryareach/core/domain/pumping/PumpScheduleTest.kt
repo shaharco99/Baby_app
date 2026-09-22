@@ -158,7 +158,6 @@ class PumpScheduleTest {
         stash.totalMinutes shouldBe 85
         // The 18th: 90 and 130 together beat the 17th's 100.
         stash.bestDayMl shouldBe 220
-        stash.longestSessionMinutes shouldBe 30
         // 320 ml is two 120 ml feeds, with the remainder left out rather than rounded up.
         stash.feedsCovered shouldBe 2
     }
@@ -178,4 +177,16 @@ class PumpScheduleTest {
     )
 
     private fun at(instant: String): Long = Instant.parse(instant).toEpochMilliseconds()
+
+    @Test
+    fun `the stash milestone is the highest round volume already passed`() {
+        val first = session("a", "2026-09-18T06:00:00Z", "2026-09-18T06:20:00Z", amountMl = 400)
+        val second = session("b", "2026-09-18T12:00:00Z", "2026-09-18T12:20:00Z", amountMl = 150)
+
+        val under = milkStash(listOf(first), TimeZone.UTC)
+        val over = milkStash(listOf(first, second), TimeZone.UTC)
+
+        under!!.milestoneMl shouldBe null
+        over!!.milestoneMl shouldBe 500
+    }
 }

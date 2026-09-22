@@ -608,6 +608,7 @@ private fun com.oryareach.core.model.EntityType.toHomeTab(): HomeTab = when (thi
     com.oryareach.core.model.EntityType.SETTINGS -> HomeTab.Settings
     com.oryareach.core.model.EntityType.FEEDING_ENTRY -> HomeTab.Feeding
     com.oryareach.core.model.EntityType.PUMP_SESSION -> HomeTab.Pumping
+    com.oryareach.core.model.EntityType.VITAMIN_DOSE -> HomeTab.Feeding
     // A child itself has no screen of its own; the switcher that picks one lives on Home.
     com.oryareach.core.model.EntityType.BABY -> HomeTab.Home
 }

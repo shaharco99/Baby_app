@@ -5,7 +5,8 @@ open, what was already done (so nobody redoes it), and the specs that have been 
 into the code. Point Claude at this file to pick up where the last session left off.
 
 Branch `feature/android-app`, pushed. Latest release **v1.8.1** (2026-09-21, all workflows
-green); both phones run it. Supabase migrations **0001–0011 all applied**. Migrations are
+green); both phones run it. Supabase migrations **0001–0012 all applied** (0012 on 2026-09-22,
+confirmed against the live enum). Migrations are
 applied by hand and **must always be written idempotent** — see the rule in `CLAUDE.md`; tagging a
 release before applying one breaks sync silently.
 
@@ -47,6 +48,50 @@ with the drawer work looked at in English/dark and Hebrew/light.
 cannot be seen on either phone — there is no cycle history logged, which is exactly how an ISO end
 date survived this long. Confirming them would mean inventing period data, so they stand on the
 build and the code alone. Everything else in v1.8.1 was checked on both phones in both languages.
+
+---
+
+## 2026-09-22 — vitamin D, the baby's age, and an easter-egg pass
+
+**Vitamin D, reminded and ticked off.** New synced entity `VitaminDose` (`vitamin_doses`, Room 20→21,
+Supabase `0012` — enum value only, applied), plus `AppSettings.vitaminDMinuteOfDay`,
+shared by the couple so both phones ask at the same hour and either can move it. A card at the top
+of the feeding screen sets the time, ticks the dose (undo deletes it), and long-presses open the
+last fortnight — a plain list, deliberately no streak. `ReminderKind.VITAMIN_D` is the first
+`repeatsDaily` alarm: it arms the next occurrence the moment it rings, from a minute-of-day kept in
+plain preferences so the receiver works with the database still locked, and a missed one is **not**
+rung late on reboot the way a feed reminder is. `VitaminReminderRefresher` re-derives it on
+workspace open, after a sync pull and after any tick — which is what makes a dose given on the
+partner's phone silence this one.
+
+**The baby's age on Home.** `:core:domain`'s `babyAge()` gives days, weeks + days, and the calendar
+years/months/days (from `periodUntil`, so a month is the same day of the month). Shown on
+`BirthStatsCard` under the birth date, zero components dropped, Hebrew through real `<plurals>`
+(יום / יומיים / ימים).
+
+**Easter eggs, audited.** All five were read end to end. Three were broken:
+- **Book of Love and the moon glitch were unreachable** — they hang off `MoonCountdown`, which only
+  draws on the pregnancy branch, so they died the day the birth date was entered. The gesture now
+  also lives on `BirthStatsCard`, sharing one `glitchFlicker` helper with the moon.
+- **The Book of Love tip re-rolled** on every recomposition (`tips.random()` read in composition).
+  Picked once per opening now.
+- **"feeds logged in all" / "ml pumped, all told" meant "in the last 14 days"** — both panels
+  tallied the screen's window. Both now read the whole log on the long press.
+
+**Removed:** the night watch's "longest stretch between feeds" line (the user's call — irrelevant),
+and `MilkStash.longestSessionMinutes`, which was computed and unit-tested but never rendered.
+
+**Added to the two panels:** feed milestones (50/100/250/500/1000/2000), litres once past a litre,
+"logging since <date> · N days in", and the split between the two of you (a `group by created_by`
+count, hidden unless both have logged). The stash gained hours-and-minutes instead of raw minutes
+and a litre milestone. The feed that actually lands on a milestone now gets the drop animation,
+which moved from `:feature:pumping` to `:core:ui`'s `component/DropFall.kt` as `DropBurst`/`DropFall`
+so both logs can use it.
+
+**Checked:** `./gradlew test lint :app:assembleDebug` green, 112 domain tests; local Supabase
+`db reset` applied 0001–0012 and `test db` ran 66/66; `0012` is on the live project too, with
+`vitamin_dose` in `public.entity_type`. **Not yet checked on a phone** — none of the
+above has been seen rendering.
 
 ---
 

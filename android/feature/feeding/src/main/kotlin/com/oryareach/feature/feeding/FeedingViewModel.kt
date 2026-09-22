@@ -4,15 +4,19 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
+import com.oryareach.core.database.repository.VitaminDoseRepository
+import com.oryareach.core.database.reminder.VitaminReminderRefresher
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.domain.feeding.FeedingDay
+import com.oryareach.core.domain.feeding.FEED_MILESTONES
 import com.oryareach.core.domain.feeding.feedingTally
 import com.oryareach.core.domain.feeding.groupFeedsByDay
 import com.oryareach.core.domain.feeding.nextFeedCountdown
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
+import com.oryareach.core.ui.component.DropBurst
 import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.sync.SyncEngine
@@ -25,13 +29,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
@@ -62,6 +71,15 @@ interface FeedingActions {
     fun onHistoryViewChange(value: HistoryView)
     fun onCountdownLongPress()
     fun onDismissNightWatch()
+    fun onMilestoneShown()
+    fun onMilestoneDismissed()
+    fun onVitaminToggle()
+    fun onOpenVitaminTimePicker()
+    fun onDismissVitaminTimePicker()
+    fun onVitaminTimeChange(value: LocalTime)
+    fun onClearVitaminTime()
+    fun onOpenVitaminHistory()
+    fun onDismissVitaminHistory()
     fun onRefresh()
 }
 
@@ -78,6 +96,8 @@ class FeedingViewModel(
     private val repository: FeedingEntryRepository,
     private val babyRepository: BabyRepository,
     private val settingsRepository: AppSettingsRepository,
+    private val vitaminRepository: VitaminDoseRepository,
+    private val vitaminReminders: VitaminReminderRefresher,
     private val auth: AuthRepository,
     private val syncEngine: SyncEngine,
     private val workspaceId: () -> String?,
@@ -95,6 +115,38 @@ class FeedingViewModel(
                 babyRepository.observeActive(id)
                     .flatMapLatest { baby -> historyFor(id, baby) }
                     .collect { (baby, days) -> set { it.copy(baby = baby, days = days) } }
+            }
+
+            // The vitamin card: the day's dose and the fortnight behind it, for the active
+            // child. Collected separately from the feed history because it has to re-read when
+            // the local day rolls over, not when a feed is logged.
+            viewModelScope.launch {
+                combine(
+                    babyRepository.observeActive(id),
+                    settingsRepository.observe(id),
+                    ticker(),
+                ) { baby, settings, _ -> Triple(baby, settings?.vitaminDMinuteOfDay, todayBounds()) }
+                    .distinctUntilChanged()
+                    .flatMapLatest { (baby, minuteOfDay, bounds) ->
+                        if (baby == null) {
+                            flowOf(Triple(minuteOfDay, emptyList(), bounds))
+                        } else {
+                            vitaminRepository
+                                .observeInRange(id, baby.id, bounds.second - HISTORY_WINDOW_MILLIS, bounds.second)
+                                .map { doses -> Triple(minuteOfDay, doses, bounds) }
+                        }
+                    }
+                    .collect { (minuteOfDay, doses, bounds) ->
+                        set {
+                            it.copy(
+                                vitaminMinuteOfDay = minuteOfDay,
+                                vitaminHistory = doses,
+                                vitaminDoseToday = doses.firstOrNull { dose ->
+                                    dose.givenAtEpochMillis in bounds.first..bounds.second
+                                },
+                            )
+                        }
+                    }
             }
 
             // The countdown is one second of arithmetic over three inputs — the last feed, the
@@ -252,9 +304,32 @@ class FeedingViewModel(
                     intervalMinutes = state.intervalMinutes,
                 )
             }
-            set { it.copy(busy = false, sheetVisible = false, editingFeedId = null) }
+            // Only a brand-new feed can land on a milestone; an edit changes no count. The
+            // count comes from the whole log, so the hundredth feed is the hundredth feed and
+            // not the hundredth of the last fortnight.
+            val milestone = if (editingId == null) crossedMilestone(workspace, baby.id) else null
+
+            set {
+                it.copy(
+                    busy = false,
+                    sheetVisible = false,
+                    editingFeedId = null,
+                    milestoneBurst = milestone?.let { count -> DropBurst(id = now(), count = DROPS_PER_BURST) },
+                    milestoneReached = milestone,
+                )
+            }
         }
     }
+
+    /** The milestone this feed just landed on, or null — only the feed that lands on it counts. */
+    private suspend fun crossedMilestone(workspaceId: String, babyId: String): Int? {
+        val total = repository.countByCreator(workspaceId, babyId).sumOf { it.count }
+        return FEED_MILESTONES.firstOrNull { it == total }
+    }
+
+    override fun onMilestoneShown() = set { it.copy(milestoneBurst = null) }
+
+    override fun onMilestoneDismissed() = set { it.copy(milestoneReached = null) }
 
     /**
      * Deletes straight away and offers the row back, rather than asking first: the row is only
@@ -281,17 +356,98 @@ class FeedingViewModel(
      * Night-watch easter egg. Deliberately silent until at least one feed has been logged
      * between midnight and 6am: a medal for a night nobody sat up through would be a joke at
      * the wrong person's expense.
+     *
+     * Read from the whole log, not from the fortnight the screen is showing. The panel says
+     * "feeds logged in all", and it used to mean "in the last 14 days" — a total that quietly
+     * shrank as the log grew. One read on a long press, off the main thread.
      */
     override fun onCountdownLongPress() {
-        val days = _uiState.value.days
-        if (days.isEmpty()) return
+        val workspace = workspaceId() ?: return
+        val baby = _uiState.value.baby ?: return
 
-        val tally = feedingTally(days.flatMap { it.feeds }, timeZone())
-        if (tally.nightFeeds == 0) return
-        set { it.copy(nightWatchTally = tally) }
+        viewModelScope.launch {
+            val all = repository.observeInRange(workspace, baby.id, 0L, Long.MAX_VALUE).first()
+            if (all.isEmpty()) return@launch
+
+            val tally = feedingTally(all, timeZone())
+            if (tally.nightFeeds == 0) return@launch
+
+            val byCreator = repository.countByCreator(workspace, baby.id)
+            val selfId = auth.currentUserId()
+            val mine = byCreator.firstOrNull { it.createdBy == selfId }?.count ?: 0
+            val theirs = byCreator.filterNot { it.createdBy == selfId }.sumOf { it.count }
+            val shared = mine > 0 && theirs > 0
+
+            set {
+                it.copy(
+                    nightWatchTally = tally,
+                    nightWatchMine = mine.takeIf { shared },
+                    nightWatchTheirs = theirs.takeIf { shared },
+                )
+            }
+        }
     }
 
-    override fun onDismissNightWatch() = set { it.copy(nightWatchTally = null) }
+    override fun onDismissNightWatch() =
+        set { it.copy(nightWatchTally = null, nightWatchMine = null, nightWatchTheirs = null) }
+
+    /**
+     * Ticks today's dose, or takes it back.
+     *
+     * Taking it back is a real delete rather than a flag, so a mistaken tick leaves nothing
+     * behind — and either way the reminder is re-derived, which is what stops the phone asking
+     * again this evening for something that has already been given.
+     */
+    override fun onVitaminToggle() {
+        val workspace = workspaceId() ?: return
+        val baby = _uiState.value.baby ?: return
+        val userId = auth.currentUserId() ?: return
+        val existing = _uiState.value.vitaminDoseToday
+
+        viewModelScope.launch {
+            if (existing == null) {
+                vitaminRepository.logDose(workspace, baby.id, userId)
+            } else {
+                vitaminRepository.delete(existing.id)
+            }
+            vitaminReminders.refresh()
+        }
+    }
+
+    override fun onOpenVitaminTimePicker() = set { it.copy(vitaminTimePickerVisible = true) }
+
+    override fun onDismissVitaminTimePicker() = set { it.copy(vitaminTimePickerVisible = false) }
+
+    override fun onVitaminTimeChange(value: LocalTime) {
+        val workspace = workspaceId() ?: return
+        set { it.copy(vitaminTimePickerVisible = false) }
+        viewModelScope.launch {
+            settingsRepository.setVitaminMinuteOfDay(workspace, value.hour * 60 + value.minute)
+            vitaminReminders.refresh()
+        }
+    }
+
+    override fun onClearVitaminTime() {
+        val workspace = workspaceId() ?: return
+        set { it.copy(vitaminTimePickerVisible = false) }
+        viewModelScope.launch {
+            settingsRepository.setVitaminMinuteOfDay(workspace, null)
+            vitaminReminders.refresh()
+        }
+    }
+
+    override fun onOpenVitaminHistory() = set { it.copy(vitaminHistoryVisible = true) }
+
+    override fun onDismissVitaminHistory() = set { it.copy(vitaminHistoryVisible = false) }
+
+    /** The local day the phone is in right now, as the epoch-millis range the queries take. */
+    private fun todayBounds(): Pair<Long, Long> {
+        val zone = timeZone()
+        val today = Clock.System.todayIn(zone)
+        val start = today.atStartOfDayIn(zone).toEpochMilliseconds()
+        val end = today.plus(1, DateTimeUnit.DAY).atStartOfDayIn(zone).toEpochMilliseconds() - 1
+        return start to end
+    }
 
     override fun onRefresh() {
         if (_uiState.value.refreshing) return
@@ -321,6 +477,9 @@ class FeedingViewModel(
 
     private companion object {
         const val MAX_AMOUNT_DIGITS = 4
+
+        /** Enough to read as a handful thrown in the air, few enough to be gone in a moment. */
+        const val DROPS_PER_BURST = 14
 
         /** The table view scrolls sideways through days; a fortnight is as far back as it reads. */
         const val HISTORY_WINDOW_MILLIS = 14L * 24 * 60 * 60 * 1000

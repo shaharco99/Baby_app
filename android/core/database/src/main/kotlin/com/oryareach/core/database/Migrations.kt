@@ -616,3 +616,51 @@ val MIGRATION_19_20 = object : Migration(19, 20) {
         // and the total falls back to it.
     }
 }
+
+/**
+ * The daily supplement dose, and the hour the reminder for it fires.
+ *
+ * The table is a new one, so nothing existing changes; the settings column is additive and
+ * nullable, and null is exactly what "no vitamin reminder set" means, so no row has to be
+ * rewritten to be valid.
+ */
+val MIGRATION_20_21 = object : Migration(20, 21) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `vitamin_doses` (
+                `id` TEXT NOT NULL,
+                `baby_id` TEXT NOT NULL,
+                `given_at` INTEGER NOT NULL,
+                `kind` TEXT NOT NULL,
+                `note` TEXT,
+                `workspace_id` TEXT NOT NULL,
+                `created_by` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `deleted_at` INTEGER,
+                `version` INTEGER NOT NULL,
+                `sync_status` TEXT NOT NULL,
+                `client_mutation_id` TEXT,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vitamin_doses_sync_status` " +
+                "ON `vitamin_doses` (`sync_status`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vitamin_doses_workspace_id_updated_at` " +
+                "ON `vitamin_doses` (`workspace_id`, `updated_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vitamin_doses_workspace_id_baby_id_given_at` " +
+                "ON `vitamin_doses` (`workspace_id`, `baby_id`, `given_at`)",
+        )
+
+        // No DEFAULT: NULL on every existing row is "no vitamin reminder set", which is the
+        // right starting point and what Room's schema expects to find here.
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `vitamin_d_minute_of_day` INTEGER")
+    }
+}

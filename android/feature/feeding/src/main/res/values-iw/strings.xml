@@ -55,8 +55,11 @@
     <string name="feeding_night_watch_close">חזרה</string>
     <string name="feeding_night_watch_count">%1$d האכלות בין חצות לשש</string>
     <string name="feeding_night_watch_total">%1$d האכלות בסך הכול</string>
-    <string name="feeding_night_watch_stretch">הרווח הארוך ביותר בין האכלות: %1$s</string>
     <string name="feeding_night_watch_ml">%1$d מ״ל נמדדו</string>
+    <string name="feeding_night_watch_litres">%1$s ליטר נמדדו</string>
+    <string name="feeding_night_watch_since">רושמים מאז %1$s · %2$d ימים</string>
+    <string name="feeding_night_watch_split">רשמת %1$d מהן, בן/בת הזוג %2$d</string>
+    <string name="feeding_night_watch_milestone">האכלה מספר %1$d, וגם רשמתם אותה</string>
 
     <string-array name="feeding_night_watch_praise">
         <item>אף אחד לא ראה. זה עדיין נחשב.</item>
@@ -69,4 +72,17 @@
     <string name="feeding_deleted">ההאכלה נמחקה</string>
     <string name="feeding_undo_action">ביטול</string>
     <string name="feeding_older_days_drawer">ימים קודמים</string>
+    <string name="vitamin_title">ויטמין D</string>
+    <string name="vitamin_not_yet">עוד לא ניתן היום</string>
+    <string name="vitamin_given_at">ניתן היום ב-%1$s</string>
+    <string name="vitamin_mark_given">ניתן</string>
+    <string name="vitamin_undo_given">ביטול</string>
+    <string name="vitamin_set_time">קביעת שעת תזכורת</string>
+    <string name="vitamin_reminder_at">תזכורת ב-%1$s</string>
+    <string name="vitamin_time_title">תזכורת ויטמין יומית</string>
+    <string name="vitamin_clear_time">כיבוי</string>
+    <string name="vitamin_history_title">השבועיים האחרונים</string>
+    <string name="vitamin_history_given">%1$s · ניתן ב-%2$s</string>
+    <string name="vitamin_history_missed">%1$s · לא נרשם</string>
+    <string name="feeding_milestone_snackbar">האכלה מספר %1$d 🎉</string>
 </resources>

@@ -7,21 +7,42 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
-/** The one-shot reminders that move with every logged entry. The daily nag is not one of them. */
-enum class ReminderKind(internal val requestCode: Int, internal val prefKey: String) {
+/**
+ * The exact reminders. The daily nag from [ReminderWorker] is not one of them.
+ *
+ * [FEEDING] and [PUMP] are one-shots that move with every logged entry. [VITAMIN_D] is the odd
+ * one out: it is the same alarm every day at the same wall-clock time, so [repeatsDaily] marks
+ * it as re-arming itself once it has rung, and as being worth nothing at all if it is late.
+ */
+enum class ReminderKind(
+    internal val requestCode: Int,
+    internal val prefKey: String,
+    internal val repeatsDaily: Boolean = false,
+) {
     FEEDING(requestCode = 2, prefKey = "feeding-due-at"),
     PUMP(requestCode = 3, prefKey = "pump-due-at"),
+    VITAMIN_D(requestCode = 4, prefKey = "vitamin-d-due-at", repeatsDaily = true),
     ;
 
     internal fun show(context: Context) = when (this) {
         FEEDING -> FeedingReminderNotifier.show(context)
         PUMP -> PumpReminderNotifier.show(context)
+        VITAMIN_D -> VitaminReminderNotifier.show(context)
     }
 
     internal fun ensureChannel(context: Context) = when (this) {
         FEEDING -> FeedingReminderNotifier.ensureChannel(context)
         PUMP -> PumpReminderNotifier.ensureChannel(context)
+        VITAMIN_D -> VitaminReminderNotifier.ensureChannel(context)
     }
 }
 
@@ -42,6 +63,16 @@ object ReminderAlarms {
     private const val EXTRA_KIND = "kind"
 
     /**
+     * The vitamin reminder's hour, as minutes past local midnight.
+     *
+     * Kept here, in plain preferences, and not only in the workspace row it comes from: after the
+     * alarm rings, the next day's has to be armed from a broadcast receiver that may be running
+     * with the app locked and the database key unavailable. Only the time of day is stored — no
+     * child, no dose, nothing from the workspace.
+     */
+    private const val KEY_VITAMIN_MINUTE_OF_DAY = "vitamin-d-minute-of-day"
+
+    /**
      * Arms [kind] for [dueAtEpochMillis], replacing whatever was pending. A time already past is
      * not rung: the app's own countdown already reads "overdue", and a notification the moment a
      * late feed is logged would only be noise.
@@ -53,6 +84,25 @@ object ReminderAlarms {
         }
         prefs(context).edit().putLong(kind.prefKey, dueAtEpochMillis).apply()
         arm(context, kind, dueAtEpochMillis)
+    }
+
+    /**
+     * Arms the daily vitamin reminder for [dueAtEpochMillis] and remembers [minuteOfDay], which
+     * is what lets the next day's alarm be set from the receiver without the database.
+     */
+    fun scheduleDaily(context: Context, dueAtEpochMillis: Long, minuteOfDay: Int, now: Long = System.currentTimeMillis()) {
+        prefs(context).edit().putInt(KEY_VITAMIN_MINUTE_OF_DAY, minuteOfDay).apply()
+        schedule(context, ReminderKind.VITAMIN_D, dueAtEpochMillis, now)
+    }
+
+    /**
+     * Turns the daily vitamin reminder off for good, rather than just dropping the pending
+     * alarm: the stored hour goes too, so nothing re-arms it. Plain [cancel] must not do this —
+     * [schedule] falls back to it for a time already past, and that would break the chain.
+     */
+    fun cancelDaily(context: Context) {
+        prefs(context).edit().remove(KEY_VITAMIN_MINUTE_OF_DAY).apply()
+        cancel(context, ReminderKind.VITAMIN_D)
     }
 
     fun cancel(context: Context, kind: ReminderKind) {
@@ -68,6 +118,13 @@ object ReminderAlarms {
     fun rearmAll(context: Context, now: Long = System.currentTimeMillis()) {
         for (kind in ReminderKind.entries) {
             val dueAt = prefs(context).getLong(kind.prefKey, 0L).takeIf { it > 0L } ?: continue
+            if (kind.repeatsDaily) {
+                // A daily reminder that was missed is not worth ringing late: "give the vitamin"
+                // delivered at 14:10 for an 08:00 dose is noise, and the card on screen already
+                // says whether today's was given. The next occurrence is armed instead.
+                armNextDaily(context, now)
+                continue
+            }
             if (dueAt <= now) {
                 prefs(context).edit().remove(kind.prefKey).apply()
                 kind.ensureChannel(context)
@@ -86,6 +143,21 @@ object ReminderAlarms {
         prefs(context).edit().remove(kind.prefKey).apply()
         kind.ensureChannel(context)
         kind.show(context)
+        // A daily reminder arms the next one the moment it rings, so the chain survives even if
+        // the app is never opened again. Whatever the app works out later — today's dose already
+        // given, the time moved, the reminder turned off — replaces this.
+        if (kind.repeatsDaily) armNextDaily(context)
+    }
+
+    /**
+     * Arms the next occurrence of the stored vitamin hour, in the phone's own time zone.
+     *
+     * Deliberately not "the last due time plus 24 hours": across a daylight-saving change that
+     * would walk the reminder an hour off the time that was actually chosen.
+     */
+    private fun armNextDaily(context: Context, now: Long = System.currentTimeMillis()) {
+        val minuteOfDay = prefs(context).getInt(KEY_VITAMIN_MINUTE_OF_DAY, -1).takeIf { it >= 0 } ?: return
+        schedule(context, ReminderKind.VITAMIN_D, nextOccurrence(minuteOfDay, now), now)
     }
 
     /**
@@ -110,6 +182,22 @@ object ReminderAlarms {
             alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueAtEpochMillis, operation)
         } else {
             alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueAtEpochMillis, operation)
+        }
+    }
+
+    /** The next moment the clock reads [minuteOfDay] locally: today if it is still ahead, else tomorrow. */
+    fun nextOccurrence(
+        minuteOfDay: Int,
+        now: Long = System.currentTimeMillis(),
+        zone: TimeZone = TimeZone.currentSystemDefault(),
+    ): Long {
+        val today = Instant.fromEpochMilliseconds(now).toLocalDateTime(zone).date
+        val time = LocalTime(minuteOfDay / 60, minuteOfDay % 60)
+        val todayAt = today.atTime(time).toInstant(zone).toEpochMilliseconds()
+        return if (todayAt > now) {
+            todayAt
+        } else {
+            today.plus(1, DateTimeUnit.DAY).atTime(time).toInstant(zone).toEpochMilliseconds()
         }
     }
 

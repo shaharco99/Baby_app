@@ -10,10 +10,12 @@ import com.oryareach.core.domain.pumping.groupPumpsByDay
 import com.oryareach.core.domain.pumping.milkStash
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.PumpSession
+import com.oryareach.core.ui.component.DropBurst
 import com.oryareach.core.model.PumpSide
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.sync.SyncEngine
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -347,7 +349,7 @@ class PumpingViewModel(
                     editingSessionId = null,
                     discardable = false,
                     milkDrops = if (celebrate) {
-                        MilkDrops(id = now(), count = dropCount(state.formAmountMl.toIntOrNull()))
+                        DropBurst(id = now(), count = dropCount(state.formAmountMl.toIntOrNull()))
                     } else {
                         it.milkDrops
                     },
@@ -362,11 +364,18 @@ class PumpingViewModel(
      * The stash easter egg: what the pumping has actually come to. Silent until something has
      * been measured, on the same principle as the feeding log's night watch — a panel reading
      * zero millilitres is worse than no panel.
+     *
+     * Read from the whole log rather than the fortnight on screen: "ml pumped, all told" has to
+     * mean all told, and the window would have made the total fall as the log grew.
      */
     override fun onTimerLongPress() {
-        val sessions = _uiState.value.days.flatMap { it.sessions }
-        val stash = milkStash(sessions, timeZone()) ?: return
-        set { it.copy(stash = stash) }
+        val workspace = workspaceId() ?: return
+
+        viewModelScope.launch {
+            val all = repository.observeInRange(workspace, 0L, Long.MAX_VALUE).first()
+            val stash = milkStash(all, timeZone()) ?: return@launch
+            set { it.copy(stash = stash) }
+        }
     }
 
     override fun onDismissStash() = set { it.copy(stash = null) }

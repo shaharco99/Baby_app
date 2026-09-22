@@ -106,25 +106,9 @@ class FeedingScheduleTest {
     }
 
     @Test
-    fun `the longest stretch is the widest gap between consecutive feeds`() {
-        val tally = feedingTally(
-            listOf(
-                feed("a", "2026-09-18T00:00:00Z"),
-                feed("c", "2026-09-18T08:00:00Z"),
-                feed("b", "2026-09-18T02:00:00Z"),
-            ),
-            TimeZone.UTC,
-        )
-
-        // Sorted by time first, so the gaps are 2h then 6h regardless of input order.
-        tally.longestStretchMillis shouldBe 6 * 60 * 60_000L
-    }
-
-    @Test
-    fun `a single feed has no stretch to measure`() {
+    fun `a single feed tallies as one`() {
         val tally = feedingTally(listOf(feed("a", "2026-09-18T00:00:00Z")), TimeZone.UTC)
 
-        tally.longestStretchMillis shouldBe null
         tally.totalFeeds shouldBe 1
     }
 
@@ -135,7 +119,6 @@ class FeedingScheduleTest {
         tally.totalFeeds shouldBe 0
         tally.nightFeeds shouldBe 0
         tally.totalMl shouldBe null
-        tally.longestStretchMillis shouldBe null
     }
 
     @Test
@@ -261,4 +244,28 @@ class FeedingScheduleTest {
         fedAtEpochMillis = at(iso),
         amountMl = amountMl,
     )
+
+    @Test
+    fun `days logged counts distinct local days, not feeds`() {
+        val tally = feedingTally(
+            listOf(
+                feed("a", "2026-09-18T06:00:00Z"),
+                feed("b", "2026-09-18T09:00:00Z"),
+                feed("c", "2026-09-19T09:00:00Z"),
+            ),
+            TimeZone.UTC,
+        )
+
+        tally.daysLogged shouldBe 2
+        tally.firstFeedEpochMillis shouldBe Instant.parse("2026-09-18T06:00:00Z").toEpochMilliseconds()
+    }
+
+    @Test
+    fun `the milestone is the highest round number already passed`() {
+        val feeds = (0 until 120).map { feed("f$it", "2026-09-18T06:00:00Z") }
+
+        feedingTally(feeds, TimeZone.UTC).milestone shouldBe 100
+        feedingTally(feeds.take(49), TimeZone.UTC).milestone shouldBe null
+        feedingTally(feeds.take(50), TimeZone.UTC).milestone shouldBe 50
+    }
 }

@@ -69,9 +69,16 @@ data class MilkStash(
     val totalMinutes: Int,
     /** The best single day, by measured output. */
     val bestDayMl: Int,
-    val longestSessionMinutes: Int,
     val feedsCovered: Int,
+    /** The highest of [STASH_MILESTONES_ML] reached, in millilitres, or null before the first. */
+    val milestoneMl: Int?,
 )
+
+/**
+ * Round volumes worth a line. Half a litre is the first: it is roughly a day's feeds for a
+ * newborn, and the first one that sounds like a quantity rather than a bottle.
+ */
+val STASH_MILESTONES_ML = listOf(500, 1_000, 2_000, 5_000, 10_000)
 
 /**
  * Null until at least one session has had its output measured: a stash panel showing zero
@@ -90,8 +97,8 @@ fun milkStash(sessions: List<PumpSession>, timeZone: TimeZone): MilkStash? {
         sessions = sessions.size,
         totalMinutes = sessions.sumOf { it.durationMinutes ?: 0 },
         bestDayMl = perDay.values.maxOf { day -> day.sumOf { it.amountMl ?: 0 } },
-        longestSessionMinutes = sessions.maxOf { it.durationMinutes ?: 0 },
         feedsCovered = totalMl / ML_PER_FEED,
+        milestoneMl = STASH_MILESTONES_ML.lastOrNull { it <= totalMl },
     )
 }
 

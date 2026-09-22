@@ -10,6 +10,8 @@ import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
+import com.oryareach.core.model.VitaminDose
+import com.oryareach.core.ui.component.DropBurst
 import kotlinx.datetime.LocalDate
 
 /** The history has two shapes; the toggle above it picks which one is drawn. */
@@ -53,6 +55,17 @@ data class FeedingUiState(
     val datePickerVisible: Boolean = false,
     val timePickerVisible: Boolean = false,
 
+    // The daily vitamin. Its own small card above the countdown: it is the one thing in the
+    // day that is not a feed but is asked about at the same moment.
+    /** Minutes past local midnight for the reminder; null means no time has been set. */
+    val vitaminMinuteOfDay: Int? = null,
+    /** Today's dose, if it has been given — by either partner, on either phone. */
+    val vitaminDoseToday: VitaminDose? = null,
+    /** The last fortnight of doses, newest first, for the history the card long-presses open. */
+    val vitaminHistory: List<VitaminDose> = emptyList(),
+    val vitaminTimePickerVisible: Boolean = false,
+    val vitaminHistoryVisible: Boolean = false,
+
     // Transient UI-only.
     val historyView: HistoryView = HistoryView.LIST,
     /**
@@ -60,6 +73,19 @@ data class FeedingUiState(
      * earned once a night feed has actually been logged — see [FeedingViewModel.onCountdownLongPress].
      */
     val nightWatchTally: FeedingTally? = null,
+    /**
+     * How the feeds split between the two of you, over the whole log. Null when only one person
+     * has ever logged one — "you 151 · them 0" is not the point of the panel.
+     */
+    /**
+     * The one celebration in this screen that is not hidden: the feed that lands on a round
+     * number gets a fall of drops and a line in the snackbar. [milestoneBurst] is the animation,
+     * [milestoneReached] the number to say.
+     */
+    val milestoneBurst: DropBurst? = null,
+    val milestoneReached: Int? = null,
+    val nightWatchMine: Int? = null,
+    val nightWatchTheirs: Int? = null,
     val busy: Boolean = false,
     val refreshing: Boolean = false,
 ) {

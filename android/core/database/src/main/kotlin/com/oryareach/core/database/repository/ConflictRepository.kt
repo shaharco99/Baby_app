@@ -15,6 +15,7 @@ import com.oryareach.core.database.mapper.toFeedingEntry
 import com.oryareach.core.database.mapper.toFolder
 import com.oryareach.core.database.mapper.toImportantDate
 import com.oryareach.core.database.mapper.toPumpSession
+import com.oryareach.core.database.mapper.toVitaminDose
 import com.oryareach.core.database.mapper.toShoppingItem
 import com.oryareach.core.database.mapper.toTask
 import com.oryareach.core.domain.conflict.recordDifferences
@@ -28,6 +29,7 @@ import com.oryareach.core.model.Folder
 import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
 import com.oryareach.core.model.PumpSession
+import com.oryareach.core.model.VitaminDose
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
@@ -109,6 +111,7 @@ class ConflictRepository(
         EntityType.BABY -> database.babyDao().findById(recordId)?.let { json.encodeToString(it.toBaby()) }
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let { json.encodeToString(it.toFeedingEntry()) }
         EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let { json.encodeToString(it.toPumpSession()) }
+        EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.let { json.encodeToString(it.toVitaminDose()) }
     }
 
     /** Keeps this device's edit: re-queues it for push, based on the server's version so the
@@ -209,6 +212,11 @@ class ConflictRepository(
                 database.pumpSessionDao().upsert(session.toEntity(workspace, record, now()))
                 search.index(entityType, recordId(record), workspace, "", session.note.orEmpty())
             }
+            EntityType.VITAMIN_DOSE -> {
+                val dose = runCatching { json.decodeFromString<VitaminDose>(payload) }.getOrNull() ?: return
+                database.vitaminDoseDao().upsert(dose.toEntity(workspace, record, now()))
+                search.index(entityType, recordId(record), workspace, "", dose.note.orEmpty())
+            }
         }
     }
 
@@ -249,6 +257,9 @@ class ConflictRepository(
             EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let {
                 database.pumpSessionDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
             }
+            EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.let {
+                database.vitaminDoseDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
+            }
         }
     }
 
@@ -264,6 +275,7 @@ class ConflictRepository(
         EntityType.BABY -> database.babyDao().findById(recordId)?.sync?.workspaceId
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.sync?.workspaceId
         EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.sync?.workspaceId
+        EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.sync?.workspaceId
     }
 
     private suspend fun localTitleAndUpdatedAt(entityType: EntityType, recordId: String): Pair<String, Long>? = when (entityType) {
@@ -281,6 +293,9 @@ class ConflictRepository(
         }
         EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let {
             (it.note ?: momentLabel(it.startedAt)) to it.sync.updatedAt
+        }
+        EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.let {
+            (it.note ?: momentLabel(it.givenAt)) to it.sync.updatedAt
         }
     }
 
@@ -304,6 +319,9 @@ class ConflictRepository(
                 }
                 EntityType.PUMP_SESSION -> json.decodeFromString<PumpSession>(payload).let {
                     it.note ?: momentLabel(it.startedAtEpochMillis)
+                }
+                EntityType.VITAMIN_DOSE -> json.decodeFromString<VitaminDose>(payload).let {
+                    it.note ?: momentLabel(it.givenAtEpochMillis)
                 }
             }
         }.getOrNull()

@@ -1,0 +1,11 @@
+-- Daily supplement doses (vitamin D, and whatever a paediatrician adds later).
+--
+-- Nothing but the enum value: `public.records` is generic, holding one ciphertext blob per
+-- record whatever its type, so a new synced entity needs only a discriminator the client and
+-- the server agree on. Kept in step with `EntityType.VITAMIN_DOSE`'s wire name in
+-- `core/model/.../EntityType.kt`.
+--
+-- Idempotent, like every migration here: these are applied by hand, sometimes after the object
+-- already exists, and `add value if not exists` is what keeps the file and the live project from
+-- drifting apart permanently.
+alter type public.entity_type add value if not exists 'vitamin_dose';

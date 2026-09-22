@@ -10,6 +10,9 @@
     <string name="pump_reminder_channel_name">Pumping reminders</string>
     <string name="pump_reminder_title">Takes Two of Us</string>
     <string name="pump_reminder_body">Time to pump again.</string>
+    <string name="vitamin_reminder_channel_name">Vitamin reminders</string>
+    <string name="vitamin_reminder_title">Takes Two of Us</string>
+    <string name="vitamin_reminder_body">Time for today\'s vitamin.</string>
     <string name="lock_title">App locked</string>
     <string name="lock_unlock">Unlock</string>
     <string name="lock_prompt_title">Unlock Takes Two of Us</string>

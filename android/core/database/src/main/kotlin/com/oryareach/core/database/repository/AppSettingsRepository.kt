@@ -98,4 +98,41 @@ class AppSettingsRepository(
         }
         syncTrigger.syncNow()
     }
+
+    /**
+     * Moves the daily vitamin reminder, or turns it off with null.
+     *
+     * Its own method rather than another optional parameter on [save]: this is changed from the
+     * feeding screen's card, which has no due date or partner names to hand and must not write
+     * stale copies of them back over the row.
+     */
+    suspend fun setVitaminMinuteOfDay(workspaceId: String, minuteOfDay: Int?) {
+        val existing = settings.find(workspaceId) ?: return
+        if (existing.vitaminDMinuteOfDay == minuteOfDay) return
+
+        val timestamp = now()
+        val entity = existing.copy(
+            vitaminDMinuteOfDay = minuteOfDay,
+            sync = existing.sync.copy(
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                clientMutationId = newId(),
+            ),
+        )
+
+        database.withTransaction {
+            settings.upsert(entity)
+            val opId = operations.enqueue(
+                SyncOperationEntity(
+                    recordId = entity.id,
+                    entityType = EntityType.SETTINGS,
+                    operation = SyncOperationType.UPDATE,
+                    clientMutationId = entity.sync.clientMutationId ?: newId(),
+                    createdAt = timestamp,
+                ),
+            )
+            operations.removeSuperseded(entity.id, opId)
+        }
+        syncTrigger.syncNow()
+    }
 }

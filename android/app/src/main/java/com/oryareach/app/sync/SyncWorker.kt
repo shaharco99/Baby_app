@@ -14,6 +14,7 @@ import androidx.work.WorkerParameters
 import com.oryareach.core.common.AppResult
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
+import com.oryareach.core.database.reminder.VitaminReminderRefresher
 import com.oryareach.core.sync.SyncEngine
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -33,6 +34,7 @@ class SyncWorker(
     private val engine: SyncEngine by inject()
     private val feedingReminders: FeedingReminderRefresher by inject()
     private val pumpReminders: PumpReminderRefresher by inject()
+    private val vitaminReminders: VitaminReminderRefresher by inject()
 
     override suspend fun doWork(): Result = when (val outcome = engine.sync()) {
         is AppResult.Success -> {
@@ -41,6 +43,8 @@ class SyncWorker(
             if (outcome.data.pulled > 0) {
                 feedingReminders.refresh()
                 pumpReminders.refresh()
+                // A dose ticked off on the partner's phone silences this one's reminder too.
+                vitaminReminders.refresh()
             }
             if (outcome.data.shouldRetry) Result.retry() else Result.success()
         }

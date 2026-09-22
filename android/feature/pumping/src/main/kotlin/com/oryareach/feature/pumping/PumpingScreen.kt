@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,6 +90,7 @@ import com.oryareach.core.domain.log.splitLogDays
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
 import com.oryareach.core.ui.component.DrawerHeader
+import com.oryareach.core.ui.component.DropFall
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
@@ -182,7 +184,7 @@ fun PumpingScreen(
     }
 
     uiState.milkDrops?.let { drops ->
-        MilkDropFall(drops = drops, onFinished = actions::onDropsShown)
+        DropFall(burst = drops, onFinished = actions::onDropsShown)
     }
 
     uiState.stash?.let { stash ->
@@ -252,8 +254,14 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
         modifier = Modifier
             .fillMaxWidth()
             // Long-press opens the stash, the same gesture the feeding countdown uses for its
-            // night watch. Nothing on a short press: the card's own buttons are the controls.
-            .combinedClickable(onClick = {}, onLongClick = actions::onTimerLongPress),
+            // night watch. Nothing on a short press, and no ripple either: the card's own buttons
+            // are the tap targets, and a ripple under a dead tap reads as a broken button.
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {},
+                onLongClick = actions::onTimerLongPress,
+            ),
     ) {
         Column(
             // Tighter while running: the card is then the only thing anyone is looking at, and
@@ -339,74 +347,6 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
     }
 }
 
-/**
- * The drops: a short fall of milk down the screen when a session is put away.
- *
- * Drawn rather than animated with composables — a dozen moving `Box`es would each be a layout
- * pass, while this is one canvas redrawn against a single clock. It draws on top of everything and
- * takes no touches, so pressing on through it while it falls works normally.
- *
- * Every drop's lane, size, drift and head start come from [MilkDrops.id], so a burst looks
- * scattered but never reshuffles mid-fall, and the next burst is scattered differently.
- */
-@Composable
-private fun MilkDropFall(drops: MilkDrops, onFinished: () -> Unit) {
-    val fall = remember(drops.id) { Animatable(0f) }
-    val seeds = remember(drops.id) {
-        val random = Random(drops.id)
-        List(drops.count) {
-            DropSeed(
-                lane = random.nextFloat(),
-                scale = 0.7f + random.nextFloat() * 0.8f,
-                delay = random.nextFloat() * 0.45f,
-                drift = (random.nextFloat() - 0.5f) * 0.08f,
-            )
-        }
-    }
-
-    LaunchedEffect(drops.id) {
-        fall.animateTo(1f, tween(durationMillis = FALL_MILLIS, easing = LinearEasing))
-        onFinished()
-    }
-
-    val milk = MaterialTheme.colorScheme.surfaceBright
-    val rim = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        for (seed in seeds) {
-            // Each drop's own progress through its own window, so they do not fall in step.
-            val span = 1f - seed.delay
-            val t = ((fall.value - seed.delay) / span).coerceIn(0f, 1f)
-            if (t <= 0f) continue
-
-            val radius = size.width * 0.011f * seed.scale
-            // Accelerating, like something actually falling, and fading over the last third.
-            val y = -radius * 3f + (size.height * 0.78f + radius * 3f) * t * t
-            val x = size.width * (0.08f + seed.lane * 0.84f) +
-                size.width * seed.drift * sin(t * PI.toFloat())
-            val alpha = if (t < FADE_FROM) 1f else 1f - (t - FADE_FROM) / (1f - FADE_FROM)
-
-            val drop = teardrop(x, y, radius)
-            drawPath(drop, color = milk, alpha = alpha)
-            drawPath(drop, color = rim, alpha = alpha, style = Stroke(width = radius * 0.18f))
-        }
-    }
-}
-
-/** A drop: round at the bottom, drawn out to a point at the top, falling point-first. */
-private fun teardrop(cx: Float, cy: Float, r: Float): Path = Path().apply {
-    moveTo(cx, cy - r * 2.2f)
-    cubicTo(cx + r * 0.9f, cy - r * 1.1f, cx + r, cy + r * 0.35f, cx, cy + r)
-    cubicTo(cx - r, cy + r * 0.35f, cx - r * 0.9f, cy - r * 1.1f, cx, cy - r * 2.2f)
-    close()
-}
-
-private data class DropSeed(
-    val lane: Float,
-    val scale: Float,
-    val delay: Float,
-    val drift: Float,
-)
 
 /**
  * The stash: what the pumping has added up to. Warm rather than clinical, on the same principle as
@@ -436,10 +376,12 @@ private fun MilkStashDialog(stash: MilkStash, onDismiss: () -> Unit) {
                     )
                 }
                 Text(
+                    // Hours and minutes, not a raw minute count: past a couple of days at the
+                    // pump "1100 minutes" stops being a length of time anyone can feel.
                     text = stringResource(
                         R.string.pumping_stash_sessions,
                         stash.sessions,
-                        stash.totalMinutes,
+                        stash.totalMinutes.toHoursAndMinutes(),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -449,6 +391,13 @@ private fun MilkStashDialog(stash: MilkStash, onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                stash.milestoneMl?.let { milestone ->
+                    Text(
+                        text = stringResource(R.string.pumping_stash_milestone, milestone.toLitres()),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 // Keyed to the count, so the line changes as the log grows rather than on every
                 // recomposition — a message that reshuffles mid-read is just noise.
                 Text(
@@ -1005,12 +954,6 @@ private const val MARK_RUNNING = "…"
 /** An output nobody measured, as distinct from a cell that failed to draw. */
 private const val MARK_UNMEASURED = "–"
 
-/** Long enough to read as falling, short enough not to sit in front of the log. */
-private const val FALL_MILLIS = 1_700
-
-/** Where a drop starts fading, as a fraction of its own fall. */
-private const val FADE_FROM = 0.65f
-
 /** The side label is the widest cell; the two numbers are three digits at most. */
 private val ColumnWeights = listOf(1f, 1.2f, 1f, 1f)
 
@@ -1084,3 +1027,13 @@ private object NoopPumpingActions : PumpingActions {
     override fun onHistoryViewChange(value: PumpHistoryView) = Unit
     override fun onRefresh() = Unit
 }
+
+private const val MINUTES_PER_HOUR = 60
+private const val MILLILITRES_PER_LITRE = 1_000
+
+/** "18h 20m" above an hour, "45m" below it. */
+private fun Int.toHoursAndMinutes(): String =
+    if (this < MINUTES_PER_HOUR) "${this}m" else "${this / MINUTES_PER_HOUR}h ${this % MINUTES_PER_HOUR}m"
+
+/** One decimal place: "1.5 litres" is a quantity, "1.487 litres" is a reading. */
+private fun Int.toLitres(): String = "%.1f".format(this / MILLILITRES_PER_LITRE.toFloat())

@@ -10,6 +10,7 @@ import com.oryareach.core.database.repository.ImportantDateRepository
 import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
+import com.oryareach.core.domain.baby.babyAge
 import com.oryareach.core.domain.importer.parseWebSnapshot
 import com.oryareach.core.domain.importer.toImportedSnapshot
 import com.oryareach.core.domain.feeding.nextFeedCountdown
@@ -117,6 +118,7 @@ class HomeViewModel(
                         budgetSpentByUs = budget.spentByUs,
                         budgetSpentByOthers = budget.spentByOthers,
                         progress = settings?.dueDate?.let { getPregnancyProgress(it, today()) },
+                        babyAge = activeBaby?.birthDate?.let { babyAge(it, today()) },
                     )
                 }.collect { computed ->
                     set { current ->

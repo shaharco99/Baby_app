@@ -6,6 +6,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,18 +102,24 @@ import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
+import com.oryareach.core.model.VitaminDose
 import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.component.DrawerHeader
+import com.oryareach.core.ui.component.DropFall
 import com.oryareach.core.ui.text.dayLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.todayIn
+import kotlinx.datetime.minus
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
+import kotlin.time.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,6 +144,17 @@ fun FeedingScreen(
     // forever, over the list, until the undo was tapped. `Long` gives roughly ten seconds —
     // long enough to notice a mistaken delete, short enough to get out of the way — and the
     // dismiss action adds an X for closing it on the spot. A sideways swipe also dismisses it.
+    val milestoneLabel = stringResource(R.string.feeding_milestone_snackbar, uiState.milestoneReached ?: 0)
+    LaunchedEffect(uiState.milestoneReached) {
+        if (uiState.milestoneReached == null) return@LaunchedEffect
+        snackbarHostState.showSnackbar(
+            message = milestoneLabel,
+            withDismissAction = true,
+            duration = SnackbarDuration.Short,
+        )
+        actions.onMilestoneDismissed()
+    }
+
     LaunchedEffect(uiState.undoDeleteId) {
         val id = uiState.undoDeleteId ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
@@ -168,6 +189,8 @@ fun FeedingScreen(
                     NoBabyCard()
                     return@Column
                 }
+
+                VitaminCard(uiState = uiState, actions = actions)
 
                 CountdownCard(
                     countdown = uiState.countdown,
@@ -204,8 +227,51 @@ fun FeedingScreen(
         }
     }
 
+    uiState.milestoneBurst?.let { burst ->
+        DropFall(burst = burst, onFinished = actions::onMilestoneShown)
+    }
+
     uiState.nightWatchTally?.let { tally ->
-        NightWatchDialog(tally = tally, onDismiss = actions::onDismissNightWatch)
+        NightWatchDialog(
+            tally = tally,
+            mine = uiState.nightWatchMine,
+            theirs = uiState.nightWatchTheirs,
+            onDismiss = actions::onDismissNightWatch,
+        )
+    }
+
+    if (uiState.vitaminHistoryVisible) {
+        VitaminHistoryDialog(
+            doses = uiState.vitaminHistory,
+            today = uiState.today,
+            onDismiss = actions::onDismissVitaminHistory,
+        )
+    }
+
+    if (uiState.vitaminTimePickerVisible) {
+        val minuteOfDay = uiState.vitaminMinuteOfDay ?: DEFAULT_VITAMIN_MINUTE_OF_DAY
+        val timeState = rememberTimePickerState(
+            initialHour = minuteOfDay / 60,
+            initialMinute = minuteOfDay % 60,
+            is24Hour = true,
+        )
+        AlertDialog(
+            onDismissRequest = actions::onDismissVitaminTimePicker,
+            confirmButton = {
+                TextButton(onClick = {
+                    actions.onVitaminTimeChange(LocalTime(timeState.hour, timeState.minute))
+                }) { Text(stringResource(R.string.feeding_pick_confirm)) }
+            },
+            dismissButton = {
+                // Clearing the hour is the only way to turn the reminder off, so it lives here
+                // rather than as a switch that would need a second control of its own.
+                TextButton(onClick = actions::onClearVitaminTime) {
+                    Text(stringResource(R.string.vitamin_clear_time))
+                }
+            },
+            title = { Text(stringResource(R.string.vitamin_time_title)) },
+            text = { TimePicker(state = timeState) },
+        )
     }
 
     if (uiState.sheetVisible) {
@@ -260,12 +326,135 @@ fun FeedingScreen(
     }
 }
 
+/** 18:00 by default when no hour has been set yet — early evening, after the day has settled. */
+private const val DEFAULT_VITAMIN_MINUTE_OF_DAY = 18 * 60
+
+/**
+ * The daily vitamin: was it given today, and when does the reminder fire.
+ *
+ * A tick rather than a log sheet, because there is nothing to record beyond "yes, and at this
+ * time" — and the tick is shared, so whichever parent gives it, the other's phone stops asking.
+ * Long-pressing opens the fortnight behind it. There is deliberately no streak: a run of days
+ * broken by one forgotten evening is a worse thing to show a tired parent than a plain list.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun VitaminCard(uiState: FeedingUiState, actions: FeedingActions) {
+    val given = uiState.vitaminDoseToday
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {},
+                onLongClick = actions::onOpenVitaminHistory,
+            ),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(R.string.vitamin_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = given?.let {
+                        stringResource(R.string.vitamin_given_at, it.givenAtEpochMillis.toTimeLabel())
+                    } ?: stringResource(R.string.vitamin_not_yet),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = actions::onOpenVitaminTimePicker, contentPadding = PaddingValues(0.dp)) {
+                    Text(
+                        text = uiState.vitaminMinuteOfDay
+                            ?.let { stringResource(R.string.vitamin_reminder_at, it.toTimeLabel()) }
+                            ?: stringResource(R.string.vitamin_set_time),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
+
+            if (given == null) {
+                Button(onClick = actions::onVitaminToggle) {
+                    Text(stringResource(R.string.vitamin_mark_given))
+                }
+            } else {
+                OutlinedButton(onClick = actions::onVitaminToggle) {
+                    Text(stringResource(R.string.vitamin_undo_given))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The fortnight behind the card, one line per day. Days with no dose are listed as missed rather
+ * than left out: "nothing here" and "we forgot" look the same in a list that only shows hits.
+ */
+@Composable
+private fun VitaminHistoryDialog(doses: List<VitaminDose>, today: LocalDate?, onDismiss: () -> Unit) {
+    val zone = TimeZone.currentSystemDefault()
+    val givenDays = doses.associateBy { dose ->
+        Instant.fromEpochMilliseconds(dose.givenAtEpochMillis).toLocalDateTime(zone).date
+    }
+    val lastDay = today ?: Clock.System.todayIn(zone)
+    val days = (0 until VITAMIN_HISTORY_DAYS).map { lastDay.minus(it, DateTimeUnit.DAY) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.feeding_night_watch_close)) }
+        },
+        title = { Text(stringResource(R.string.vitamin_history_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                for (day in days) {
+                    val dose = givenDays[day]
+                    Text(
+                        text = stringResource(
+                            if (dose == null) R.string.vitamin_history_missed else R.string.vitamin_history_given,
+                            dayLabel(day, lastDay),
+                            dose?.givenAtEpochMillis?.toTimeLabel().orEmpty(),
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (dose == null) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                    )
+                }
+            }
+        },
+    )
+}
+
+private const val VITAMIN_HISTORY_DAYS = 14
+
+private const val MILLILITRES_PER_LITRE = 1_000
+
+/** One decimal place: "1.4 litres" is a quantity, "1.437 litres" is a reading. */
+private fun Int.toLitres(): String = "%.1f".format(this / MILLILITRES_PER_LITRE.toFloat())
+
+private fun Long.toTimeLabel(): String = toLocalDateTime().let { "%02d:%02d".format(it.hour, it.minute) }
+
+/** Minutes past midnight as a clock reading. */
+private fun Int.toTimeLabel(): String = "%02d:%02d".format(this / 60, this % 60)
+
 /**
  * The night-watch easter egg: what the small hours actually came to. Warm rather than clinical
  * — the numbers are real, the framing is a medal for whoever was awake.
  */
 @Composable
-private fun NightWatchDialog(tally: FeedingTally, onDismiss: () -> Unit) {
+private fun NightWatchDialog(tally: FeedingTally, mine: Int?, theirs: Int?, onDismiss: () -> Unit) {
     val lines = androidx.compose.ui.res.stringArrayResource(R.array.feeding_night_watch_praise)
 
     AlertDialog(
@@ -283,18 +472,42 @@ private fun NightWatchDialog(tally: FeedingTally, onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                tally.longestStretchMillis?.let { stretch ->
+                tally.totalMl?.let { ml ->
                     Text(
-                        text = stringResource(R.string.feeding_night_watch_stretch, formatCountdown(stretch)),
+                        // Past a litre the number stops meaning anything as millilitres. It is
+                        // the same figure, said in a unit a person can picture.
+                        text = if (ml >= MILLILITRES_PER_LITRE) {
+                            stringResource(R.string.feeding_night_watch_litres, ml.toLitres())
+                        } else {
+                            stringResource(R.string.feeding_night_watch_ml, ml)
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                tally.totalMl?.let { ml ->
+                tally.firstFeedEpochMillis?.let { first ->
                     Text(
-                        text = stringResource(R.string.feeding_night_watch_ml, ml),
+                        text = stringResource(
+                            R.string.feeding_night_watch_since,
+                            dateLabel(first.toLocalDateTime().date),
+                            tally.daysLogged,
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (mine != null && theirs != null) {
+                    Text(
+                        text = stringResource(R.string.feeding_night_watch_split, mine, theirs),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                tally.milestone?.let { milestone ->
+                    Text(
+                        text = stringResource(R.string.feeding_night_watch_milestone, milestone),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 // Keyed to the tally, so the line changes as the log grows rather than on
@@ -340,6 +553,8 @@ private fun CountdownCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
                 onClick = {},
                 onLongClick = actions::onCountdownLongPress,
             ),
@@ -1336,5 +1551,14 @@ private object NoopFeedingActions : FeedingActions {
     override fun onHistoryViewChange(value: HistoryView) = Unit
     override fun onCountdownLongPress() = Unit
     override fun onDismissNightWatch() = Unit
+    override fun onMilestoneShown() = Unit
+    override fun onMilestoneDismissed() = Unit
+    override fun onVitaminToggle() = Unit
+    override fun onOpenVitaminTimePicker() = Unit
+    override fun onDismissVitaminTimePicker() = Unit
+    override fun onVitaminTimeChange(value: LocalTime) = Unit
+    override fun onClearVitaminTime() = Unit
+    override fun onOpenVitaminHistory() = Unit
+    override fun onDismissVitaminHistory() = Unit
     override fun onRefresh() = Unit
 }

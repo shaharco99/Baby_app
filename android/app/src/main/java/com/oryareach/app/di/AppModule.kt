@@ -3,6 +3,7 @@ package com.oryareach.app.di
 import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.AlarmFeedingReminderScheduler
 import com.oryareach.app.notifications.AlarmPumpReminderScheduler
+import com.oryareach.app.notifications.AlarmVitaminReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.push.PushRegistrar
 import com.oryareach.app.sync.WorkManagerSyncTrigger
@@ -15,6 +16,7 @@ import com.oryareach.core.security.GoogleCalendarAuthManagerImpl
 import com.oryareach.core.security.GoogleCalendarTokenStore
 import com.oryareach.core.settings.FeedingReminderScheduler
 import com.oryareach.core.settings.PumpReminderScheduler
+import com.oryareach.core.settings.VitaminReminderScheduler
 import com.oryareach.core.settings.ReminderScheduler
 import com.oryareach.core.settings.SettingsPreferences
 import com.oryareach.core.database.DatabaseFactory
@@ -23,12 +25,14 @@ import com.oryareach.core.database.OrYareachDatabase
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
+import com.oryareach.core.database.reminder.VitaminReminderRefresher
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.CycleEntryRepository
 import com.oryareach.core.database.repository.CycleRepository
 import com.oryareach.core.database.repository.DocumentRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.database.repository.PumpSessionRepository
+import com.oryareach.core.database.repository.VitaminDoseRepository
 import com.oryareach.core.database.repository.FolderRepository
 import com.oryareach.core.database.repository.ConflictRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
@@ -109,12 +113,14 @@ val appModule = module {
             refreshReminders = {
                 get<FeedingReminderRefresher>().refresh()
                 get<PumpReminderRefresher>().refresh()
+                get<VitaminReminderRefresher>().refresh()
             },
         )
     }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }
     single<FeedingReminderScheduler> { AlarmFeedingReminderScheduler(androidContext()) }
     single<PumpReminderScheduler> { AlarmPumpReminderScheduler(androidContext()) }
+    single<VitaminReminderScheduler> { AlarmVitaminReminderScheduler(androidContext()) }
 
     // Consumed by :core:network, which must not depend on the session type.
     // The Keystore fallback matters here too: a push arrives with no open session, and a null
@@ -206,6 +212,7 @@ val appModule = module {
     single { BabyRepository(database = get(), syncTrigger = get()) }
     single { FeedingEntryRepository(database = get(), syncTrigger = get(), reminders = get()) }
     single { PumpSessionRepository(database = get(), syncTrigger = get(), reminders = get()) }
+    single { VitaminDoseRepository(database = get(), syncTrigger = get()) }
     single { ShoppingItemRepository(database = get(), syncTrigger = get()) }
     single { ImportantDateRepository(database = get(), syncTrigger = get()) }
     single { AppSettingsRepository(database = get(), syncTrigger = get()) }
@@ -217,6 +224,16 @@ val appModule = module {
         FeedingReminderRefresher(
             babies = get(),
             feeds = get(),
+            settings = get(),
+            scheduler = get(),
+            workspaceId = { scope.backgroundWorkspaceId() },
+        )
+    }
+    single {
+        val scope = this
+        VitaminReminderRefresher(
+            babies = get(),
+            vitamins = get(),
             settings = get(),
             scheduler = get(),
             workspaceId = { scope.backgroundWorkspaceId() },
@@ -273,6 +290,8 @@ val appModule = module {
             repository = get(),
             babyRepository = get(),
             settingsRepository = get(),
+            vitaminRepository = get(),
+            vitaminReminders = get(),
             auth = get(),
             syncEngine = get(),
             workspaceId = { get<SessionState>().workspaceId },

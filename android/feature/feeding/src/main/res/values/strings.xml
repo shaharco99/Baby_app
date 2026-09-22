@@ -55,8 +55,11 @@
     <string name="feeding_night_watch_close">Back to it</string>
     <string name="feeding_night_watch_count">%1$d feeds between midnight and six</string>
     <string name="feeding_night_watch_total">%1$d feeds logged in all</string>
-    <string name="feeding_night_watch_stretch">Longest stretch between feeds: %1$s</string>
     <string name="feeding_night_watch_ml">%1$d ml measured out</string>
+    <string name="feeding_night_watch_litres">%1$s litres measured out</string>
+    <string name="feeding_night_watch_since">Logging since %1$s · %2$d days in</string>
+    <string name="feeding_night_watch_split">You logged %1$d of them, your partner %2$d</string>
+    <string name="feeding_night_watch_milestone">Feed number %1$d, and you wrote it down</string>
 
     <string-array name="feeding_night_watch_praise">
         <item>Nobody saw it. It still counted.</item>
@@ -69,4 +72,17 @@
     <string name="feeding_deleted">Feed deleted</string>
     <string name="feeding_undo_action">Undo</string>
     <string name="feeding_older_days_drawer">Earlier days</string>
+    <string name="vitamin_title">Vitamin D</string>
+    <string name="vitamin_not_yet">Not given yet today</string>
+    <string name="vitamin_given_at">Given today at %1$s</string>
+    <string name="vitamin_mark_given">Given</string>
+    <string name="vitamin_undo_given">Undo</string>
+    <string name="vitamin_set_time">Set a reminder time</string>
+    <string name="vitamin_reminder_at">Reminder at %1$s</string>
+    <string name="vitamin_time_title">Daily vitamin reminder</string>
+    <string name="vitamin_clear_time">Turn off</string>
+    <string name="vitamin_history_title">The last two weeks</string>
+    <string name="vitamin_history_given">%1$s · given at %2$s</string>
+    <string name="vitamin_history_missed">%1$s · not logged</string>
+    <string name="feeding_milestone_snackbar">Feed number %1$d 🎉</string>
 </resources>

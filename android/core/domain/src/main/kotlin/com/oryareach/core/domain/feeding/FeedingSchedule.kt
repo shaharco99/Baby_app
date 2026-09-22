@@ -87,15 +87,27 @@ private const val MILLIS_PER_MINUTE = 60_000L
  * What the night shift actually added up to.
  *
  * [nightFeeds] counts feeds whose local hour falls in [NIGHT_START_HOUR, NIGHT_END_HOUR) — the
- * stretch nobody volunteers for. [longestStretchMillis] is the longest gap between consecutive
- * feeds, which is the closest thing to "the longest you got to sleep" the log can know.
+ * stretch nobody volunteers for. The rest are the milestones worth saying out loud: how many
+ * feeds in all, how much milk that came to, how many days the log has been kept, and which
+ * round number was last passed.
+ *
+ * Every figure is over the whole log, not a window of it. A panel that says "in all" and means
+ * "in the last fortnight" gets quietly wronger the longer the log runs.
  */
 data class FeedingTally(
     val totalFeeds: Int,
     val nightFeeds: Int,
     val totalMl: Int?,
-    val longestStretchMillis: Long?,
+    /** Distinct local days with at least one feed — not a streak, just how many days are in. */
+    val daysLogged: Int,
+    /** When the log starts; null only for an empty log. */
+    val firstFeedEpochMillis: Long?,
+    /** The highest of [FEED_MILESTONES] reached, or null before the first one. */
+    val milestone: Int?,
 )
+
+/** Round numbers worth a line. Nothing below fifty: the first week alone passes ten. */
+val FEED_MILESTONES = listOf(50, 100, 250, 500, 1000, 2000)
 
 fun feedingTally(entries: List<FeedingEntry>, timeZone: TimeZone): FeedingTally {
     val byTime = entries.sortedBy { it.fedAtEpochMillis }
@@ -107,15 +119,18 @@ fun feedingTally(entries: List<FeedingEntry>, timeZone: TimeZone): FeedingTally 
         hour in NIGHT_START_HOUR until NIGHT_END_HOUR
     }
 
-    val longestStretch = byTime
-        .zipWithNext { earlier, later -> later.fedAtEpochMillis - earlier.fedAtEpochMillis }
-        .maxOrNull()
+    val daysLogged = byTime
+        .map { Instant.fromEpochMilliseconds(it.fedAtEpochMillis).toLocalDateTime(timeZone).date }
+        .distinct()
+        .size
 
     return FeedingTally(
         totalFeeds = byTime.size,
         nightFeeds = nightFeeds,
         totalMl = measured.takeIf { it.isNotEmpty() }?.sum(),
-        longestStretchMillis = longestStretch,
+        daysLogged = daysLogged,
+        firstFeedEpochMillis = byTime.firstOrNull()?.fedAtEpochMillis,
+        milestone = FEED_MILESTONES.lastOrNull { it <= byTime.size },
     )
 }
 
