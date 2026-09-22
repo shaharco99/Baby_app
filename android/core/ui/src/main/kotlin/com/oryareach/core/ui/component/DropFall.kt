@@ -10,6 +10,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,12 @@ private const val FALL_MILLIS = 1_700
 
 /** Where a drop starts fading, as a fraction of its own fall. */
 private const val FADE_FROM = 0.65f
+
+/**
+ * Milk is white whatever the theme. A theme role here (it used to be `surfaceBright`) comes out
+ * as a grey-purple one step off the dark background, and the drops all but vanished.
+ */
+private val Milk = Color(0xFFFFFBF2)
 
 /**
  * The drops: a short fall of milk down the screen when a session is put away.
@@ -63,8 +70,8 @@ fun DropFall(burst: DropBurst, onFinished: () -> Unit) {
         onFinished()
     }
 
-    val milk = MaterialTheme.colorScheme.surfaceBright
-    val rim = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+    // The warm accent as the rim, so a white drop still has an edge on the light theme's cream.
+    val rim = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         for (seed in seeds) {
@@ -73,7 +80,7 @@ fun DropFall(burst: DropBurst, onFinished: () -> Unit) {
             val t = ((fall.value - seed.delay) / span).coerceIn(0f, 1f)
             if (t <= 0f) continue
 
-            val radius = size.width * 0.011f * seed.scale
+            val radius = size.width * 0.014f * seed.scale
             // Accelerating, like something actually falling, and fading over the last third.
             val y = -radius * 3f + (size.height * 0.78f + radius * 3f) * t * t
             val x = size.width * (0.08f + seed.lane * 0.84f) +
@@ -81,8 +88,8 @@ fun DropFall(burst: DropBurst, onFinished: () -> Unit) {
             val alpha = if (t < FADE_FROM) 1f else 1f - (t - FADE_FROM) / (1f - FADE_FROM)
 
             val drop = teardrop(x, y, radius)
-            drawPath(drop, color = milk, alpha = alpha)
-            drawPath(drop, color = rim, alpha = alpha, style = Stroke(width = radius * 0.18f))
+            drawPath(drop, color = Milk, alpha = alpha)
+            drawPath(drop, color = rim, alpha = alpha, style = Stroke(width = radius * 0.22f))
         }
     }
 }
