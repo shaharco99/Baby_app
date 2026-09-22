@@ -74,6 +74,10 @@
     <string name="feeding_older_days_drawer">ימים קודמים</string>
     <string name="vitamin_title">ויטמין D</string>
     <string name="vitamin_not_yet">עוד לא ניתן היום</string>
+    <string name="vitamin_given_short">ניתן ב-%1$s</string>
+    <string name="vitamin_set_time_short">שעה</string>
+    <string name="vitamin_row_pending_description">ויטמין D, %1$s. לסמן שניתן.</string>
+    <string name="vitamin_row_given_description">ויטמין D, %1$s. לבטל.</string>
     <string name="vitamin_given_at">ניתן היום ב-%1$s</string>
     <string name="vitamin_mark_given">ניתן</string>
     <string name="vitamin_undo_given">ביטול</string>

@@ -74,6 +74,10 @@
     <string name="feeding_older_days_drawer">Earlier days</string>
     <string name="vitamin_title">Vitamin D</string>
     <string name="vitamin_not_yet">Not given yet today</string>
+    <string name="vitamin_given_short">given %1$s</string>
+    <string name="vitamin_set_time_short">set time</string>
+    <string name="vitamin_row_pending_description">Vitamin D, %1$s. Mark it given.</string>
+    <string name="vitamin_row_given_description">Vitamin D, %1$s. Undo.</string>
     <string name="vitamin_given_at">Given today at %1$s</string>
     <string name="vitamin_mark_given">Given</string>
     <string name="vitamin_undo_given">Undo</string>

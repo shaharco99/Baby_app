@@ -18,7 +18,7 @@ create extension if not exists "pgcrypto" with schema extensions;
 -- Profiles
 -- ---------------------------------------------------------------------------
 
-create table public.profiles (
+create table if not exists public.profiles (
     id          uuid primary key references auth.users (id) on delete cascade,
     -- Display name is low-sensitivity and needed to render "created by" without a round
     -- trip through the encrypted payload, so it is deliberately left in plaintext.
@@ -31,7 +31,7 @@ create table public.profiles (
 -- Workspaces and membership
 -- ---------------------------------------------------------------------------
 
-create table public.workspaces (
+create table if not exists public.workspaces (
     id          uuid primary key default gen_random_uuid(),
     created_by  uuid not null references auth.users (id) on delete restrict,
     -- Hard cap: this product is for exactly two people.
@@ -39,14 +39,14 @@ create table public.workspaces (
     created_at  timestamptz not null default now()
 );
 
-create table public.workspace_members (
+create table if not exists public.workspace_members (
     workspace_id uuid not null references public.workspaces (id) on delete cascade,
     user_id      uuid not null references auth.users (id) on delete cascade,
     joined_at    timestamptz not null default now(),
     primary key (workspace_id, user_id)
 );
 
-create index workspace_members_user_idx on public.workspace_members (user_id);
+create index if not exists workspace_members_user_idx on public.workspace_members (user_id);
 
 -- Membership lookup used by every policy below. SECURITY DEFINER so the policy on
 -- workspace_members itself does not recurse when another table's policy calls it.
@@ -93,6 +93,7 @@ begin
 end;
 $$;
 
+drop trigger if exists workspace_member_cap on public.workspace_members;
 create trigger workspace_member_cap
     before insert on public.workspace_members
     for each row execute function public.enforce_workspace_member_cap();
@@ -101,7 +102,7 @@ create trigger workspace_member_cap
 -- Device keys and wrapped workspace keys
 -- ---------------------------------------------------------------------------
 
-create table public.device_keys (
+create table if not exists public.device_keys (
     id           uuid primary key default gen_random_uuid(),
     user_id      uuid not null references auth.users (id) on delete cascade,
     workspace_id uuid not null references public.workspaces (id) on delete cascade,
@@ -112,9 +113,9 @@ create table public.device_keys (
     revoked_at   timestamptz
 );
 
-create index device_keys_workspace_idx on public.device_keys (workspace_id);
+create index if not exists device_keys_workspace_idx on public.device_keys (workspace_id);
 
-create table public.wrapped_workspace_keys (
+create table if not exists public.wrapped_workspace_keys (
     id            uuid primary key default gen_random_uuid(),
     workspace_id  uuid not null references public.workspaces (id) on delete cascade,
     device_key_id uuid not null references public.device_keys (id) on delete cascade,
@@ -129,7 +130,7 @@ create table public.wrapped_workspace_keys (
 -- Couple invitations
 -- ---------------------------------------------------------------------------
 
-create table public.couple_invitations (
+create table if not exists public.couple_invitations (
     id           uuid primary key default gen_random_uuid(),
     workspace_id uuid not null references public.workspaces (id) on delete cascade,
     created_by   uuid not null references auth.users (id) on delete cascade,
@@ -143,24 +144,28 @@ create table public.couple_invitations (
     created_at   timestamptz not null default now()
 );
 
-create index couple_invitations_workspace_idx on public.couple_invitations (workspace_id);
+create index if not exists couple_invitations_workspace_idx on public.couple_invitations (workspace_id);
 
 -- ---------------------------------------------------------------------------
 -- Encrypted records
 -- ---------------------------------------------------------------------------
 
-create type public.entity_type as enum (
-    'task',
-    'shopping_item',
-    'important_date',
-    'folder',
-    'document',
-    'cycle',
-    'cycle_entry',
-    'settings'
-);
+do $$ begin
+    create type public.entity_type as enum (
+        'task',
+        'shopping_item',
+        'important_date',
+        'folder',
+        'document',
+        'cycle',
+        'cycle_entry',
+        'settings'
+    );
+exception
+    when duplicate_object then null;
+end $$;
 
-create table public.records (
+create table if not exists public.records (
     id                 uuid primary key,
     workspace_id       uuid not null references public.workspaces (id) on delete cascade,
     entity_type        public.entity_type not null,
@@ -177,10 +182,10 @@ create table public.records (
 );
 
 -- The sync engine pulls by (workspace, updated_at) cursor; this index is that query.
-create index records_sync_idx on public.records (workspace_id, updated_at);
-create index records_type_idx on public.records (workspace_id, entity_type);
+create index if not exists records_sync_idx on public.records (workspace_id, updated_at);
+create index if not exists records_type_idx on public.records (workspace_id, entity_type);
 
-create table public.document_blobs (
+create table if not exists public.document_blobs (
     record_id           uuid primary key references public.records (id) on delete cascade,
     workspace_id        uuid not null references public.workspaces (id) on delete cascade,
     storage_path        text not null unique,
@@ -205,10 +210,12 @@ begin
 end;
 $$;
 
+drop trigger if exists profiles_touch on public.profiles;
 create trigger profiles_touch
     before update on public.profiles
     for each row execute function public.touch_updated_at();
 
+drop trigger if exists records_touch on public.records;
 create trigger records_touch
     before update on public.records
     for each row execute function public.touch_updated_at();
@@ -227,6 +234,7 @@ alter table public.records               enable row level security;
 alter table public.document_blobs        enable row level security;
 
 -- Profiles: your own, plus anyone you share a workspace with.
+drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
     for select to authenticated
     using (
@@ -241,67 +249,83 @@ create policy profiles_select on public.profiles
         )
     );
 
+drop policy if exists profiles_insert_self on public.profiles;
 create policy profiles_insert_self on public.profiles
     for insert to authenticated with check (id = auth.uid());
 
+drop policy if exists profiles_update_self on public.profiles;
 create policy profiles_update_self on public.profiles
     for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
 -- Workspaces: visible to members; creatable by anyone (they become the first member).
+drop policy if exists workspaces_select on public.workspaces;
 create policy workspaces_select on public.workspaces
     for select to authenticated using (public.is_workspace_member(id));
 
+drop policy if exists workspaces_insert on public.workspaces;
 create policy workspaces_insert on public.workspaces
     for insert to authenticated with check (created_by = auth.uid());
 
 -- Membership rows are readable by members. Inserts happen only through
 -- accept_invitation() or the workspace-creation RPC, both SECURITY DEFINER.
+drop policy if exists workspace_members_select on public.workspace_members;
 create policy workspace_members_select on public.workspace_members
     for select to authenticated using (public.is_workspace_member(workspace_id));
 
 -- Device keys: readable by workspace members, since the inviter must seal the workspace
 -- key to the joiner's public key. Writable only for your own devices.
+drop policy if exists device_keys_select on public.device_keys;
 create policy device_keys_select on public.device_keys
     for select to authenticated using (public.is_workspace_member(workspace_id));
 
+drop policy if exists device_keys_insert on public.device_keys;
 create policy device_keys_insert on public.device_keys
     for insert to authenticated
     with check (user_id = auth.uid() and public.is_workspace_member(workspace_id));
 
+drop policy if exists device_keys_update_own on public.device_keys;
 create policy device_keys_update_own on public.device_keys
     for update to authenticated
     using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- Wrapped keys: readable by members (only the holder of the matching private key can
 -- open one anyway), writable by members.
+drop policy if exists wrapped_keys_select on public.wrapped_workspace_keys;
 create policy wrapped_keys_select on public.wrapped_workspace_keys
     for select to authenticated using (public.is_workspace_member(workspace_id));
 
+drop policy if exists wrapped_keys_insert on public.wrapped_workspace_keys;
 create policy wrapped_keys_insert on public.wrapped_workspace_keys
     for insert to authenticated
     with check (created_by = auth.uid() and public.is_workspace_member(workspace_id));
 
 -- Invitations: only the inviter sees or revokes them. Acceptance goes through the RPC,
 -- so an invitee never needs (and never gets) select access to token hashes.
+drop policy if exists invitations_select_own on public.couple_invitations;
 create policy invitations_select_own on public.couple_invitations
     for select to authenticated using (created_by = auth.uid());
 
+drop policy if exists invitations_insert_own on public.couple_invitations;
 create policy invitations_insert_own on public.couple_invitations
     for insert to authenticated
     with check (created_by = auth.uid() and public.is_workspace_member(workspace_id));
 
+drop policy if exists invitations_update_own on public.couple_invitations;
 create policy invitations_update_own on public.couple_invitations
     for update to authenticated
     using (created_by = auth.uid()) with check (created_by = auth.uid());
 
 -- Records: full access for workspace members, none for anyone else.
+drop policy if exists records_select on public.records;
 create policy records_select on public.records
     for select to authenticated using (public.is_workspace_member(workspace_id));
 
+drop policy if exists records_insert on public.records;
 create policy records_insert on public.records
     for insert to authenticated
     with check (created_by = auth.uid() and public.is_workspace_member(workspace_id));
 
+drop policy if exists records_update on public.records;
 create policy records_update on public.records
     for update to authenticated
     using (public.is_workspace_member(workspace_id))
@@ -309,12 +333,15 @@ create policy records_update on public.records
 
 -- No delete policy: records are tombstoned via deleted_at so the delete can sync.
 
+drop policy if exists document_blobs_select on public.document_blobs;
 create policy document_blobs_select on public.document_blobs
     for select to authenticated using (public.is_workspace_member(workspace_id));
 
+drop policy if exists document_blobs_insert on public.document_blobs;
 create policy document_blobs_insert on public.document_blobs
     for insert to authenticated with check (public.is_workspace_member(workspace_id));
 
+drop policy if exists document_blobs_update on public.document_blobs;
 create policy document_blobs_update on public.document_blobs
     for update to authenticated
     using (public.is_workspace_member(workspace_id))

@@ -9,6 +9,7 @@ insert into storage.buckets (id, name, public)
 values ('documents', 'documents', false)
 on conflict (id) do nothing;
 
+drop policy if exists documents_select on storage.objects;
 create policy documents_select on storage.objects
     for select to authenticated
     using (
@@ -16,6 +17,7 @@ create policy documents_select on storage.objects
         and public.is_workspace_member(((storage.foldername(name))[1])::uuid)
     );
 
+drop policy if exists documents_insert on storage.objects;
 create policy documents_insert on storage.objects
     for insert to authenticated
     with check (

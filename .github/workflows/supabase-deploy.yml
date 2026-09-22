@@ -1,0 +1,89 @@
+name: Supabase Deploy
+
+# Applies pending migrations to the live project, and does it *before* the release that needs
+# them exists. That ordering is the whole point: a tag whose APK expects a column the database
+# does not have yet breaks sync on both phones silently, with no error on either one. Until now
+# the only thing standing between a tag and that outcome was remembering to apply by hand.
+#
+# Written as a reusable workflow so there is exactly one copy of it: `android-release.yml` calls
+# it as a job the release waits on, and `workflow_dispatch` runs it on its own when the schema
+# needs to move without cutting a release.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  # Never two of these against the same database at once.
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    # A protected environment, so GitHub can hold the job for a manual approval and record who
+    # gave it. Set up under Settings > Environments > production; without the environment
+    # configured this simply runs, which is why the approval is a setting and not a code path.
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Check deploy secrets
+        env:
+          ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          missing=""
+          [ -z "$ACCESS_TOKEN" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -z "$DB_PASSWORD" ] && missing="$missing SUPABASE_DB_PASSWORD"
+          [ -z "$PROJECT_REF" ] && missing="$missing SUPABASE_PROJECT_REF"
+          if [ -n "$missing" ]; then
+            echo "::error::missing secret(s):$missing. Nothing was applied."
+            exit 1
+          fi
+
+      # The clean-room proof, first and always: every migration from scratch on an empty
+      # database, then the pgTAP suite. A migration that only works against an already-migrated
+      # database fails here, where failing costs nothing.
+      - name: Start local Supabase
+        run: supabase start -x realtime,imgproxy,studio,logflare,vector,supavisor,mailpit
+
+      - name: Apply migrations from scratch
+        run: supabase db reset
+
+      - name: Access-control tests
+        run: supabase test db
+
+      - name: Stop local Supabase
+        run: supabase stop --no-backup
+
+      - name: Link to the live project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      # What would be applied, printed before anything is, so the run's log is the record of
+      # what this tag changed about the schema.
+      - name: Pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase migration list --linked
+
+      - name: Apply to the live project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push --linked
+
+      - name: Confirm the histories agree
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase migration list --linked

@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -38,6 +39,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.HorizontalDivider
@@ -79,6 +81,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -190,8 +194,6 @@ fun FeedingScreen(
                     return@Column
                 }
 
-                VitaminCard(uiState = uiState, actions = actions)
-
                 CountdownCard(
                     countdown = uiState.countdown,
                     guidance = uiState.guidance,
@@ -201,6 +203,8 @@ fun FeedingScreen(
                 Button(onClick = actions::onLogFeedClick, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.feeding_log_feed))
                 }
+
+                VitaminRow(uiState = uiState, actions = actions)
 
                 HistoryViewToggle(selected = uiState.historyView, actions = actions)
 
@@ -331,67 +335,116 @@ fun FeedingScreen(
 private const val DEFAULT_VITAMIN_MINUTE_OF_DAY = 18 * 60
 
 /**
- * The daily vitamin: was it given today, and when does the reminder fire.
+ * The daily vitamin, as one line in the day-sheet.
  *
- * A tick rather than a log sheet, because there is nothing to record beyond "yes, and at this
- * time" — and the tick is shared, so whichever parent gives it, the other's phone stops asking.
- * Long-pressing opens the fortnight behind it. There is deliberately no streak: a run of days
- * broken by one forgotten evening is a worse thing to show a tired parent than a plain list.
+ * It was a card at the top of the screen: three stacked lines and a filled button, the visual
+ * weight of a primary feature for something that is one tap a day and sat above the countdown
+ * that people actually open this screen for. It is now a single row under "Log a feed", which
+ * is where the thought arrives anyway — you have just written down a feed, and the vitamin is
+ * the other thing that happens once a day.
+ *
+ * Not a [com.oryareach.core.ui.component.CollapsibleDrawer]: that bar means "finished rows you
+ * can ignore" everywhere else in the app, and it would put the one thing worth knowing — was it
+ * given — behind a tap. The answer stays on screen; only the fortnight behind it is hidden.
+ *
+ * The ring is the state and the control at once, the way a box on a paper chart is: hollow for
+ * a dose still to give, filled with a tick once it is done. Tapping the row ticks it, tapping
+ * again takes it back, and the time on the right opens the reminder picker. Long-pressing still
+ * opens the last two weeks.
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun VitaminCard(uiState: FeedingUiState, actions: FeedingActions) {
+private fun VitaminRow(uiState: FeedingUiState, actions: FeedingActions) {
     val given = uiState.vitaminDoseToday
+    val status = given?.let {
+        stringResource(R.string.vitamin_given_short, it.givenAtEpochMillis.toTimeLabel())
+    } ?: stringResource(R.string.vitamin_not_yet)
+    val spoken = stringResource(
+        if (given == null) R.string.vitamin_row_pending_description else R.string.vitamin_row_given_description,
+        status,
+    )
 
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
             .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {},
+                onClick = actions::onVitaminToggle,
                 onLongClick = actions::onOpenVitaminHistory,
-            ),
+                onClickLabel = spoken,
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.vitamin_title),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = given?.let {
-                        stringResource(R.string.vitamin_given_at, it.givenAtEpochMillis.toTimeLabel())
-                    } ?: stringResource(R.string.vitamin_not_yet),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextButton(onClick = actions::onOpenVitaminTimePicker, contentPadding = PaddingValues(0.dp)) {
-                    Text(
-                        text = uiState.vitaminMinuteOfDay
-                            ?.let { stringResource(R.string.vitamin_reminder_at, it.toTimeLabel()) }
-                            ?: stringResource(R.string.vitamin_set_time),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-            }
+        VitaminMark(given = given != null)
 
-            if (given == null) {
-                Button(onClick = actions::onVitaminToggle) {
-                    Text(stringResource(R.string.vitamin_mark_given))
-                }
-            } else {
-                OutlinedButton(onClick = actions::onVitaminToggle) {
-                    Text(stringResource(R.string.vitamin_undo_given))
-                }
-            }
+        Text(
+            text = stringResource(R.string.vitamin_title),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+
+        // Its own target, because setting the hour and giving the dose are different acts and
+        // one should never be a mis-tap for the other.
+        TextButton(
+            onClick = actions::onOpenVitaminTimePicker,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Text(
+                text = uiState.vitaminMinuteOfDay?.toTimeLabel()
+                    ?: stringResource(R.string.vitamin_set_time_short),
+                style = MaterialTheme.typography.labelMedium,
+            )
         }
     }
 }
+
+/**
+ * The tick itself. Drawn rather than iconised so the hollow and the filled state are the same
+ * ring at the same weight — swapping between two icons makes the mark jump, and this is a
+ * thing people look at once a day for a year.
+ *
+ * The fill animates because it answers a tap; nothing else here moves.
+ */
+@Composable
+private fun VitaminMark(given: Boolean) {
+    val ring = MaterialTheme.colorScheme.outline
+    val filled = MaterialTheme.colorScheme.primary
+    val onFilled = MaterialTheme.colorScheme.onPrimary
+    val fill by animateFloatAsState(if (given) 1f else 0f, label = "vitaminFill")
+
+    Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val radius = size.minDimension / 2f
+            drawCircle(color = filled, radius = radius * fill)
+            drawCircle(
+                color = if (given) filled else ring,
+                radius = radius - STROKE_WIDTH_DP.dp.toPx() / 2f,
+                style = Stroke(width = STROKE_WIDTH_DP.dp.toPx()),
+            )
+        }
+        if (given) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = onFilled,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
+}
+
+/** Thin enough to read as a pencil mark rather than a button. */
+private const val STROKE_WIDTH_DP = 1.5f
+
 
 /**
  * The fortnight behind the card, one line per day. Days with no dose are listed as missed rather

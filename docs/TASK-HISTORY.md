@@ -137,10 +137,26 @@ who is present, so a member cannot announce a device in someone else's name, can
 clear the partner's heartbeat, and cannot see another workspace's at all. The suite is 73/73 from a
 `db reset`.
 
-**Worth writing down:** the `Supabase Access Control` workflow does **not** deploy migrations. It
-starts a throwaway Supabase inside the runner, runs `db reset` and `test db`, and throws it away —
-it proves a migration applies from scratch, nothing more. Applying to the live project is still a
-manual step before tagging.
+**Migrations now have a pipeline, and by-hand is over.** `supabase-deploy.yml` is a reusable
+workflow that proves every migration on an empty database (`db reset` + `test db`) and only then
+links and pushes to the live project; `android-release.yml` calls it as a job the release waits on,
+so on a tag the schema lands before the APK. It also runs on `workflow_dispatch` for a schema
+change without a release. `CLAUDE.md` carries the rule: nothing else applies migrations — not a
+local CLI, not an agent with database access. The `Supabase Access Control` workflow is unchanged
+and still deploys nothing; it is the clean-room check on branch pushes.
+
+**The schema history was reconciled** the same day: `0007`–`0011` had been recorded under
+timestamps (applied through the MCP, which names a migration for when it ran) and `0012` not at
+all, so the six timestamped rows were replaced with `0007`–`0012`. Bookkeeping only; row counts
+checked either side. `0013_device_presence` is left **pending on purpose** — its table exists from
+a hand-apply, its history row was removed, and the pipeline's first job will record it as the
+no-op it now is.
+
+**All thirteen migrations are genuinely idempotent now, which they were not.** `0001_init.sql` was
+plain `create table` / `create type` / `create index` / `create trigger` / `create policy`
+throughout and failed on a second run; `0005_document_storage.sql`'s two storage policies had no
+guard. Both fixed, and proved: every file re-applied against a fully-migrated database, 13/13 clean,
+with seeded rows intact byte for byte afterwards.
 
 ---
 
