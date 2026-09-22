@@ -102,9 +102,9 @@ birth* as "not logged", and the stash's milestone read "0.5 litres pumped, all i
 "796 ml pumped, all told", which reads as a contradiction rather than a threshold ("Past 0.5
 litres" now).
 
-**Still unseen:** the milestone burst (the log is at 31 feeds; the first milestone is 50), and the
-Book of Love, which needs the partner to have touched something in the last five minutes. Both wait
-for the Pixel pass.
+**Still unseen:** the feed milestone burst — the log is at 32 feeds and the first milestone is 50,
+and faking 18 feeds into the real log is not worth it. It will show itself. (The Book of Love was
+seen on both phones in v1.10.0, see below.)
 
 ---
 
@@ -115,7 +115,7 @@ shopping item in the last five minutes, which says yes long after they have put 
 no while they sit reading the app without touching anything. What it wanted to know was whether
 both of you are holding your phones at the same moment.
 
-**`device_presence` (migration 0013, not yet applied).** One row per device: device id, whose it
+**`device_presence` (migration 0013, applied by the pipeline on v1.10.0).** One row per device: device id, whose it
 is, and when it last said hello. Each phone upserts its own row every 30 seconds while the app is
 on screen — the heartbeat rides `ForegroundSyncController`'s existing poll rather than owning a
 timer — and deletes it on the way out. A heartbeat counts for 90 seconds
@@ -157,6 +157,45 @@ plain `create table` / `create type` / `create index` / `create trigger` / `crea
 throughout and failed on a second run; `0005_document_storage.sql`'s two storage policies had no
 guard. Both fixed, and proved: every file re-applied against a fully-migrated database, 13/13 clean,
 with seeded rows intact byte for byte afterwards.
+
+---
+
+## 2026-09-22 (night) — v1.10.0 to v1.10.2 on both phones
+
+**The pipeline's first real run.** v1.10.0 stopped at the migrations job until the user added
+`SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` to the `production` environment; once approved it
+recorded `0013` as designed, and the live history now reads `0001`–`0013` by filename. v1.10.1 and
+v1.10.2 each re-ran it as a no-op. (A parallel session reworked the CI the same evening — build in
+parallel with migrations, then publish — see `fb10853`/`aa714e3`.)
+
+**Checked on the Xiaomi (English, dark) and the Pixel (Hebrew, dark), release builds:**
+- Presence: the dot and "your partner is here right now" / "בן/בת הזוג כאן עכשיו" on both within
+  one 30s beat; the Book of Love opens on both only while the other phone is open, and says so in
+  its own words now — **"Will do" / "אעשה את זה"**, not the date picker's "Set", which the import
+  dialog was also borrowing (now "OK" / "אישור").
+- The vitamin row renders compact under "Log a feed", right-to-left in Hebrew; a tick on the Pixel
+  showed on the Xiaomi within ~5s, undo from either phone clears it for both; the history dialog
+  starts at the birth date.
+- Night watch: 32 feeds in all, 1.3 litres, "logging since 18 September · 5 days in". Stash: hours
+  and minutes, "Past 0.5 litres". Every tab renders.
+- **The milk drops were near invisible** (v1.10.2 fix): they were filled with `surfaceBright`, a
+  grey-purple one step off the dark background. Now a fixed milk white with a warm `primary` rim,
+  a little larger — confirmed on screen recordings from both phones.
+
+**A testing accident, recovered.** Cleaning up a test pumping session, a tap aimed at the Undo
+snackbar's X landed on the next row's trash icon after the snackbar had gone — twice — deleting
+two real sessions (14:04, 98 ml; 18:31, 85 ml). Trash has no confirmation. Both were restored with
+the user's OK by un-tombstoning exactly those two `records` rows (`deleted_at = null`,
+`updated_at = now()`, `version + 1`): the ciphertext survives a delete and `applyRemote` takes the
+un-delete, so both phones pulled them back intact. Every other deletion in the window was checked
+against the server and was test data or the user's own.
+
+**Open from this pass:**
+- The presence goodbye can fail with a 401 as the app backgrounds (seen once on the Pixel), so the
+  partner's dot can linger up to the 90s window. Suspect: supabase-kt's own lifecycle hook dropping
+  the session before our `onStop` delete lands. Harmless; not chased.
+- Deleting a pump session (and a feed) is one tap with only an Undo snackbar. Worth a thought
+  whether that is enough for the real log.
 
 ---
 
