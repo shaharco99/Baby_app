@@ -27,6 +27,10 @@ release before applying one breaks sync silently.
    means unpairing and re-joining. Parked by the user 2026-09-21 as too disruptive for the payoff.
 3. **`device_keys` stale-on-reuse fix, on a real phone.** Needs a full leave-and-rejoin. The fix is
    in and the live rows were checked in the database. Parked for the same reason.
+4. **Confirm before deleting a session.** The user's decision, 2026-09-22: deleting a pumping
+   session — and a feed, same one-tap trash — gets a confirm dialog naming what goes ("Delete the
+   14:04 session, 98 ml?"). Today it is one tap plus an Undo snackbar, and one mistimed tap deleted
+   two real sessions during testing (see the v1.10 pass below). Keep the Undo snackbar as well.
 
 **Small open items:**
 - No Macrobenchmark startup module. It needs a spare device or an emulator; a benchmark build
@@ -194,8 +198,8 @@ against the server and was test data or the user's own.
 - The presence goodbye can fail with a 401 as the app backgrounds (seen once on the Pixel), so the
   partner's dot can linger up to the 90s window. Suspect: supabase-kt's own lifecycle hook dropping
   the session before our `onStop` delete lands. Harmless; not chased.
-- Deleting a pump session (and a feed) is one tap with only an Undo snackbar. Worth a thought
-  whether that is enough for the real log.
+- Deleting a pump session (and a feed) is one tap with only an Undo snackbar — the user decided it
+  gets a confirm dialog; tracked as item 4 under "Still open".
 
 ---
 
