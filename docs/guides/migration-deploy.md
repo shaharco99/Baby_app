@@ -49,14 +49,18 @@ it is kept with the other two so that the whole deploy configuration lives in on
 ## What the workflow does
 
 `supabase-deploy.yml` is reusable, not triggered directly. `android-release.yml` calls it as the
-`migrations` job and the release waits on it, so on a tag the order is: schema first, APK second.
-`workflow_dispatch` runs it alone when the schema needs to move without a release.
+`migrations` job, and the release's `publish` job waits on it, so on a tag the order is: schema
+first, APK second. The APK itself is built alongside the migrations — building touches nothing a
+phone can see, only publishing does. `workflow_dispatch` runs the deploy alone when the schema
+needs to move without a release.
 
-Every run proves the migrations on an empty database before it touches the live one: `supabase
-start`, `db reset`, `test db`, and only then `link` and `db push`. The pending list is printed
-before the push and again after, so the run's log says what that tag changed.
+Every run proves the migrations on an empty database before it touches the live one. The
+`verify` job is `supabase-tests.yml` itself, called rather than copied: `supabase start` on a
+fresh runner (an empty volume, so every migration applies from scratch) and `test db`. Only once
+it passes does the `migrate` job ask for approval, then `link` and `db push`. The pending list is
+printed before the push and again after, so the run's log says what that tag changed.
 
-The job names `production` as its environment. Configuring that environment under
+The `migrate` job names `production` as its environment. Configuring that environment under
 Settings > Environments lets GitHub hold the job for a manual approval and record who gave it —
 worth doing, since this is the one workflow here whose mistakes cannot be fixed by rebuilding.
 

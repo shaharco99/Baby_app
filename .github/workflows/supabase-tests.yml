@@ -1,33 +1,45 @@
 name: Supabase Access Control
 
+# Every migration applied from scratch on an empty database, then the pgTAP suite. Runs on its
+# own for any change under supabase/, and is also called by `supabase-deploy.yml` as the proof a
+# deploy has to pass before it asks for approval — one copy of these steps, not two.
+
 on:
   push:
     branches: [main, 'feature/**']
     paths: ['supabase/**', '.github/workflows/supabase-tests.yml']
   pull_request:
     paths: ['supabase/**', '.github/workflows/supabase-tests.yml']
+  workflow_call:
 
-concurrency:
-  group: supabase-tests-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   access-control:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # A newer push supersedes an older one on the same branch, but a run proving a deploy (called
+    # from a tag or a dispatch) is never cancelled by one — hence the event in the group.
+    concurrency:
+      group: supabase-tests-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.ref_type == 'branch' && github.event_name != 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
 
+      # Pinned, so a CLI release cannot change what "passes" between two runs of the same commit.
       - uses: supabase/setup-cli@v3
         with:
-          version: latest
+          version: 2.117.0
 
-      - name: Start local Supabase
-        run: supabase start -x realtime,imgproxy,studio,logflare,vector,supavisor,mailpit
-
-      # Applies every migration from scratch, so a migration that only works against an
-      # already-migrated database fails here rather than in production.
-      - name: Apply migrations
-        run: supabase db reset
+      # Only what the migrations and tests touch: Postgres, plus auth and storage, whose own
+      # schemas (auth.users, storage.objects) the migrations write policies against. Every other
+      # container is an image pull the suite never uses.
+      #
+      # On a fresh runner the volume is empty, so `start` already applies every migration from
+      # scratch — a following `db reset` would only do the same thing a second time.
+      - name: Start local Supabase and apply migrations from scratch
+        run: supabase start -x realtime,imgproxy,studio,logflare,vector,supavisor,mailpit,edge-runtime,postgrest,postgres-meta,kong
 
       - name: Access-control tests
         run: supabase test db

@@ -7,13 +7,17 @@ on:
   pull_request:
     paths: ['android/**', '.github/workflows/android-ci.yml']
 
+permissions:
+  contents: read
+
 concurrency:
   group: android-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -25,7 +29,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # The configuration cache is only saved between runs when it can be encrypted (it can hold
+      # secrets); with the secret unset this input is empty and setup-gradle just skips it.
       - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
       # setup-gradle only caches ~/.gradle; Kotlin's own incremental-compile state
       # lives under each module's build/ dir and is lost on every fresh runner,
