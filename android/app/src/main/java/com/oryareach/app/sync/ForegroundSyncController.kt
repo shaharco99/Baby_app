@@ -26,6 +26,8 @@ class ForegroundSyncController(
     private val session: SessionState,
     private val poll: () -> Unit,
     private val refreshReminders: suspend () -> Unit,
+    private val heartbeat: suspend () -> Unit,
+    private val goodbye: suspend () -> Unit,
 ) : DefaultLifecycleObserver {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -41,7 +43,13 @@ class ForegroundSyncController(
             // on its own, say, or a reboot that rearmed a due time since superseded.
             if (session.isUnlocked) refreshReminders()
             while (isActive) {
-                if (session.isUnlocked) poll()
+                if (session.isUnlocked) {
+                    poll()
+                    // The presence heartbeat rides this loop rather than owning a timer: being
+                    // on screen is exactly the condition it reports, and it is the condition
+                    // this loop already runs under.
+                    heartbeat()
+                }
                 delay(INTERVAL_MILLIS)
             }
         }
@@ -50,6 +58,9 @@ class ForegroundSyncController(
     override fun onStop(owner: LifecycleOwner) {
         loop?.cancel()
         loop = null
+        // Said in its own coroutine, because the loop's has just been cancelled: without this
+        // the phone that was just put down keeps reading as present until its row goes stale.
+        scope.launch { goodbye() }
     }
 
     private companion object {

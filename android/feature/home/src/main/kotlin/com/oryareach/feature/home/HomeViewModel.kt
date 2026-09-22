@@ -20,6 +20,7 @@ import com.oryareach.core.domain.pregnancy.lastPeriodFromDueDate
 import com.oryareach.core.domain.shopping.calculateBudget
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.model.AppSettings
+import com.oryareach.core.sync.PartnerPresence
 import com.oryareach.core.sync.SyncEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,6 +84,7 @@ class HomeViewModel(
     private val shoppingRepository: ShoppingItemRepository,
     private val importantDateRepository: ImportantDateRepository,
     private val auth: AuthRepository,
+    private val presence: PartnerPresence,
     private val syncEngine: SyncEngine,
     private val workspaceId: () -> String?,
     private val today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
@@ -399,25 +401,17 @@ class HomeViewModel(
     override fun onDismissImportResult() = set { it.copy(importResult = null) }
 
     /**
-     * Book of Love easter egg: only surfaces when the partner looks "around right now". There's
-     * no live presence channel (see `[DAO].lastActivityByOthers` doc comment), so this is a
-     * recency proxy — the partner's most recent task/shopping edit within the last few minutes.
+     * Book of Love easter egg: only surfaces when both of you have the app open at the same
+     * moment, which is the whole point of it — a tip meant for two people reading it together.
+     *
+     * It used to ask whether the partner had *edited* something in the last five minutes, which
+     * is a different question: it said yes long after they had put the phone down, and no while
+     * they sat reading the app without touching anything. [PartnerPresence] answers the real
+     * one, from a heartbeat each phone writes while its app is on screen.
      */
     override fun onMoonLongPress() {
-        val workspace = workspaceId() ?: return
-        val selfUserId = auth.currentUserId() ?: return
-
-        viewModelScope.launch {
-            val lastActivity = maxOf(
-                taskRepository.lastActivityByOthers(workspace, selfUserId) ?: 0L,
-                shoppingRepository.lastActivityByOthers(workspace, selfUserId) ?: 0L,
-            )
-            val recentlyActive = lastActivity > 0L &&
-                System.currentTimeMillis() - lastActivity <= PARTNER_RECENTLY_ACTIVE_WINDOW_MS
-            if (recentlyActive) {
-                set { it.copy(bookOfLoveVisible = true) }
-            }
-        }
+        if (!presence.isPartnerHere.value) return
+        set { it.copy(bookOfLoveVisible = true) }
     }
 
     override fun onDismissBookOfLove() = set { it.copy(bookOfLoveVisible = false) }
@@ -453,7 +447,6 @@ class HomeViewModel(
     }
 
     private companion object {
-        const val PARTNER_RECENTLY_ACTIVE_WINDOW_MS = 5 * 60 * 1000L
         const val MAX_WEIGHT_DIGITS = 5
     }
 }

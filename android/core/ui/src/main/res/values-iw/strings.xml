@@ -2,6 +2,7 @@
 <resources>
     <string name="app_drawer_title">שנינו ביחד</string>
     <string name="app_drawer_subtitle">שחר וטופז</string>
+    <string name="app_partner_here">בן/בת הזוג כאן עכשיו</string>
     <string name="app_drawer_open">פתיחת תפריט ניווט</string>
     <string name="day_label_today">היום</string>
     <string name="day_label_yesterday">אתמול</string>

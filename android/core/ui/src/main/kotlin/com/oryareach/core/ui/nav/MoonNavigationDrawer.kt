@@ -1,6 +1,7 @@
 package com.oryareach.core.ui.nav
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -67,7 +68,13 @@ fun MoonNavigationDrawer(
     headerTitle: String,
     headerSubtitle: String,
     modifier: Modifier = Modifier,
+    /** Shown under the subtitle when the partner has their app open right now. */
+    partnerHereLabel: String? = null,
 ) {
+    // The lit end of the moon's own glow: the one warm colour in this always-dark sheet, so
+    // "she is here" reads as a light being on rather than as a status LED.
+    val presentGlow = NightPalette.glowStart
+
     ModalDrawerSheet(
         modifier = modifier,
         drawerContainerColor = NightPalette.sky,
@@ -86,6 +93,23 @@ fun MoonNavigationDrawer(
                 color = NightPalette.textMuted,
                 modifier = Modifier.padding(top = 4.dp),
             )
+            partnerHereLabel?.let { label ->
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        // One announcement, not a dot and a sentence read separately.
+                        .semantics(mergeDescendants = true) { contentDescription = label },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Canvas(Modifier.size(8.dp)) { drawCircle(color = presentGlow) }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NightPalette.text,
+                    )
+                }
+            }
         }
         HorizontalDivider(color = NightPalette.moonRim.copy(alpha = 0.35f))
         Column(Modifier.padding(vertical = 12.dp, horizontal = 12.dp)) {

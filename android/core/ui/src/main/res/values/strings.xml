@@ -2,6 +2,7 @@
 <resources>
     <string name="app_drawer_title">Takes Two of Us</string>
     <string name="app_drawer_subtitle">Shahar &amp; Topaz</string>
+    <string name="app_partner_here">Your partner is here right now</string>
     <string name="app_drawer_open">Open navigation menu</string>
     <string name="day_label_today">Today</string>
     <string name="day_label_yesterday">Yesterday</string>

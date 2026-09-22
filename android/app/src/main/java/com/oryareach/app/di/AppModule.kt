@@ -47,6 +47,7 @@ import com.oryareach.core.security.LocalDataWiper
 import com.oryareach.core.sync.RecordCodec
 import com.oryareach.core.sync.SyncEngine
 import com.oryareach.core.sync.SyncStore
+import com.oryareach.core.sync.PartnerPresence
 import com.oryareach.core.sync.SyncTrigger
 import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.sync.WorkspaceKeyProvider
@@ -115,6 +116,8 @@ val appModule = module {
                 get<PumpReminderRefresher>().refresh()
                 get<VitaminReminderRefresher>().refresh()
             },
+            heartbeat = { get<PartnerPresence>().heartbeat() },
+            goodbye = { get<PartnerPresence>().goodbye() },
         )
     }
     single<ReminderScheduler> { WorkManagerReminderScheduler(androidContext()) }
@@ -326,6 +329,7 @@ val appModule = module {
             shoppingRepository = get(),
             importantDateRepository = get(),
             auth = get(),
+            presence = get(),
             syncEngine = get(),
             workspaceId = { get<SessionState>().workspaceId },
         )

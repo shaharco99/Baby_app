@@ -108,6 +108,42 @@ for the Pixel pass.
 
 ---
 
+## 2026-09-22 (later) — presence, and what the Book of Love now asks
+
+The Book of Love asked the wrong question. It surfaced when the partner had *edited* a task or a
+shopping item in the last five minutes, which says yes long after they have put the phone down and
+no while they sit reading the app without touching anything. What it wanted to know was whether
+both of you are holding your phones at the same moment.
+
+**`device_presence` (migration 0013, not yet applied).** One row per device: device id, whose it
+is, and when it last said hello. Each phone upserts its own row every 30 seconds while the app is
+on screen — the heartbeat rides `ForegroundSyncController`'s existing poll rather than owning a
+timer — and deletes it on the way out. A heartbeat counts for 90 seconds
+(`PRESENCE_WINDOW_MILLIS`), comfortably more than the gap between beats, so one dropped request
+does not blink the dot off. Nothing about the couple, the child or the workspace's contents is in
+the table; there is nothing there to encrypt.
+
+Deliberately **not** Supabase Realtime: the app has no websocket anywhere, and adding one for a
+presence dot would mean a transport to keep alive, reconnect and pay for in battery. `PartnerPresence`
+in `:core:sync` is the seam, `SupabasePartnerPresence` in `:core:network` the implementation, and
+failure is swallowed exactly like the wake-up's — presence is an ornament on a sync that works
+without it.
+
+Shown in two places: the Book of Love now opens only when the partner is actually present, and the
+drawer header carries a lit dot with "your partner is here right now".
+
+`supabase/tests/006_device_presence.sql` covers the part that matters — the table is a claim about
+who is present, so a member cannot announce a device in someone else's name, cannot refresh or
+clear the partner's heartbeat, and cannot see another workspace's at all. The suite is 73/73 from a
+`db reset`.
+
+**Worth writing down:** the `Supabase Access Control` workflow does **not** deploy migrations. It
+starts a throwaway Supabase inside the runner, runs `db reset` and `test db`, and throws it away —
+it proves a migration applies from scratch, nothing more. Applying to the live project is still a
+manual step before tagging.
+
+---
+
 ## Known limits, by design
 
 - **Force-stop** (Settings → Force stop, or MIUI "clean" on a non-whitelisted app) drops all of an

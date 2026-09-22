@@ -273,6 +273,10 @@ private fun HomeRoute() {
     val drawerState = androidx.compose.material3.rememberDrawerState(androidx.compose.material3.DrawerValue.Closed)
     val drawerScope = androidx.compose.runtime.rememberCoroutineScope()
     val activity = LocalActivity.current
+    // Presence is read here rather than in a feature: the drawer belongs to :app, and the
+    // heartbeat behind this is driven by the foreground controller next to it.
+    val presence: com.oryareach.core.sync.PartnerPresence = org.koin.compose.koinInject()
+    val partnerHere by presence.isPartnerHere.collectAsStateWithLifecycle()
 
     // A plain visited-tab history so the system back button walks back through the tabs the user
     // actually opened, then to Home, before it ever leaves the app — still not a NavHost, just a
@@ -327,6 +331,8 @@ private fun HomeRoute() {
             MoonNavigationDrawer(
                 headerTitle = stringResource(com.oryareach.core.ui.R.string.app_drawer_title),
                 headerSubtitle = stringResource(com.oryareach.core.ui.R.string.app_drawer_subtitle),
+                partnerHereLabel = stringResource(com.oryareach.core.ui.R.string.app_partner_here)
+                    .takeIf { partnerHere },
                 items = listOf(
                     MoonNavItem(
                         label = stringResource(com.oryareach.feature.home.R.string.home_title),

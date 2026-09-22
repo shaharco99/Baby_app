@@ -7,12 +7,14 @@ import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.network.auth.EncryptedSessionManager
 import com.oryareach.core.network.auth.SupabaseAuthRepository
 import com.oryareach.core.network.push.PushTokenRepository
+import com.oryareach.core.network.presence.SupabasePartnerPresence
 import com.oryareach.core.network.push.SupabasePartnerWakeUp
 import com.oryareach.core.network.push.SupabasePushTokenRepository
 import com.oryareach.core.network.workspace.SupabaseWorkspaceRepository
 import com.oryareach.core.network.workspace.WorkspaceRepository
 import com.oryareach.core.security.KeystoreBlobStore
 import com.oryareach.core.sync.DocumentBlobStore
+import com.oryareach.core.sync.PartnerPresence
 import com.oryareach.core.sync.PartnerWakeUp
 import com.oryareach.core.sync.RecordRemoteDataSource
 import io.github.jan.supabase.SupabaseClient
@@ -41,6 +43,15 @@ val networkModule = module {
     single<PartnerWakeUp> {
         @Suppress("UNCHECKED_CAST")
         SupabasePartnerWakeUp(
+            client = get(),
+            workspaceId = get(workspaceIdQualifier) as () -> String?,
+            deviceId = get(pushDeviceIdQualifier) as () -> String?,
+        )
+    }
+
+    single<PartnerPresence> {
+        @Suppress("UNCHECKED_CAST")
+        SupabasePartnerPresence(
             client = get(),
             workspaceId = get(workspaceIdQualifier) as () -> String?,
             deviceId = get(pushDeviceIdQualifier) as () -> String?,
