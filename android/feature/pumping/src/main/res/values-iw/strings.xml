@@ -44,7 +44,7 @@
     <string name="pumping_stash_feeds">בערך %1$d האכלות</string>
     <string name="pumping_stash_sessions">%1$d שאיבות, %2$s על המשאבה</string>
     <string name="pumping_stash_best_day">היום הטוב ביותר: %1$d מ״ל</string>
-    <string name="pumping_stash_milestone">%1$s ליטר נשאבו, בסך הכול</string>
+    <string name="pumping_stash_milestone">עברת %1$s ליטר</string>
     <string-array name="pumping_stash_praise">
         <item>הכול מגיע ממך. פשוט מדהים.</item>
         <item>כל טיפה שם היא שעה שוויתרת עליה.</item>

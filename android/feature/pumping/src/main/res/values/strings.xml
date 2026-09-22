@@ -44,7 +44,7 @@
     <string name="pumping_stash_feeds">About %1$d feeds\' worth</string>
     <string name="pumping_stash_sessions">%1$d sessions, %2$s on the pump</string>
     <string name="pumping_stash_best_day">Best day: %1$d ml</string>
-    <string name="pumping_stash_milestone">%1$s litres pumped, all in</string>
+    <string name="pumping_stash_milestone">Past %1$s litres</string>
     <string-array name="pumping_stash_praise">
         <item>Made out of nothing but you. Quietly astonishing.</item>
         <item>Every drop of that was an hour you gave up.</item>

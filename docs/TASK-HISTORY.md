@@ -88,10 +88,23 @@ and a litre milestone. The feed that actually lands on a milestone now gets the 
 which moved from `:feature:pumping` to `:core:ui`'s `component/DropFall.kt` as `DropBurst`/`DropFall`
 so both logs can use it.
 
-**Checked:** `./gradlew test lint :app:assembleDebug` green, 112 domain tests; local Supabase
-`db reset` applied 0001–0012 and `test db` ran 66/66; `0012` is on the live project too, with
-`vitamin_dose` in `public.entity_type`. **Not yet checked on a phone** — none of the
-above has been seen rendering.
+**Checked on the Xiaomi (v1.9.0, English then Hebrew).** The reminder is the part worth recording:
+armed exact for 18:00 (`window=0`, `exactAllowReason=policy_permission`), the notification posted at
+18:00:00.9 on the `vitamin-reminders` channel, and **the next day's alarm armed itself** for
+23.9 18:00 — the re-arm chain is the thing most likely to be quietly broken, and it holds. The tick
+reached Supabase as a `vitamin_dose` row; undo removed it. Age read "6 days old" / "בגיל 6 ימים",
+with no second line in the first week, as designed. The night watch showed 31 feeds in all, 1.3
+litres and "logging since 18 September", with no longest-stretch line; the stash showed 11h 46m
+rather than 706 raw minutes.
+
+**Two things the device pass caught, fixed in v1.9.1:** the vitamin history listed days *before the
+birth* as "not logged", and the stash's milestone read "0.5 litres pumped, all in" directly under
+"796 ml pumped, all told", which reads as a contradiction rather than a threshold ("Past 0.5
+litres" now).
+
+**Still unseen:** the milestone burst (the log is at 31 feeds; the first milestone is 50), and the
+Book of Love, which needs the partner to have touched something in the last five minutes. Both wait
+for the Pixel pass.
 
 ---
 

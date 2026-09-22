@@ -244,6 +244,7 @@ fun FeedingScreen(
         VitaminHistoryDialog(
             doses = uiState.vitaminHistory,
             today = uiState.today,
+            birthDate = uiState.baby?.birthDate,
             onDismiss = actions::onDismissVitaminHistory,
         )
     }
@@ -397,13 +398,22 @@ private fun VitaminCard(uiState: FeedingUiState, actions: FeedingActions) {
  * than left out: "nothing here" and "we forgot" look the same in a list that only shows hits.
  */
 @Composable
-private fun VitaminHistoryDialog(doses: List<VitaminDose>, today: LocalDate?, onDismiss: () -> Unit) {
+private fun VitaminHistoryDialog(
+    doses: List<VitaminDose>,
+    today: LocalDate?,
+    birthDate: LocalDate?,
+    onDismiss: () -> Unit,
+) {
     val zone = TimeZone.currentSystemDefault()
     val givenDays = doses.associateBy { dose ->
         Instant.fromEpochMilliseconds(dose.givenAtEpochMillis).toLocalDateTime(zone).date
     }
     val lastDay = today ?: Clock.System.todayIn(zone)
-    val days = (0 until VITAMIN_HISTORY_DAYS).map { lastDay.minus(it, DateTimeUnit.DAY) }
+    // Stops at the birth: a day before the child existed is not a day the vitamin was missed,
+    // and listing it as "not logged" reads as an accusation about nothing.
+    val days = (0 until VITAMIN_HISTORY_DAYS)
+        .map { lastDay.minus(it, DateTimeUnit.DAY) }
+        .filter { birthDate == null || it >= birthDate }
 
     AlertDialog(
         onDismissRequest = onDismiss,
