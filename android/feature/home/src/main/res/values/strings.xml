@@ -24,6 +24,7 @@
     <string name="home_save">Save</string>
     <string name="home_pick_confirm">Set</string>
     <string name="home_pick_cancel">Cancel</string>
+    <string name="home_ok">OK</string>
     <string name="home_edit_due_date">Edit last period and name</string>
     <string name="home_import_from_web">Import from web app</string>
     <string name="home_import_done">Import complete</string>
@@ -34,6 +35,7 @@
     <string name="home_budget_paid_by_us">₪%1$.2f paid by us</string>
     <string name="home_budget_gifts">₪%1$.2f received as gifts</string>
     <string name="home_book_of_love_title">Book of Love</string>
+    <string name="home_book_of_love_close">Will do</string>
     <string name="home_child_unnamed">Baby</string>
     <string name="home_baby_was_born">The baby is here — add the birth details</string>
     <string name="home_edit_birth_details">Edit birth details</string>

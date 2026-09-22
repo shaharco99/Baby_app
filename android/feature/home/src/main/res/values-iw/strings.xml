@@ -24,6 +24,7 @@
     <string name="home_save">שמור</string>
     <string name="home_pick_confirm">אישור</string>
     <string name="home_pick_cancel">ביטול</string>
+    <string name="home_ok">אישור</string>
     <string name="home_edit_due_date">עריכת הווסת האחרונה והשם</string>
     <string name="home_import_from_web">ייבוא מהאתר</string>
     <string name="home_import_done">הייבוא הושלם</string>
@@ -34,6 +35,7 @@
     <string name="home_budget_paid_by_us">₪%1$.2f שילמנו</string>
     <string name="home_budget_gifts">₪%1$.2f קיבלנו במתנה</string>
     <string name="home_book_of_love_title">ספר האהבה</string>
+    <string name="home_book_of_love_close">אעשה את זה</string>
     <string name="home_child_unnamed">תינוק/ת</string>
     <string name="home_baby_was_born">התינוק/ת כאן — הוספת פרטי הלידה</string>
     <string name="home_edit_birth_details">עריכת פרטי הלידה</string>

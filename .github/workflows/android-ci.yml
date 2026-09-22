@@ -29,11 +29,9 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # The configuration cache is only saved between runs when it can be encrypted (it can hold
-      # secrets); with the secret unset this input is empty and setup-gradle just skips it.
+      # No cache-encryption-key: in setup-gradle v6, carrying the configuration cache between
+      # runs is gated behind a Develocity licence, so the key alone saves nothing (tried).
       - uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
       # setup-gradle only caches ~/.gradle; Kotlin's own incremental-compile state
       # lives under each module's build/ dir and is lost on every fresh runner,

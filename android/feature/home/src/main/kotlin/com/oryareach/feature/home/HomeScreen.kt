@@ -204,7 +204,7 @@ fun HomeScreen(
         AlertDialog(
             onDismissRequest = actions::onDismissImportResult,
             confirmButton = {
-                TextButton(onClick = actions::onDismissImportResult) { Text(stringResource(R.string.home_pick_confirm)) }
+                TextButton(onClick = actions::onDismissImportResult) { Text(stringResource(R.string.home_ok)) }
             },
             title = {
                 Text(
@@ -233,7 +233,7 @@ fun HomeScreen(
         AlertDialog(
             onDismissRequest = actions::onDismissBookOfLove,
             confirmButton = {
-                TextButton(onClick = actions::onDismissBookOfLove) { Text(stringResource(R.string.home_pick_confirm)) }
+                TextButton(onClick = actions::onDismissBookOfLove) { Text(stringResource(R.string.home_book_of_love_close)) }
             },
             icon = {
                 Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
