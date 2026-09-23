@@ -34,6 +34,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
@@ -135,8 +136,16 @@ fun FoldersScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
+                // One button opens three actions, so it has to say so and turn into the way out
+                // again: a "+" still reading "New folder" while the menu is open left no way to
+                // tell the tap would close it rather than make a folder.
                 FloatingActionButton(onClick = { fabExpanded = !fabExpanded }) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.folders_add))
+                    Icon(
+                        imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                        contentDescription = stringResource(
+                            if (fabExpanded) R.string.folders_fab_close else R.string.folders_fab_open,
+                        ),
+                    )
                 }
             }
         },
@@ -314,7 +323,9 @@ fun FoldersScreen(
 @Composable
 private fun Breadcrumb(uiState: FoldersUiState, actions: FoldersActions) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        // Vertical padding lives on each crumb instead, so the tap target is ~48dp tall, not
+        // the height of one line of text.
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -325,7 +336,8 @@ private fun Breadcrumb(uiState: FoldersUiState, actions: FoldersActions) {
             } else {
                 MaterialTheme.colorScheme.primary
             },
-            modifier = Modifier.clickable { actions.onNavigateToBreadcrumb(-1) },
+            modifier = Modifier.clickable { actions.onNavigateToBreadcrumb(-1) }
+                .padding(vertical = 12.dp, horizontal = 4.dp),
         )
         uiState.breadcrumb.forEachIndexed { index, folder ->
             // Auto-mirrored: the path reads right-to-left in Hebrew, so the separator has to point
@@ -340,7 +352,8 @@ private fun Breadcrumb(uiState: FoldersUiState, actions: FoldersActions) {
                 text = folder.name,
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isLast) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { actions.onNavigateToBreadcrumb(index) },
+                modifier = Modifier.clickable { actions.onNavigateToBreadcrumb(index) }
+                    .padding(vertical = 12.dp, horizontal = 4.dp),
             )
         }
     }
@@ -353,7 +366,9 @@ private fun FolderRow(
     highlighted: Boolean = false,
     onBoundsChanged: (androidx.compose.ui.geometry.Rect) -> Unit = {},
 ) {
+    // The whole card opens the folder, not just the strip of text holding its name.
     Card(
+        onClick = { actions.onOpenFolder(folder) },
         modifier = Modifier.fillMaxWidth()
             .onGloballyPositioned { onBoundsChanged(it.boundsInRoot()) },
         colors = CardDefaults.cardColors(
@@ -368,7 +383,7 @@ private fun FolderRow(
             Text(
                 text = folder.name,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f).padding(start = 12.dp).clickable { actions.onOpenFolder(folder) },
+                modifier = Modifier.weight(1f).padding(start = 12.dp),
             )
             IconButton(onClick = { actions.onRenameClick(folder) }) {
                 Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.folders_rename_title))
@@ -407,7 +422,9 @@ private fun DocumentRow(
     val scale by animateFloatAsState(if (dragging) 1.04f else 1f, label = "documentDragScale")
     val elevation by animateDpAsState(if (dragging) 10.dp else 0.dp, label = "documentDragElevation")
 
+    // Tap anywhere on the card previews; long-press still starts the drag (pointerInput below).
     Card(
+        onClick = { actions.onPreviewDocument(document) },
         modifier = Modifier.fillMaxWidth()
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {
@@ -456,7 +473,7 @@ private fun DocumentRow(
             Text(
                 text = document.name,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f).padding(start = 12.dp).clickable { actions.onPreviewDocument(document) },
+                modifier = Modifier.weight(1f).padding(start = 12.dp),
             )
             IconButton(onClick = { actions.onRenameDocumentClick(document) }) {
                 Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.folders_rename_document_title))

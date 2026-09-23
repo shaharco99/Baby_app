@@ -4,11 +4,13 @@
     <string name="update_mandatory_notice">עדכון זה נדרש כדי להמשיך להשתמש בשנינו ביחד.</string>
     <string name="update_downloading">מוריד…</string>
     <string name="update_installing">מתקין…</string>
-    <string name="update_failed">העדכון נכשל: %1$s</string>
+    <string name="update_failed_download">ההורדה לא הושלמה. בדקו את החיבור והקישו שוב על התקן.</string>
+    <string name="update_failed_install">אנדרואיד לא התקין את העדכון. הקישו שוב על התקן, או הורידו אותו מדף הגרסה.</string>
     <string name="update_install">התקן</string>
     <string name="update_view_release">צפה בגרסה</string>
     <string name="update_later">מאוחר יותר</string>
     <string name="update_skip">דלג על גרסה זו</string>
     <string name="settings_check_for_updates">בדוק עדכונים</string>
     <string name="settings_up_to_date">יש לך את הגרסה העדכנית ביותר</string>
+    <string name="update_check_failed">לא הצלחנו לבדוק אם יש עדכון. בדקו את החיבור ונסו שוב.</string>
 </resources>

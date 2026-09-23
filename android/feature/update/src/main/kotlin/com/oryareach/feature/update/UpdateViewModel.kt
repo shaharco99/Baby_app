@@ -71,7 +71,7 @@ class UpdateViewModel(
 
             when (val result = downloadResult) {
                 is AppResult.Failure -> set {
-                    it.copy(downloading = false, errorMessage = result.error.toString())
+                    it.copy(downloading = false, errorMessage = R.string.update_failed_download)
                 }
                 is AppResult.Success -> {
                     set { it.copy(downloading = false, installing = true) }
@@ -81,7 +81,7 @@ class UpdateViewModel(
                             is InstallOutcome.PendingUserAction ->
                                 _effects.trySend(UpdateEffect.LaunchInstallConfirmation(outcome.intent))
                             is InstallOutcome.Failed -> set {
-                                it.copy(installing = false, errorMessage = outcome.message)
+                                it.copy(installing = false, errorMessage = R.string.update_failed_install)
                             }
                         }
                     }
@@ -107,14 +107,18 @@ class UpdateViewModel(
     }
 
     private fun check(manual: Boolean) {
-        set { it.copy(checking = true) }
+        set { it.copy(checking = true, manualCheckResult = null) }
         viewModelScope.launch {
             state.recordCheck(System.currentTimeMillis())
 
             when (val result = checker.check()) {
-                is AppResult.Failure -> set { it.copy(checking = false) }
+                is AppResult.Failure -> set {
+                    it.copy(checking = false, manualCheckResult = if (manual) R.string.update_check_failed else null)
+                }
                 is AppResult.Success -> when (val availability = result.data) {
-                    UpdateAvailability.UpToDate -> set { it.copy(checking = false) }
+                    UpdateAvailability.UpToDate -> set {
+                        it.copy(checking = false, manualCheckResult = if (manual) R.string.settings_up_to_date else null)
+                    }
 
                     is UpdateAvailability.Available -> {
                         val skipped = !manual && state.isSkipped(availability.manifest.version)

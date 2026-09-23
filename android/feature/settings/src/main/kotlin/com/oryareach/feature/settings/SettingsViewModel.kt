@@ -277,7 +277,7 @@ class SettingsViewModel(
                 _effects.trySend(SettingsEffect.LaunchGoogleCalendarResolution(result.intentSender))
             }
             is GoogleCalendarConnectResult.Failed -> {
-                set { it.copy(googleCalendarBusy = false, googleCalendarError = result.message) }
+                set { it.copy(googleCalendarBusy = false, googleCalendarError = R.string.settings_google_calendar_error_connect) }
             }
         }
     }
@@ -301,7 +301,7 @@ class SettingsViewModel(
                     }
                 }
                 .onFailure { error ->
-                    set { it.copy(googleCalendarBusy = false, googleCalendarError = error.message) }
+                    set { it.copy(googleCalendarBusy = false, googleCalendarError = R.string.settings_google_calendar_error_list) }
                 }
         }
     }

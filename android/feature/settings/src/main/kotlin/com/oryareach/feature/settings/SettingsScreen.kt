@@ -1,6 +1,5 @@
 package com.oryareach.feature.settings
 
-import android.content.ClipData
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -48,7 +47,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -64,6 +62,8 @@ import com.oryareach.core.model.Baby
 import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
+import com.oryareach.core.ui.text.sensitiveClipEntry
+import com.oryareach.core.ui.component.BusyLabel
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -122,7 +122,8 @@ fun SettingsScreen(
                     enabled = !uiState.busy,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.settings_sign_out))
+                    // Sign-out waits on the server (push token, device row) before it leaves.
+                    BusyLabel(stringResource(R.string.settings_sign_out), busy = uiState.busy)
                 }
             }
         }
@@ -149,9 +150,7 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = {
                     scope.launch {
-                        clipboard.setClipEntry(
-                            ClipEntry(ClipData.newPlainText("recovery-phrase", words.joinToString(" "))),
-                        )
+                        clipboard.setClipEntry(sensitiveClipEntry("recovery-phrase", words.joinToString(" ")))
                     }
                 }) {
                     Text(stringResource(R.string.settings_recovery_phrase_copy))
@@ -515,11 +514,10 @@ private fun AccountSection(uiState: SettingsUiState, actions: SettingsActions) {
                 enabled = !uiState.googleAccountLinkBusy,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                if (uiState.googleAccountLinkBusy) {
-                    CircularProgressIndicator(modifier = Modifier.height(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(R.string.settings_account_google_connect))
-                }
+                BusyLabel(
+                    stringResource(R.string.settings_account_google_connect),
+                    busy = uiState.googleAccountLinkBusy,
+                )
             }
         }
     }
@@ -626,7 +624,7 @@ private fun GoogleCalendarSection(uiState: SettingsUiState, actions: SettingsAct
         )
 
         uiState.googleCalendarError?.let { error ->
-            Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            Text(stringResource(error), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
 
         if (uiState.googleCalendarConnected) {
@@ -666,7 +664,19 @@ private fun GoogleCalendarSection(uiState: SettingsUiState, actions: SettingsAct
             onDismissRequest = actions::onDismissCalendarPicker,
             title = { Text(stringResource(R.string.settings_google_calendar_picker_title)) },
             text = {
-                if (uiState.availableGoogleCalendars.isEmpty() && !uiState.googleCalendarBusy) {
+                // Four states, not two: while the list loads the dialog used to sit blank (the
+                // spinner is on the card behind it), and a failed fetch claimed the account had
+                // no calendars at all.
+                val pickerError = uiState.googleCalendarError
+                if (uiState.availableGoogleCalendars.isEmpty() && uiState.googleCalendarBusy) {
+                    CircularProgressIndicator()
+                } else if (uiState.availableGoogleCalendars.isEmpty() && pickerError != null) {
+                    Text(
+                        stringResource(pickerError),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else if (uiState.availableGoogleCalendars.isEmpty()) {
                     Text(
                         stringResource(R.string.settings_google_calendar_picker_empty),
                         style = MaterialTheme.typography.bodyMedium,

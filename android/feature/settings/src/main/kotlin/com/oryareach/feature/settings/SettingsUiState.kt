@@ -1,6 +1,7 @@
 package com.oryareach.feature.settings
 
 import android.content.IntentSender
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
@@ -24,7 +25,7 @@ data class SettingsUiState(
     val googleCalendarConnected: Boolean = false,
     val googleCalendarAccountEmail: String? = null,
     val googleCalendarBusy: Boolean = false,
-    val googleCalendarError: String? = null,
+    @StringRes val googleCalendarError: Int? = null,
     val calendarPickerVisible: Boolean = false,
     val availableGoogleCalendars: List<GoogleCalendarOption> = emptyList(),
     val googleAccountLinked: Boolean = false,

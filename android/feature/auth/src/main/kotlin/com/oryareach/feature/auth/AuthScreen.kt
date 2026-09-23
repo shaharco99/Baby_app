@@ -13,11 +13,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
@@ -145,11 +147,17 @@ fun AuthScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    // One toggle for the whole row: TalkBack reads "Remember me, checkbox, checked"
+                    // once, instead of a bare checkbox followed by a separately clickable label.
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { actions.onRememberMeChange(!uiState.rememberMe) },
+                        modifier = Modifier.toggleable(
+                            value = uiState.rememberMe,
+                            role = Role.Checkbox,
+                            onValueChange = actions::onRememberMeChange,
+                        ).minimumInteractiveComponentSize().padding(end = 8.dp),
                     ) {
-                        Checkbox(checked = uiState.rememberMe, onCheckedChange = actions::onRememberMeChange)
+                        Checkbox(checked = uiState.rememberMe, onCheckedChange = null)
                         Text(
                             stringResource(R.string.auth_remember_me),
                             style = MaterialTheme.typography.bodyMedium,

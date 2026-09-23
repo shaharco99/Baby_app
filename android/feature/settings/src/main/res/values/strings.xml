@@ -36,6 +36,8 @@
     <string name="settings_google_calendar_choose_calendars">Choose calendars</string>
     <string name="settings_google_calendar_disconnect">Disconnect</string>
     <string name="settings_google_calendar_picker_title">Show events from</string>
+    <string name="settings_google_calendar_error_connect">Could not connect to Google Calendar. Check your connection and try again.</string>
+    <string name="settings_google_calendar_error_list">Could not load your calendars. Check your connection and try again.</string>
     <string name="settings_google_calendar_picker_empty">No calendars found on this account.</string>
 
     <string name="settings_sign_out">Sign out</string>

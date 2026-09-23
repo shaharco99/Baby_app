@@ -88,6 +88,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.coroutines.delay
 import com.oryareach.core.domain.baby.BabyAge
+import com.oryareach.core.ui.component.BusyLabel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
@@ -194,7 +195,7 @@ fun HomeScreen(
                     enabled = !uiState.importing,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.home_import_from_web))
+                    BusyLabel(stringResource(R.string.home_import_from_web), busy = uiState.importing)
                 }
             }
         }

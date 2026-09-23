@@ -59,6 +59,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.oryareach.app.R
 import com.oryareach.app.di.SessionState
 import com.oryareach.app.lock.LockRoute
+import com.oryareach.core.ui.component.BusyLabel
 import com.oryareach.core.ui.nav.MoonNavItem
 import com.oryareach.core.ui.nav.MoonNavigationDrawer
 import com.oryareach.core.ui.nav.MoonTopBar
@@ -102,6 +103,9 @@ import com.oryareach.feature.home.HomeViewModel
 import com.oryareach.feature.folders.FoldersScreen
 import com.oryareach.feature.folders.FoldersViewModel
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -664,6 +668,7 @@ private fun SettingsRoute(
     }
 
     val updateViewModel: UpdateViewModel = koinViewModel()
+    val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
         uiState = uiState,
         actions = viewModel,
@@ -675,9 +680,29 @@ private fun SettingsRoute(
             ) {
                 androidx.compose.material3.OutlinedButton(
                     onClick = updateViewModel::onCheckNow,
+                    enabled = !updateState.checking,
                     modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(com.oryareach.feature.update.R.string.settings_check_for_updates))
+                    BusyLabel(
+                        text = stringResource(com.oryareach.feature.update.R.string.settings_check_for_updates),
+                        busy = updateState.checking,
+                    )
+                }
+                // A check that finds nothing new used to end in silence, indistinguishable from a
+                // tap that never registered.
+                updateState.manualCheckResult?.let { result ->
+                    Text(
+                        text = stringResource(result),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = if (result == com.oryareach.feature.update.R.string.update_check_failed) {
+                            androidx.compose.material3.MaterialTheme.colorScheme.error
+                        } else {
+                            androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                 }
 
                 val context = androidx.compose.ui.platform.LocalContext.current

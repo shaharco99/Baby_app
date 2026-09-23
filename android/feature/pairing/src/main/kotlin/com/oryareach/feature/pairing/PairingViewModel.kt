@@ -81,24 +81,36 @@ class PairingViewModel(
 
     override fun onRefresh() {
         viewModelScope.launch {
-            val storedWorkspace = identity.workspaceId
-            val storedKey = identity.workspaceKey()
-
-            if (storedWorkspace != null && storedKey != null) {
-                onWorkspaceOpened(storedWorkspace, storedKey)
-                showReady(storedWorkspace)
-                return@launch
+            // "Check again" waits on the network; without the flag the tap looked ignored
+            // whenever the answer was "still waiting". Cleared with a plain set, not busy(false),
+            // so an error fail() just put up survives.
+            set { it.copy(busy = true, errorMessage = null) }
+            try {
+                refresh()
+            } finally {
+                set { it.copy(busy = false) }
             }
+        }
+    }
 
-            when (val remote = workspaces.currentWorkspaceId()) {
-                is AppResult.Failure -> fail(remote.error)
-                is AppResult.Success -> {
-                    val workspaceId = remote.data
-                    when {
-                        workspaceId == null -> set { it.copy(stage = PairingStage.Choose) }
-                        // A member without a key is a joiner waiting for the partner to release it.
-                        else -> tryClaimKey(workspaceId)
-                    }
+    private suspend fun refresh() {
+        val storedWorkspace = identity.workspaceId
+        val storedKey = identity.workspaceKey()
+
+        if (storedWorkspace != null && storedKey != null) {
+            onWorkspaceOpened(storedWorkspace, storedKey)
+            showReady(storedWorkspace)
+            return
+        }
+
+        when (val remote = workspaces.currentWorkspaceId()) {
+            is AppResult.Failure -> fail(remote.error)
+            is AppResult.Success -> {
+                val workspaceId = remote.data
+                when {
+                    workspaceId == null -> set { it.copy(stage = PairingStage.Choose) }
+                    // A member without a key is a joiner waiting for the partner to release it.
+                    else -> tryClaimKey(workspaceId)
                 }
             }
         }

@@ -36,6 +36,8 @@
     <string name="settings_google_calendar_choose_calendars">בחירת יומנים</string>
     <string name="settings_google_calendar_disconnect">ניתוק</string>
     <string name="settings_google_calendar_picker_title">הצגת אירועים מתוך</string>
+    <string name="settings_google_calendar_error_connect">החיבור ליומן Google לא הצליח. בדקו את החיבור ונסו שוב.</string>
+    <string name="settings_google_calendar_error_list">לא הצלחנו לטעון את היומנים. בדקו את החיבור ונסו שוב.</string>
     <string name="settings_google_calendar_picker_empty">לא נמצאו יומנים בחשבון הזה.</string>
 
     <string name="settings_sign_out">התנתקות</string>

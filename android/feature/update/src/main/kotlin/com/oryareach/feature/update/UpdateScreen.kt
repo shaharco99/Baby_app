@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,7 +56,7 @@ fun UpdateDialog(uiState: UpdateUiState, actions: UpdateActions) {
                 }
 
                 uiState.errorMessage?.let { message ->
-                    Text(stringResource(R.string.update_failed, message))
+                    Text(stringResource(message), color = MaterialTheme.colorScheme.error)
                 }
             }
         },

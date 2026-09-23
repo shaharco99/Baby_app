@@ -13,6 +13,8 @@
     <string name="folders_delete">מחק</string>
     <string name="folders_delete_title">למחוק את התיקייה?</string>
     <string name="folders_delete_body">"%1$s וכל מה שבתוכה יימחקו."</string>
+    <string name="folders_fab_open">הוספת תיקייה או מסמך</string>
+    <string name="folders_fab_close">סגירה</string>
     <string name="folders_import">ייבוא מסמך</string>
     <string name="folders_scan">סריקת מסמך</string>
     <string name="folders_delete_document_title">למחוק את המסמך?</string>

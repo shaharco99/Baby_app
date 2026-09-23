@@ -4,11 +4,13 @@
     <string name="update_mandatory_notice">This update is required to keep using Takes Two of Us.</string>
     <string name="update_downloading">Downloading…</string>
     <string name="update_installing">Installing…</string>
-    <string name="update_failed">Update failed: %1$s</string>
+    <string name="update_failed_download">The download did not finish. Check your connection, then tap Install again.</string>
+    <string name="update_failed_install">Android did not install the update. Tap Install to try again, or get it from the release page.</string>
     <string name="update_install">Install</string>
     <string name="update_view_release">View release</string>
     <string name="update_later">Later</string>
     <string name="update_skip">Skip this version</string>
     <string name="settings_check_for_updates">Check for updates</string>
     <string name="settings_up_to_date">You have the latest version</string>
+    <string name="update_check_failed">Could not check for updates. Check your connection and try again.</string>
 </resources>

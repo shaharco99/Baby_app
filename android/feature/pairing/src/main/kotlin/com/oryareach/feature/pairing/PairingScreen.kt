@@ -26,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -57,6 +58,8 @@ import com.oryareach.core.scanner.rememberInvitationCodeScanner
 import com.oryareach.core.security.InvitationToken
 import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.theme.OrYareachTheme
+import com.oryareach.core.ui.component.BusyLabel
+import com.oryareach.core.ui.text.sensitiveClipEntry
 import kotlinx.coroutines.launch
 
 @Composable
@@ -142,7 +145,7 @@ private fun ChooseStage(uiState: PairingUiState, actions: PairingActions) {
         onClick = actions::onCreateWorkspace,
         enabled = !uiState.busy,
         modifier = Modifier.fillMaxWidth(),
-    ) { Text(stringResource(R.string.pairing_create)) }
+    ) { BusyLabel(stringResource(R.string.pairing_create), busy = uiState.busy) }
 
     OutlinedButton(
         onClick = actions::onChooseJoin,
@@ -187,7 +190,7 @@ private fun RecoveryPhraseStage(
     OutlinedButton(
         onClick = {
             scope.launch {
-                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("recovery-phrase", stage.words.joinToString(" "))))
+                clipboard.setClipEntry(sensitiveClipEntry("recovery-phrase", stage.words.joinToString(" ")))
             }
         },
         modifier = Modifier.fillMaxWidth(),
@@ -261,7 +264,7 @@ private fun EnterCodeStage(uiState: PairingUiState, actions: PairingActions) {
         onClick = actions::onSubmitCode,
         enabled = uiState.canSubmitCode,
         modifier = Modifier.fillMaxWidth(),
-    ) { Text(stringResource(R.string.pairing_code_submit)) }
+    ) { BusyLabel(stringResource(R.string.pairing_code_submit), busy = uiState.busy) }
 
     // Scans the QR code off the partner's Ready screen instead of typing the 20 characters —
     // same code, just read by camera. onSubmitCode re-checks well-formedness itself, so a
@@ -297,7 +300,7 @@ private fun AwaitingKeyStage(uiState: PairingUiState, actions: PairingActions) {
         onClick = actions::onRefresh,
         enabled = !uiState.busy,
         modifier = Modifier.fillMaxWidth(),
-    ) { Text(stringResource(R.string.pairing_check_again)) }
+    ) { BusyLabel(stringResource(R.string.pairing_check_again), busy = uiState.busy) }
 
     TextButton(
         onClick = actions::onShowRecoveryPhraseEntry,
@@ -321,7 +324,7 @@ private fun EnterRecoveryPhraseStage(uiState: PairingUiState, actions: PairingAc
         onClick = actions::onSubmitRecoveryPhrase,
         enabled = uiState.recoveryPhraseInput.isNotBlank() && !uiState.busy,
         modifier = Modifier.fillMaxWidth(),
-    ) { Text(stringResource(R.string.pairing_recovery_entry_submit)) }
+    ) { BusyLabel(stringResource(R.string.pairing_recovery_entry_submit), busy = uiState.busy) }
 
     OutlinedButton(
         onClick = actions::onDismissRecoveryPhraseEntry,
@@ -341,6 +344,12 @@ private fun ReadyStage(
         style = MaterialTheme.typography.headlineSmall,
         color = MaterialTheme.colorScheme.onBackground,
     )
+
+    // Approve, revoke and new-invite all share one busy flag, so the progress goes here rather
+    // than into whichever button was not the one tapped.
+    if (uiState.busy) {
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+    }
 
     stage.pendingDevices.forEach { device ->
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -451,8 +460,8 @@ private fun ReadyStage(
 
     Spacer(Modifier.height(8.dp))
 
-    Button(onClick = actions::onRefresh, modifier = Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.pairing_continue))
+    Button(onClick = actions::onRefresh, enabled = !uiState.busy, modifier = Modifier.fillMaxWidth()) {
+        BusyLabel(stringResource(R.string.pairing_continue), busy = uiState.busy)
     }
 }
 

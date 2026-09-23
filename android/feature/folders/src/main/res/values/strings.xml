@@ -13,6 +13,8 @@
     <string name="folders_delete">Delete</string>
     <string name="folders_delete_title">Delete folder?</string>
     <string name="folders_delete_body">"%1$s and everything inside it will be deleted."</string>
+    <string name="folders_fab_open">Add a folder or document</string>
+    <string name="folders_fab_close">Close</string>
     <string name="folders_import">Import document</string>
     <string name="folders_scan">Scan document</string>
     <string name="folders_delete_document_title">Delete document?</string>
