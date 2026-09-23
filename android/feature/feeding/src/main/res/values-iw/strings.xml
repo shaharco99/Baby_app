@@ -71,6 +71,8 @@
     <string name="feeding_empty_hint">אפשר לרשום האכלה כשהיא קורית, או להוסיף אחת מקודם.</string>
     <string name="feeding_deleted">ההאכלה נמחקה</string>
     <string name="feeding_undo_action">ביטול</string>
+    <string name="feeding_delete_confirm">למחוק את ההאכלה של %1$s?</string>
+    <string name="feeding_delete_confirm_amount">למחוק את ההאכלה של %1$s, %2$d מ״ל?</string>
     <string name="feeding_older_days_drawer">ימים קודמים</string>
     <string name="vitamin_title">ויטמין D</string>
     <string name="vitamin_not_yet">עוד לא ניתן היום</string>

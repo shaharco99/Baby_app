@@ -71,6 +71,8 @@
     <string name="feeding_empty_hint">Log a feed when it happens, or add one from earlier.</string>
     <string name="feeding_deleted">Feed deleted</string>
     <string name="feeding_undo_action">Undo</string>
+    <string name="feeding_delete_confirm">Delete the %1$s feed?</string>
+    <string name="feeding_delete_confirm_amount">Delete the %1$s feed, %2$d ml?</string>
     <string name="feeding_older_days_drawer">Earlier days</string>
     <string name="vitamin_title">Vitamin D</string>
     <string name="vitamin_not_yet">Not given yet today</string>

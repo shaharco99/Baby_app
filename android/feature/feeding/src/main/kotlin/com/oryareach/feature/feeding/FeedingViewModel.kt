@@ -65,7 +65,9 @@ interface FeedingActions {
     fun onDismissTimePicker()
     fun onFedTimeChange(value: LocalTime)
     fun onLogFeed()
-    fun onDeleteFeed(id: String)
+    fun onDeleteFeedClick(feed: FeedingEntry)
+    fun onDismissDeleteFeed()
+    fun onConfirmDeleteFeed()
     fun onUndoDelete()
     fun onUndoDismissed()
     fun onHistoryViewChange(value: HistoryView)
@@ -332,11 +334,17 @@ class FeedingViewModel(
     override fun onMilestoneDismissed() = set { it.copy(milestoneReached = null) }
 
     /**
-     * Deletes straight away and offers the row back, rather than asking first: the row is only
-     * soft-deleted, so undoing it is cheap, and a confirmation dialog on every delete is its own
-     * kind of annoying at four in the morning.
+     * Asks first, then still offers the row back — the same as a pumping session, and for the
+     * same reason: the trash icon sits where a thumb lands on its way to the snackbar. The dialog
+     * names the feed, so it is clear which one goes.
      */
-    override fun onDeleteFeed(id: String) {
+    override fun onDeleteFeedClick(feed: FeedingEntry) = set { it.copy(deleteConfirmFeed = feed) }
+
+    override fun onDismissDeleteFeed() = set { it.copy(deleteConfirmFeed = null) }
+
+    override fun onConfirmDeleteFeed() {
+        val id = _uiState.value.deleteConfirmFeed?.id ?: return
+        set { it.copy(deleteConfirmFeed = null) }
         viewModelScope.launch {
             repository.delete(id, _uiState.value.intervalMinutes)
             set { it.copy(undoDeleteId = id) }

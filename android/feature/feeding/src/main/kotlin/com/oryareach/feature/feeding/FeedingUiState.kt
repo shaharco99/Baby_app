@@ -10,6 +10,7 @@ import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
+import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.VitaminDose
 import com.oryareach.core.ui.component.DropBurst
 import kotlinx.datetime.LocalDate
@@ -40,6 +41,8 @@ data class FeedingUiState(
      * either way — this is only what keeps the snackbar on screen.
      */
     val undoDeleteId: String? = null,
+    /** The feed whose trash icon was tapped, while the are-you-sure dialog is up. */
+    val deleteConfirmFeed: FeedingEntry? = null,
     val formFeedType: FeedType = FeedType.BREAST_MILK,
     /**
      * The two amounts a milk feed can have. Both fillable at once — a breastfeed topped up with

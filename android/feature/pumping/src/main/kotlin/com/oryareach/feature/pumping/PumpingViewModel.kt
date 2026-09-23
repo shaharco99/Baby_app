@@ -59,7 +59,9 @@ interface PumpingActions {
     fun onStartedTimeChange(value: LocalTime)
     fun onSave()
     fun onDiscard()
-    fun onDeleteSession(id: String)
+    fun onDeleteSessionClick(session: PumpSession)
+    fun onDismissDeleteSession()
+    fun onConfirmDeleteSession()
     fun onUndoDelete()
     fun onUndoDismissed()
     fun onHistoryViewChange(value: PumpHistoryView)
@@ -392,11 +394,17 @@ class PumpingViewModel(
     }
 
     /**
-     * Deletes straight away and offers the row back, rather than asking first: the row is only
-     * soft-deleted, so undoing it is cheap, and a confirmation dialog on every delete is its own
-     * kind of annoying at four in the morning.
+     * Asks first, then still offers the row back. The undo alone was not enough: the trash icon
+     * sits where a thumb lands on its way to the snackbar, and a mistimed tap there once deleted
+     * two real sessions in a row. The dialog names the session, so it is clear which one goes.
      */
-    override fun onDeleteSession(id: String) {
+    override fun onDeleteSessionClick(session: PumpSession) = set { it.copy(deleteConfirmSession = session) }
+
+    override fun onDismissDeleteSession() = set { it.copy(deleteConfirmSession = null) }
+
+    override fun onConfirmDeleteSession() {
+        val id = _uiState.value.deleteConfirmSession?.id ?: return
+        set { it.copy(deleteConfirmSession = null) }
         viewModelScope.launch {
             repository.delete(id, _uiState.value.intervalMinutes)
             set { it.copy(undoDeleteId = id) }

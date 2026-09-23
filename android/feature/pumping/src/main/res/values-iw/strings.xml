@@ -57,6 +57,8 @@
     <string name="pumping_empty_hint">לחצי על התחלה כשאת מתחילה, או הוסיפי שאיבה שהיתה.</string>
     <string name="pumping_deleted">השאיבה נמחקה</string>
     <string name="pumping_undo_action">ביטול</string>
+    <string name="pumping_delete_confirm">למחוק את השאיבה של %1$s?</string>
+    <string name="pumping_delete_confirm_amount">למחוק את השאיבה של %1$s, %2$d מ״ל?</string>
     <string name="pumping_add_action">רישום שאיבה</string>
     <string name="pumping_save_changes">שמירת שינויים</string>
     <string name="pumping_older_days_drawer">ימים קודמים</string>

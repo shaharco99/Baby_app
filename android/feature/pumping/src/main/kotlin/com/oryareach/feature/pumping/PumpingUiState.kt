@@ -77,6 +77,8 @@ data class PumpingUiState(
      * either way — this is only what keeps the snackbar on screen.
      */
     val undoDeleteId: String? = null,
+    /** The session whose trash icon was tapped, while the are-you-sure dialog is up. */
+    val deleteConfirmSession: PumpSession? = null,
     /** The stash panel, when it has been asked for and there is something in it. */
     val stash: MilkStash? = null,
 ) {

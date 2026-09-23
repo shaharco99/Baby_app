@@ -244,6 +244,26 @@ fun FeedingScreen(
         )
     }
 
+    uiState.deleteConfirmFeed?.let { feed ->
+        val clock = formatClock(feed.fedAtEpochMillis)
+        AlertDialog(
+            onDismissRequest = actions::onDismissDeleteFeed,
+            text = {
+                Text(
+                    feed.totalMl
+                        ?.let { stringResource(R.string.feeding_delete_confirm_amount, clock, it) }
+                        ?: stringResource(R.string.feeding_delete_confirm, clock),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = actions::onConfirmDeleteFeed) { Text(stringResource(R.string.feeding_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissDeleteFeed) { Text(stringResource(R.string.feeding_pick_cancel)) }
+            },
+        )
+    }
+
     if (uiState.vitaminHistoryVisible) {
         VitaminHistoryDialog(
             doses = uiState.vitaminHistory,
@@ -794,7 +814,7 @@ private fun LazyListScope.listDay(
         FeedRow(
             feed = feed,
             onEdit = { actions.onEditFeedClick(feed) },
-            onDelete = { actions.onDeleteFeed(feed.id) },
+            onDelete = { actions.onDeleteFeedClick(feed) },
         )
     }
 }
@@ -1608,7 +1628,9 @@ private object NoopFeedingActions : FeedingActions {
     override fun onDismissTimePicker() = Unit
     override fun onFedTimeChange(value: LocalTime) = Unit
     override fun onLogFeed() = Unit
-    override fun onDeleteFeed(id: String) = Unit
+    override fun onDeleteFeedClick(feed: FeedingEntry) = Unit
+    override fun onDismissDeleteFeed() = Unit
+    override fun onConfirmDeleteFeed() = Unit
     override fun onUndoDelete() = Unit
     override fun onUndoDismissed() = Unit
     override fun onHistoryViewChange(value: HistoryView) = Unit

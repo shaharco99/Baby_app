@@ -4,11 +4,9 @@ One file for everything that used to live in `docs/FOLLOWUP.md` and `docs/specs/
 open, what was already done (so nobody redoes it), and the specs that have been fully absorbed
 into the code. Point Claude at this file to pick up where the last session left off.
 
-Branch `feature/android-app`, pushed. Latest release **v1.8.1** (2026-09-21, all workflows
-green); both phones run it. Supabase migrations **0001–0012 all applied** (0012 on 2026-09-22,
-confirmed against the live enum). Migrations are
-applied by hand and **must always be written idempotent** — see the rule in `CLAUDE.md`; tagging a
-release before applying one breaks sync silently.
+Branch `feature/android-app`, pushed. Latest release **v1.10.2** (2026-09-22); both phones run it.
+Supabase migrations **0001–0013 all applied**, by the `supabase-deploy.yml` pipeline and nothing
+else — see the rule in `CLAUDE.md`. Every migration file must stay idempotent.
 
 `git log --oneline feature/android-app` is the real history. This file is the condensed version.
 
@@ -27,10 +25,11 @@ release before applying one breaks sync silently.
    means unpairing and re-joining. Parked by the user 2026-09-21 as too disruptive for the payoff.
 3. **`device_keys` stale-on-reuse fix, on a real phone.** Needs a full leave-and-rejoin. The fix is
    in and the live rows were checked in the database. Parked for the same reason.
-4. **Confirm before deleting a session.** The user's decision, 2026-09-22: deleting a pumping
-   session — and a feed, same one-tap trash — gets a confirm dialog naming what goes ("Delete the
-   14:04 session, 98 ml?"). Today it is one tap plus an Undo snackbar, and one mistimed tap deleted
-   two real sessions during testing (see the v1.10 pass below). Keep the Undo snackbar as well.
+4. **Confirm before deleting a session — built, not yet released or seen on a phone.** The trash
+   icon on a pumping session and on a feed now opens a dialog naming what goes ("Delete the 14:04
+   session, 98 ml?" / "למחוק את השאיבה של 14:04, 98 מ״ל?"; no amount, no "ml"), and the Undo
+   snackbar still follows. Delete from inside the edit sheet is unchanged. Left: release, then
+   look at it on both phones in both languages — tap Cancel, never Delete, on a real row.
 
 **Small open items:**
 - No Macrobenchmark startup module. It needs a spare device or an emulator; a benchmark build

@@ -57,6 +57,8 @@
     <string name="pumping_empty_hint">Press Start when you begin, or add one that already happened.</string>
     <string name="pumping_deleted">Session deleted</string>
     <string name="pumping_undo_action">Undo</string>
+    <string name="pumping_delete_confirm">Delete the %1$s session?</string>
+    <string name="pumping_delete_confirm_amount">Delete the %1$s session, %2$d ml?</string>
     <string name="pumping_add_action">Log session</string>
     <string name="pumping_save_changes">Save changes</string>
     <string name="pumping_older_days_drawer">Earlier days</string>

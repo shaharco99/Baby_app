@@ -191,6 +191,28 @@ fun PumpingScreen(
         MilkStashDialog(stash = stash, onDismiss = actions::onDismissStash)
     }
 
+    uiState.deleteConfirmSession?.let { session ->
+        val clock = formatClock(session.startedAtEpochMillis)
+        AlertDialog(
+            onDismissRequest = actions::onDismissDeleteSession,
+            text = {
+                Text(
+                    session.amountMl
+                        ?.let { stringResource(R.string.pumping_delete_confirm_amount, clock, it) }
+                        ?: stringResource(R.string.pumping_delete_confirm, clock),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = actions::onConfirmDeleteSession) { Text(stringResource(R.string.pumping_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissDeleteSession) {
+                    Text(stringResource(R.string.pumping_pick_cancel))
+                }
+            },
+        )
+    }
+
     if (uiState.sheetVisible) {
         val sheetState = rememberModalBottomSheetState()
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
@@ -529,7 +551,7 @@ private fun LazyListScope.listDay(day: PumpingDay, today: LocalDate?, actions: P
         SessionRow(
             session = session,
             onEdit = { actions.onEditClick(session) },
-            onDelete = { actions.onDeleteSession(session.id) },
+            onDelete = { actions.onDeleteSessionClick(session) },
         )
     }
 }
@@ -559,7 +581,7 @@ private fun OlderDaysHeader(
 /**
  * One session. The row itself opens it, so there is no Edit button competing for the same space —
  * that button, a delete button and the content together left nothing room enough to read in
- * Hebrew. Delete is the one icon, and it offers an undo rather than asking first.
+ * Hebrew. Delete is the one icon; it asks first, then still offers an undo.
  */
 @Composable
 private fun SessionRow(session: PumpSession, onEdit: () -> Unit, onDelete: () -> Unit) {
@@ -1021,7 +1043,9 @@ private object NoopPumpingActions : PumpingActions {
     override fun onStartedTimeChange(value: LocalTime) = Unit
     override fun onSave() = Unit
     override fun onDiscard() = Unit
-    override fun onDeleteSession(id: String) = Unit
+    override fun onDeleteSessionClick(session: PumpSession) = Unit
+    override fun onDismissDeleteSession() = Unit
+    override fun onConfirmDeleteSession() = Unit
     override fun onUndoDelete() = Unit
     override fun onUndoDismissed() = Unit
     override fun onHistoryViewChange(value: PumpHistoryView) = Unit
