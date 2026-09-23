@@ -422,9 +422,18 @@ private fun DocumentRow(
     val scale by animateFloatAsState(if (dragging) 1.04f else 1f, label = "documentDragScale")
     val elevation by animateDpAsState(if (dragging) 10.dp else 0.dp, label = "documentDragElevation")
 
-    // Tap anywhere on the card previews; long-press still starts the drag (pointerInput below).
+    // Tap anywhere on the card previews; long-press starts the drag (pointerInput below).
+    // A long-press released without moving still ends in the card's click, which opened the
+    // preview on top of a drag that never went anywhere — seen on the Xiaomi. Held from the
+    // long-press until just after release, whichever of click and drag-end runs first.
+    var suppressClickUntil by remember { mutableStateOf(0L) }
+    var longPressed by remember { mutableStateOf(false) }
     Card(
-        onClick = { actions.onPreviewDocument(document) },
+        onClick = {
+            if (!longPressed && System.currentTimeMillis() > suppressClickUntil) {
+                actions.onPreviewDocument(document)
+            }
+        },
         modifier = Modifier.fillMaxWidth()
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {
@@ -437,6 +446,7 @@ private fun DocumentRow(
             .pointerInput(document.id) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
+                        longPressed = true
                         dragStartPosition = rowRootPosition + offset
                         onDragStart()
                     },
@@ -447,10 +457,14 @@ private fun DocumentRow(
                         scope.launch { dragOffset.snapTo(dragOffset.value + dragAmount) }
                     },
                     onDragEnd = {
+                        longPressed = false
+                        suppressClickUntil = System.currentTimeMillis() + 300
                         onDragEnd()
                         scope.launch { dragOffset.animateTo(androidx.compose.ui.geometry.Offset.Zero, spring()) }
                     },
                     onDragCancel = {
+                        longPressed = false
+                        suppressClickUntil = System.currentTimeMillis() + 300
                         onDragEnd()
                         scope.launch { dragOffset.animateTo(androidx.compose.ui.geometry.Offset.Zero, spring()) }
                     },
