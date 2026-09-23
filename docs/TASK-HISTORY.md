@@ -2,7 +2,7 @@
 
 One file for all that used to live in `docs/FOLLOWUP.md` and `docs/specs/`: what still open, what already done (so nobody redo), specs fully absorbed into code. Point Claude here to resume from last session.
 
-Branch `feature/android-app`, pushed. Latest release **v1.10.2** (2026-09-22); both phones run it. Supabase migrations **0001–0013 all applied**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
+Branch `feature/android-app`, pushed. Latest release **v1.11.1** (2026-09-23); Xiaomi runs it, Pixel still on v1.10.2. Supabase migrations **0001–0013 all applied**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
 
 `git log --oneline feature/android-app` = real history. This file = condensed version.
 
@@ -13,7 +13,7 @@ Branch `feature/android-app`, pushed. Latest release **v1.10.2** (2026-09-22); b
 1. **Doze (deep sleep) reminder check.** Parked by user; only they can do it: log feed on Pixel, leave unplugged, locked, still for 3h until reminder. Forced `adb` route fails — `dumpsys deviceidle force-idle deep` and `step deep` both stop at INACTIVE on Xiaomi (`mMotionActive=true`, 143 pending alarms). Cause never pinned; suspects: Android's "no deep idle within 30 min of wake-from-idle alarm" rule and MIUI's own power manager. Don't keep retrying on MIUI.
 2. **Partner email on pairing screen, on real phone.** Function + pgTAP test green. Seeing it needs phone joined to workspace but not yet approved, so unpair + re-join. Parked by user 2026-09-21 — too disruptive for payoff.
 3. **`device_keys` stale-on-reuse fix, on real phone.** Needs full leave-and-rejoin. Fix in; live rows checked in DB. Parked, same reason.
-4. **Confirm before deleting session — built, not yet released or seen on phone.** Trash icon on pumping session and on feed now opens dialog naming what goes ("Delete the 14:04 session, 98 ml?" / "למחוק את השאיבה של 14:04, 98 מ״ל?"; no amount, no "ml"), Undo snackbar still follows. Delete inside edit sheet unchanged. Left: release, then check on both phones, both languages — tap Cancel, never Delete, on real row. Rides same release as 2026-09-23 UI/UX audit fixes (below) — one tag, one device pass.
+4. **Confirm before deleting session — built, not yet released or seen on phone.** Trash icon on pumping session and on feed now opens dialog naming what goes ("Delete the 14:04 session, 98 ml?" / "למחוק את השאיבה של 14:04, 98 מ״ל?"; no amount, no "ml"), Undo snackbar still follows. Delete inside edit sheet unchanged. Left: release, then check on both phones, both languages — tap Cancel, never Delete, on real row. Shipped v1.11.0; confirmed on Xiaomi (English), Cancel on real rows. Pixel/Hebrew still to see.
 
 **Small open items:**
 - No Macrobenchmark startup module. Needs spare device or emulator; benchmark build breaks release-only rule on real phones.
@@ -47,7 +47,11 @@ Grep-driven sweep of every `:feature:*` screen for classes of mistake (a11y desc
 
 **New repo skill** `.claude/skills/android-uiux/SKILL.md` — app-specific UI rules (RTL/LTR + bidi, strings, states, errors, deletes, slow taps, platform, device checks); loads on any Android UI change so new features follow it. Generic M3 rules deliberately left to `android-skills:android-ux`, which it points to; `docs/UIUX.md` trimmed to audit process only, same reason.
 
-**Unseen on device** (needs release): every new spinner (update check both outcomes, pairing — only visible on a fresh join, so likely stays unseen, sign-out, import); folders FAB ×/+ swap and whole-row tap (check drag-to-folder still works, and a long-press without moving doesn't also open preview); calendar picker's loading/error states (error needs airplane mode); remember-me row in both languages; update-dialog error text (hard to provoke — code-read only).
+**Checked on the Xiaomi (v1.11.0, English/dark, then Hebrew via per-app locale).** Installed through the app's own updater (startup dialog → Install → system Update), not adb. "Check for updates": spinner in place of label, button width held, then "You have the latest version" / "יש לך את הגרסה העדכנית ביותר". Calendar picker: spinner inside dialog ~1s, then list (was blank). Documents: FAB turns × labelled "Close" / "סגירה"; card tap outside the name opens folder and previews document; tap at top edge of "Documents" crumb (outside text line) navigates; Hebrew layout mirrors (chevron, FAB on start side, trash at far end). Feed and pumping trash → "Delete the 08:46 feed, 70 ml?" / "Delete the 09:55 session, 80 ml?", Cancel kept both rows, day totals unchanged — **item 4 above confirmed on Xiaomi**. No data created or deleted.
+
+**Found on device, fixed in v1.11.1:** long-press on a document without moving opened the preview on release (card click fired after the drag's long-press). Pre-existing on the name text; whole-card tap widened it. Click now suppressed from long-press until 300ms after drag end.
+
+**Still unseen:** error branches (update check failing, calendar fetch failing — need airplane mode), pairing spinners (fresh join only), sign-out and web-import spinners (destructive / create data), remember-me row (signed-out only), Pixel pass. Update-check spinner is faint on the disabled outlined button — readable, noted.
 
 **Recommendations, not done (P2/P3):**
 - Settings title's 7-tap easter egg uses `clickable` — ripple on a heading, TalkBack announces it as a button. Swap to `pointerInput { detectTapGestures }`.
