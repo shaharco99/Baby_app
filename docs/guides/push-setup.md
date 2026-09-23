@@ -1,35 +1,31 @@
 # Turning the push wake-up on — step by step
 
-> **Status, 2026-09-21: done, and verified on both phones.** Migration 0011 is applied, the
-> Firebase project `takes-two-of-us` exists, the keys are in `android/local.properties`,
-> `notify-workspace` is deployed, and both the Pixel and the Xiaomi are registered.
+> **Status, 2026-09-21: done, verified on both phones.** Migration 0011 applied, Firebase
+> project `takes-two-of-us` exists, keys in `android/local.properties`, `notify-workspace`
+> deployed, Pixel and Xiaomi both registered.
 >
-> Verified in both directions with the receiving app killed: a feed logged or deleted on one
-> phone moved the other's pending alarm to the predicted time, in about ten seconds to the
-> Pixel and about five to the Xiaomi, without the receiving app being opened.
+> Verified both directions with receiving app killed: feed logged or deleted on one phone moved
+> other's pending alarm to predicted time, ~10s to Pixel, ~5s to Xiaomi, receiving app never opened.
 >
-> **Step 7 turned out not to be needed.** The Xiaomi received wake-ups without Autostart or the
-> battery exemption being changed. Leave that step here anyway: it was tested on a phone that
-> was plugged in and had been used minutes earlier, which is the easy case. If the Xiaomi ever
-> starts missing wake-ups after sitting idle overnight, Step 7 is the first thing to try.
+> **Step 7 not needed.** Xiaomi got wake-ups without Autostart or battery exemption changed. Keep
+> step anyway: test ran on phone plugged in and used minutes earlier — easy case. If Xiaomi starts
+> missing wake-ups after idle overnight, try Step 7 first.
 >
-> The rest of this file is the record of how it was set up, and for the day a phone is replaced.
+> Rest of file = record of setup, and guide for when phone gets replaced.
 
-**What this fixes:** right now, when you log a feed on one phone, the *other* phone keeps its
-old reminder time until someone opens the app. This makes the other phone find out within
-seconds, even with the app closed.
+**What this fixes:** now, feed logged on one phone → *other* phone keeps old reminder time until
+someone opens app. This makes other phone learn within seconds, even with app closed.
 
-**The code is already written and installed.** It is switched off, because it needs an account
-at Google (Firebase) that only you can create. Until you finish these steps nothing breaks —
-the app just behaves the way it did before.
+**Code already written and installed.** Switched off, because needs Google (Firebase) account
+only you can create. Until steps done nothing breaks — app behaves as before.
 
-Do the steps in order. Each one says exactly what to click and what to copy.
+Do steps in order. Each says exactly what to click and copy.
 
 ---
 
 ## Before you start
 
-You need, on the computer:
+Need on computer:
 
 ```bash
 # The Supabase command-line tool (used in Step 5). Check if you already have it:
@@ -45,40 +41,39 @@ curl -fsSL https://raw.githubusercontent.com/supabase/setup-cli/main/install.sh 
 
 ## Step 1 — Add the new table to the database
 
-The app wants to store one row per phone, saying "this phone can be woken, here is its address".
-That table does not exist yet.
+App stores one row per phone: "this phone can be woken, here its address". Table not exist yet.
 
 1. Open <https://supabase.com/dashboard> and click your project.
-2. In the left sidebar click **SQL Editor**.
+2. Left sidebar → **SQL Editor**.
 3. Click **New query**.
-4. Open this file on the computer and copy **all** of it:
+4. Open this file on computer, copy **all** of it:
    `supabase/migrations/0011_device_push_tokens.sql`
-5. Paste it into the box and click **Run**.
-6. You should see **Success. No rows returned.** That is what success looks like here.
+5. Paste into box, click **Run**.
+6. Expect **Success. No rows returned.** That = success.
 
-> ⚠️ Nothing applies these files automatically. If you skip this step, everything else below
-> will look like it worked and still do nothing.
+> ⚠️ Nothing applies these files automatically. Skip this step and everything below will look
+> like it worked but do nothing.
 
-**Check it worked:** left sidebar → **Table Editor**. There should now be a table called
-`device_push_tokens`. It will be empty. That is correct — phones fill it in at Step 6.
+**Check it worked:** left sidebar → **Table Editor**. Table `device_push_tokens` should exist,
+empty. Correct — phones fill it at Step 6.
 
 ---
 
 ## Step 2 — Create the Firebase project
 
-Firebase is Google's free service for sending "wake up" pings to phones. We only use the ping.
-No feed data ever goes near it.
+Firebase = Google's free service for sending "wake up" pings to phones. Only ping used. No feed
+data goes near it.
 
-1. Go to <https://console.firebase.google.com> and sign in with your Google account.
+1. Go to <https://console.firebase.google.com> and sign in with Google account.
 2. Click **Create a project**.
-3. Name it anything — `takes-two-of-us` is fine. Click through.
-4. On the Google Analytics step, choose **not** to enable it. We do not need it.
-5. Wait for it to finish, then click **Continue**.
+3. Name anything — `takes-two-of-us` fine. Click through.
+4. Google Analytics step: choose **not** to enable. Not needed.
+5. Wait for finish, click **Continue**.
 
-Now add the Android app to it:
+Now add Android app:
 
-6. On the project's home page, click the **Android** icon (a little robot).
-7. Where it asks for **Android package name**, type exactly:
+6. On project home page, click **Android** icon (little robot).
+7. At **Android package name**, type exactly:
 
    ```
    com.oryareach.app
@@ -263,6 +258,5 @@ Pixel.
 
 ## What if I never do any of this?
 
-Nothing breaks. The app syncs, reminds, and records feeds exactly as it does today. The only
-thing you lose is the other phone finding out quickly — it will keep catching up when you open
-it, or within the hour on its own.
+Nothing breaks. App syncs, reminds, records feeds same as today. Only loss: other phone not
+finding out quickly — catches up when opened, or within the hour on its own.

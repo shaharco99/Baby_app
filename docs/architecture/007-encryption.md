@@ -4,23 +4,23 @@
 
 ## Context
 
-Per `005-data-privacy.md`, server never need read workspace content. Data sensitive (menstrual cycle records, medical documents, personal notes). Requirement: must not leak to anyone outside couple — including hosting provider.
+Per `005-data-privacy.md`, server never read workspace content. Data sensitive (menstrual cycle records, medical documents, personal notes). Must not leak outside couple, hosting provider included.
 
-Spec (§45) demand established cryptographic libraries, forbid inventing algorithms, forbid claiming end-to-end encryption unless genuinely implemented.
+Spec (§45) require established crypto libraries, forbid invented algorithms, forbid end-to-end encryption claims unless real.
 
 ## Decision
 
 **Bouncy Castle lightweight API**, not libsodium.
 
-libsodium Android binding (`lazysodium-android`) JNI-bound — force every crypto test onto emulator, make crypto module Android-only. Bouncy Castle pure Java, behave identically on JVM and Android, ships RFC 9180 HPKE — key wrapping follow published standard rather than hand-assembled sealed box. `:core:crypto` therefore plain Kotlin JVM module, ordinary fast unit tests.
+libsodium Android binding (`lazysodium-android`) JNI-bound. Force every crypto test onto emulator, make crypto module Android-only. Bouncy Castle pure Java, same behavior JVM and Android, ships RFC 9180 HPKE. Key wrapping follow published standard, not hand-built sealed box. So `:core:crypto` plain Kotlin JVM module, fast ordinary unit tests.
 
-**Record encryption.** ChaCha20-Poly1305. Each write derive fresh key with HKDF-SHA256 over random 16-byte salt — this what make all-zero nonce safe: (key, nonce) pair only repeat if same salt drawn twice. Envelope layout:
+**Record encryption.** ChaCha20-Poly1305. Each write derive fresh key via HKDF-SHA256 over random 16-byte salt. This make all-zero nonce safe: (key, nonce) pair repeat only if same salt drawn twice. Envelope layout:
 
 ```
 [version:1][salt:16][ciphertext || poly1305 tag:16]
 ```
 
-Leading version byte = forward-compatibility seam — future build can change construction, still read old payloads. Associated data binds each ciphertext to its record id and version, so ciphertext cannot move between records.
+Leading version byte = forward-compat seam. Future build can change construction, still read old payloads. Associated data bind ciphertext to record id and version, so ciphertext cannot move between records.
 
 **Keys.**
 
@@ -30,19 +30,19 @@ Leading version byte = forward-compatibility seam — future build can change co
 | Device X25519 keypair | Receives workspace key at pairing | Private half sealed by Android Keystore AES-GCM key, blob in DataStore |
 | Recovery phrase | Workspace key itself, encoded | Written down by user, never stored anywhere |
 
-Keystore cannot hold raw X25519 material usable by HPKE — hence wrap-the-private-key indirection rather than Keystore-native key.
+Keystore cannot hold raw X25519 material usable by HPKE. Hence wrap-private-key indirection, not Keystore-native key.
 
-**Pairing.** Inviting device seals workspace key to joining device's X25519 public key using HPKE base mode. Server relays opaque blob it cannot open.
+**Pairing.** Inviting device seal workspace key to joining device X25519 public key, HPKE base mode. Server relay opaque blob, cannot open.
 
-**Recovery phrase.** Workspace key rendered as 24-word BIP-39 mnemonic. Phrase *is* key encoded, not passphrase unlocking stored copy — 32-byte key exactly 256 bits BIP-39 entropy, exactly 24 words. Consequence: nothing extra stored on server, no KDF parameters that could drift between app versions, no wrapped blob to lose. BIP-39 checksum makes mistyped phrase fail loudly rather than silently yield key that decrypts nothing. Verified against official BIP-39 English test vectors.
+**Recovery phrase.** Workspace key rendered as 24-word BIP-39 mnemonic. Phrase *is* key encoded, not passphrase unlocking stored copy. 32-byte key = exactly 256 bits BIP-39 entropy = exactly 24 words. Result: nothing extra on server, no KDF parameters to drift between app versions, no wrapped blob to lose. BIP-39 checksum make mistyped phrase fail loud, not silently yield key that decrypt nothing. Verified against official BIP-39 English test vectors.
 
-Trade-off: rotating workspace key changes recovery phrase — user must be told record new one. Accepted — rotation rare, deliberate act.
+Trade-off: rotating workspace key change recovery phrase. User must be told to record new one. Accepted: rotation rare, deliberate.
 
 ## Consequences
 
-- No server-side search, filtering, sorting or validation. Search becomes Room FTS4 over locally decrypted data (corrected from earlier "FTS5" — Room 2.8.4 has no `@Fts5` annotation, only `@Fts3`/`@Fts4`; found while building Phase 8 search).
+- No server-side search, filtering, sorting, validation. Search = Room FTS4 over locally decrypted data (corrected from earlier "FTS5". Room 2.8.4 has no `@Fts5` annotation, only `@Fts3`/`@Fts4`. Found during Phase 8 search build).
 - No server-generated notification content. Reminders scheduled locally.
-- Metadata still leaks: row counts and `updated_at` reveal *that* something logged and when, not what. Removing that needs padding and decoy traffic; out of scope, stated rather than glossed over.
-- Losing both devices and recovery phrase means data unrecoverable. Inherent to design; setup flow must say so plainly.
+- Metadata still leak: row counts and `updated_at` reveal *that* something logged and when, not what. Fix need padding and decoy traffic. Out of scope, stated not glossed.
+- Lose both devices and recovery phrase = data unrecoverable. Inherent to design. Setup flow must say so plain.
 
-**What may be claimed.** Content end-to-end encrypted between two devices. Account metadata, timestamps and record counts not. Documentation must say exactly that and no more.
+**What may be claimed.** Content end-to-end encrypted between two devices. Account metadata, timestamps, record counts not. Docs must say exactly that, no more.

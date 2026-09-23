@@ -1,347 +1,138 @@
 # Android App UI/UX Improvement Prompt
 
-Act as **senior Android UI/UX designer, product designer, accessibility expert**. Review app, improve UI/UX without core functionality change unless clearly needed for usability.
+Full-audit prompt. Audit results + what's left: `docs/TASK-HISTORY.md`, section "2026-09-23 — UI/UX audit".
+
+Rules live in two skills. Load both first; this file adds only the audit process on top:
+- `android-skills:android-ux` — generic Material 3: colour roles, typography, shapes, elevation, components, spacing grid, adaptive layouts/foldables, navigation components, motion tokens + reduced motion, accessibility basics (descriptions, headings, merged semantics, 48dp, WCAG contrast), dark/light theming, plus 10-category M3 audit with score template.
+- `.claude/skills/android-uiux/SKILL.md` (repo) — this app: RTL/LTR + bidi, Hebrew/English strings, states, errors, destructive actions, touch patterns, insets/keyboard/back/permissions, dark-mode history, on-device verification.
+
+Act as **senior Android UI/UX designer, product designer, accessibility expert**. Review app, improve UI/UX. No core functionality change unless needed for usability.
 
 ## Main Goal
 
-App feel **modern, polished, intuitive, fast, professional** — follow current Android/Material Design best practice.
+App feel **modern, polished, intuitive, fast, professional**.
 
-Don't blind-redesign. First understand app, screens, navigation, user flows, purpose. Then find highest-impact improvements.
+No blind redesign. First understand app, screens, navigation, user flows, purpose. Then find highest-impact improvements.
 
 ## 1. Audit Existing UI
 
-Review every screen, find:
+Review every screen. Run android-ux's M3 audit per screen, plus repo skill's checklist. Beyond those, find:
 
-* Poor spacing/alignment
-* Inconsistent margins/padding
-* Inconsistent typography
 * Weak visual hierarchy
 * Poor button placement
-* Overcrowded screens
-* Excessive empty space
+* Overcrowded screens / excess empty space
 * Confusing navigation
 * Unclear icons
-* Inconsistent colors
-* Poor contrast
 * Bad form/input UX
-* Unclear error messages
-* Missing loading/empty/success states
-* Unnecessary dialogs
+* Needless dialogs
 * Redundant UI elements
 * Hard-to-reach controls
-* Screens needing too many taps
-* Components not native-feeling to Android
+* Too many taps
+* Non-native-feeling components
 
-Prioritize:
+Grep for *class* of mistake across all features, not one screen at a time.
 
-1. Critical usability problems
-2. Major UX improvements
-3. Visual polish
-4. Minor refinements
+## 2. Navigation & User Flow
 
-## 2. Modern Android Design
-
-Use current Android/Material Design conventions.
-
-Improve:
-
-* Top app bars
-* Bottom navigation where fit
-* Cards
-* Buttons
-* Text fields
-* Switches
-* Checkboxes
-* Dropdowns
-* Dialogs
-* Bottom sheets
-* Lists
-* Tabs
-* Chips
-* FABs
-* Navigation
-* Settings screens
-
-Prefer **simple, clean interfaces** over decoration.
-
-Avoid generic-template look.
-
-## 3. Visual Design
-
-Build consistent design system covering:
-
-### Typography
-
-Define:
-
-* Screen titles
-* Section headings
-* Body text
-* Supporting text
-* Labels
-* Button text
-* Error/warning text
-
-Use fit font sizes, weights, line heights.
-
-### Colors
-
-Coherent palette:
-
-* Primary
-* Secondary
-* Background
-* Surface
-* Text
-* Muted text
-* Success
-* Warning
-* Error
-* Disabled
-
-WCAG-accessible contrast where practical.
-
-### Spacing
-
-Consistent spacing system, not arbitrary values.
-
-Keep consistent:
-
-* Screen padding
-* Component spacing
-* Section spacing
-* Icon/text spacing
-* List item height
-* Button dimensions
-
-## 4. Navigation & User Flow
-
-Analyze user movement through app.
-
-Cut unnecessary navigation/taps.
+Analyze user movement through app. Cut needless navigation/taps.
 
 Ensure:
 
 * User always know location
 * Back navigation predictable
 * Important actions easy find
-* Destructive actions get proper confirmation
-* Related functionality grouped logically
+* Related functionality grouped
 * Navigation consistent across screens
 
-Workflow simplifiable → propose, implement simpler flow.
+Workflow simplifiable: propose, implement simpler flow.
 
-## 5. States
+## 3. Responsiveness to taps
 
-Every important screen handle properly:
+Every action that waits (network, crypto, file I/O, install) shows progress at once and blocks double-submit. No tap that looks ignored. Pattern + `BusyLabel`: repo skill, "Slow taps show progress".
 
-* Loading
-* Success
-* Empty state
-* Error state
-* Offline state
-* Disabled state
-* First-use state
-
-No blank screens when data unavailable.
-
-Useful empty/error messages explain:
-
-**What happened → Why → What user can do next**
-
-## 6. Accessibility
-
-Improve accessibility throughout.
-
-Check:
-
-* Touch target sizes
-* Text contrast
-* Content descriptions
-* Screen-reader usability
-* Focus order
-* Dynamic font scaling
-* Color-independent status indicators
-* Keyboard/navigation support where relevant
-
-Don't communicate important info via color alone.
-
-## 7. Responsive Design
-
-UI work properly across:
-
-* Small phones
-* Large phones
-* Different aspect ratios
-* Portrait
-* Landscape where fit
-* Different font scales
-
-Avoid hardcoded dimensions breaking on different devices.
-
-## 8. Microinteractions
-
-Add subtle feedback where useful:
-
-* Button press feedback
-* Loading indicators
-* Success feedback
-* Error feedback
-* Smooth transitions
-* State changes
-* Fit animations
-
-Animations should be:
-
-* Fast
-* Subtle
-* Functional
-* Non-distracting
-
-No decoration-only animation.
-
-## 9. UX Simplification
+## 4. UX Simplification
 
 Every screen ask:
 
 > "What is user's primary goal on this screen?"
 
-Make that action visually obvious.
+Make that action obvious.
 
 Remove/reduce:
 
-* Unnecessary text
+* Needless text
 * Redundant buttons
-* Duplicate information
-* Excessive borders
-* Excessive cards
-* Decorative elements with no value
+* Duplicate info
+* Excess borders / cards
+* Valueless decoration
 
 Prefer **progressive disclosure** for advanced options.
 
-## 10. Android Best Practices
-
-Follow current Android conventions:
-
-* System bars
-* Edge-to-edge layouts
-* Back navigation
-* Permissions
-* Notifications
-* Dialogs
-* Keyboard behavior
-* Orientation changes
-* Accessibility
-* Dark mode
-* Material components
-
-Respect Android platform behavior over custom implementation when native better.
-
-## 11. Dark Mode
-
-If app supports dark mode, make it deliberate design, not simple color-inversion.
-
-Check:
-
-* Background hierarchy
-* Surface hierarchy
-* Text contrast
-* Icons
-* Dividers
-* Cards
-* Input fields
-* Dialogs
-* System bars
-
-Avoid pure black unless intentional design choice.
-
-## 12. Implementation Rules
+## 5. Implementation Rules
 
 Before code change:
 
-1. Explore entire project.
-2. Identify UI framework in use.
-3. Understand existing architecture.
-4. Identify reusable components.
-5. Avoid unnecessary architectural changes.
-6. Reuse existing functionality where possible.
-7. Keep business logic separate from UI changes.
-8. Don't break existing functionality.
-9. Avoid unnecessary dependencies.
-10. Follow project's existing coding conventions.
+1. Explore whole project.
+2. Understand architecture (`docs/architecture/001-android-architecture.md`).
+3. Identify reusable components (`:core:ui`).
+4. No needless architecture changes.
+5. Reuse existing functionality.
+6. Keep business logic separate from UI (`:core:domain`).
+7. Don't break existing functionality.
+8. No needless dependencies.
+9. Follow project coding conventions.
 
-Prefer reusable UI components, design tokens over duplicated styling.
+## 6. Prioritization
 
-## 13. Prioritization
+Classify each improvement:
 
-Classify each proposed improvement:
+**P0 — Critical**: blocks usability, major confusion, or leaks something private. Fix now.
 
-**P0 — Critical**
+**P1 — High**: big UX gain.
 
-* Fix immediately
-* Blocks usability or causes major confusion
+**P2 — Medium**: visual or usability gain.
 
-**P1 — High**
+**P3 — Polish**: minor refinement.
 
-* Significant UX improvement
+P0/P1 first.
 
-**P2 — Medium**
+## 7. Before/After Thinking
 
-* Visual or usability improvement
+Each significant UI change, explain internally:
 
-**P3 — Polish**
-
-* Minor refinement
-
-Implement P0/P1 first.
-
-## 14. Before/After Thinking
-
-For every significant UI change, explain internally:
-
-* What was wrong?
+* What wrong?
 * Why problem?
 * New solution?
-* How improve user experience?
+* How UX better?
 
-Don't change just for different look.
+No change just for new look.
 
-## 15. Final Quality Check
+## 8. Final Quality Check
 
-Before work complete, verify:
+Before done:
 
-* [ ] All screens have consistent visual language
-* [ ] Navigation intuitive
-* [ ] Typography consistent
-* [ ] Spacing consistent
-* [ ] Colors consistent
-* [ ] Buttons have clear hierarchy
-* [ ] Touch targets appropriate
-* [ ] Loading/error/empty states exist where needed
-* [ ] Dark mode works correctly if supported
-* [ ] Accessibility considered
-* [ ] Different screen sizes don't break UI
-* [ ] No existing functionality accidentally removed
-* [ ] No unnecessary dependencies added
-* [ ] Build succeeds
-* [ ] Tests still pass
+* [ ] android-ux M3 audit: no Fail left on touched screens
+* [ ] Repo skill's "Done means seen" steps followed
+* [ ] Navigation intuitive, clear button hierarchy
+* [ ] No functionality accidentally removed
+* [ ] No needless dependencies added
+* [ ] `./gradlew :app:assembleDebug test lint` green
+* [ ] Unseen-on-device list written to `docs/TASK-HISTORY.md`
 
 ## Important
 
-**Don't blind-redesign app.**
+**No blind redesign.** First analyze existing UX, understand app purpose.
 
-First analyze existing UX, understand what app tries to accomplish.
-
-Final result feel like **professional, modern Android application** — not just app with more colors, animations, cards, rounded corners.
+Result feel like **professional, modern Android application**. Not just more colors, animations, cards, rounded corners.
 
 Focus:
 
 **Clarity → Simplicity → Consistency → Accessibility → Speed → Polish**
 
-At end, give concise summary:
+End with short summary:
 
 1. Major UX problems found
-2. Changes implemented
+2. Changes made
 3. Screens/components improved
 4. Remaining recommendations
-5. Any risks or trade-offs
+5. Risks/trade-offs
