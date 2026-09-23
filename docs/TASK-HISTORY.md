@@ -2,7 +2,7 @@
 
 One file for all that used to live in `docs/FOLLOWUP.md` and `docs/specs/`: what still open, what already done (so nobody redo), specs fully absorbed into code. Point Claude here to resume from last session.
 
-Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); both phones checked on v1.11.1. Supabase migrations **0001–0013 all applied**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
+Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); Pixel runs it, Xiaomi on v1.11.1 (differences: spinner colour, calendar row height). Supabase migrations **0001–0013 all applied**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
 
 `git log --oneline feature/android-app` = real history. This file = condensed version.
 
@@ -53,7 +53,7 @@ Grep-driven sweep of every `:feature:*` screen for classes of mistake (a11y desc
 
 **Checked on the Pixel (v1.11.1, Hebrew/light, installed from the startup update dialog, 1.10.2 → 1.11.1 directly).** Update check → "יש לך את הגרסה העדכנית ביותר". Calendar picker: spinner in dialog, then list. Documents: card tap opens folder / previews document, long-press without moving → no preview, crumb tap at its top edge navigates, FAB × "סגירה" on the start (left) side, trash at the far end. Feed / pumping trash → "למחוק את ההאכלה של 08:46, 70 מ״ל?" / "למחוק את השאיבה של 09:55, 80 מ״ל?" — times and amounts in the right order, Cancel kept both rows. **Item 4 now confirmed on both phones, both languages.** No data created or deleted.
 
-**Found on the Pixel, fixed in v1.11.2:** `BusyLabel`'s spinner took the disabled button's 38% content colour — all but invisible on the light theme; now `primary`. Google Calendar picker rows were one text line tall (~13dp) with the checkbox touching the name; now ≥48dp with a gap. Both still to be seen on a phone.
+**Found on the Pixel, fixed in v1.11.2:** `BusyLabel`'s spinner took the disabled button's 38% content colour — all but invisible on the light theme; now `primary`. Google Calendar picker rows were one text line tall (~13dp) with the checkbox touching the name; now ≥48dp with a gap. **Both confirmed on the Pixel (v1.11.2, Hebrew/light):** picker rows 138px (~52dp, were ~35px), checkbox spaced from name, selection untouched; update-check spinner now green `primary` — on this network the check finishes in ~0.1s, so it only flashes. Pixel install needed a one-time Google Play Protect scan ("לסריקת האפליקציה") before the system update prompt.
 
 **Still unseen:** error branches (update check failing, calendar fetch failing — need airplane mode), pairing spinners (fresh join only), sign-out and web-import spinners (destructive / create data), remember-me row (signed-out only), Pixel pass. Update-check spinner is faint on the disabled outlined button — readable, noted.
 
