@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -685,8 +688,12 @@ private fun GoogleCalendarSection(uiState: SettingsUiState, actions: SettingsAct
                     Column {
                         uiState.availableGoogleCalendars.forEach { option ->
                             Row(
+                                // 48dp rows: with the checkbox's own tap target switched off
+                                // (onCheckedChange = null) each row was one line of text tall,
+                                // ~13dp on the Pixel, with the box touching the name.
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
                                     .toggleable(
                                         value = option.selected,
                                         onValueChange = { actions.onToggleCalendarSelection(option.id) },
@@ -695,6 +702,7 @@ private fun GoogleCalendarSection(uiState: SettingsUiState, actions: SettingsAct
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Checkbox(checked = option.selected, onCheckedChange = null)
+                                Spacer(Modifier.width(12.dp))
                                 Text(option.summary, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
