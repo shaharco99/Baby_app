@@ -58,6 +58,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -107,13 +109,6 @@ fun HomeScreen(
     onNavigateToFeeding: () -> Unit = {},
     onNavigateToPumping: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        val text = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-        text?.let(actions::onImportJson)
-    }
-
     Scaffold(modifier = modifier.fillMaxSize().safeDrawingPadding()) { padding ->
         PullToRefreshBox(
             isRefreshing = uiState.refreshing,
@@ -133,20 +128,16 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.semantics { heading() },
                 )
-                if (uiState.showChildSwitcher) {
-                    ChildSwitcher(uiState = uiState, actions = actions)
-                }
-
                 if (uiState.isBabyMode) {
-                    // The feed first: it is what the page is opened for, several times a night.
-                    // The birth card is a keepsake, read far less often than it is scrolled past.
-                    FeedCountdownCard(uiState = uiState, onClick = onNavigateToFeeding)
-
+                    // Who, then when to feed: a short card naming the child sits on top, and the
+                    // two countdowns the page is opened for follow straight after it.
                     BirthStatsCard(
                         baby = requireNotNull(uiState.activeBaby),
                         age = uiState.babyAge,
                         actions = actions,
                     )
+
+                    FeedCountdownCard(uiState = uiState, onClick = onNavigateToFeeding)
 
                     if (uiState.showPumpCard) {
                         PumpCountdownCard(uiState = uiState, onClick = onNavigateToPumping)
@@ -192,39 +183,8 @@ fun HomeScreen(
                         }
                     }
                 }
-
-                TextButton(
-                    onClick = { importLauncher.launch(arrayOf("application/json")) },
-                    enabled = !uiState.importing,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    BusyLabel(stringResource(R.string.home_import_from_web), busy = uiState.importing)
-                }
             }
         }
-    }
-
-    uiState.importResult?.let { result ->
-        AlertDialog(
-            onDismissRequest = actions::onDismissImportResult,
-            confirmButton = {
-                TextButton(onClick = actions::onDismissImportResult) { Text(stringResource(R.string.home_ok)) }
-            },
-            title = {
-                Text(
-                    stringResource(
-                        if (result is ImportResult.Success) R.string.home_import_done else R.string.home_import_failed,
-                    ),
-                )
-            },
-            text = {
-                if (result is ImportResult.Success) {
-                    Text(stringResource(R.string.home_import_summary, result.taskCount, result.shoppingCount, result.dateCount))
-                } else {
-                    Text(stringResource(R.string.home_import_failed_body))
-                }
-            },
-        )
     }
 
     if (uiState.bookOfLoveVisible) {
@@ -570,28 +530,6 @@ private fun OpenTasksCard(count: Int, onClick: () -> Unit) {
 }
 
 /**
- * Picking a child re-derives the whole page from *that* child: an older sibling shows their
- * birth stats, a still-unborn one shows the moon countdown. Scrolls sideways rather than
- * wrapping, so a third child doesn't push the page's content down.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ChildSwitcher(uiState: HomeUiState, actions: HomeActions) {
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        uiState.children.forEach { child ->
-            FilterChip(
-                selected = child.id == uiState.activeBaby?.id,
-                onClick = { actions.onSelectChild(child.id) },
-                label = { Text(child.name ?: stringResource(R.string.home_child_unnamed)) },
-            )
-        }
-    }
-}
-
-/**
  * The pumping counterpart to [FeedCountdownCard], and the one card here that is not about the
  * child: it reads the same on the moon page as in baby mode.
  *
@@ -723,52 +661,29 @@ private fun FeedCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
 }
 
 /**
- * The two lines under the birth date: how old the child is, said in the units people actually
- * use. The first is the plain day count, which is the one that matters in the early weeks; the
- * second adds weeks and the calendar breakdown, and is left off entirely in the first week,
- * where it would only repeat the line above it.
- *
- * Components that are zero are dropped rather than printed — "0 years, 0 months, 6 days" is a
- * form, not a sentence.
+ * How old the child is, in the one form people say it: days in the first week, then weeks and
+ * days, then months (and years) once there is a month to count. Components that are zero are
+ * dropped — "1 week" rather than "1 week, 0 days".
  */
 @Composable
-private fun AgeLines(age: BabyAge) {
+private fun AgeLine(age: BabyAge) {
     val separator = stringResource(R.string.home_age_separator)
-    val days = pluralStringResource(R.plurals.home_age_days, age.totalDays, age.totalDays)
+    val text = when {
+        age.years > 0 || age.months > 0 -> listOfNotNull(
+            pluralStringResource(R.plurals.home_age_years, age.years, age.years).takeIf { age.years > 0 },
+            pluralStringResource(R.plurals.home_age_months, age.months, age.months).takeIf { age.months > 0 },
+            pluralStringResource(R.plurals.home_age_days, age.days, age.days).takeIf { age.days > 0 },
+        ).joinToString(separator)
 
-    val weekPart = if (age.weeks > 0) {
-        listOfNotNull(
+        age.weeks > 0 -> listOfNotNull(
             pluralStringResource(R.plurals.home_age_weeks, age.weeks, age.weeks),
             pluralStringResource(R.plurals.home_age_days, age.daysInWeek, age.daysInWeek)
                 .takeIf { age.daysInWeek > 0 },
         ).joinToString(separator)
-    } else {
-        null
-    }
 
-    val calendarPart = listOfNotNull(
-        pluralStringResource(R.plurals.home_age_years, age.years, age.years).takeIf { age.years > 0 },
-        pluralStringResource(R.plurals.home_age_months, age.months, age.months).takeIf { age.months > 0 },
-        pluralStringResource(R.plurals.home_age_days, age.days, age.days).takeIf { age.days > 0 },
-    ).joinToString(separator).takeIf { age.years > 0 || age.months > 0 }
-
-    Text(
-        text = stringResource(R.string.home_age_primary, days),
-        style = MaterialTheme.typography.titleMedium,
-    )
-
-    val detail = when {
-        weekPart != null && calendarPart != null ->
-            stringResource(R.string.home_age_detail, weekPart, calendarPart)
-        else -> weekPart ?: calendarPart
+        else -> pluralStringResource(R.plurals.home_age_days, age.totalDays, age.totalDays)
     }
-    detail?.let {
-        Text(
-            text = it,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    Text(text = text, style = MaterialTheme.typography.titleMedium)
 }
 
 /**
@@ -802,13 +717,16 @@ private fun BirthStatsCard(baby: Baby, age: BabyAge?, actions: HomeActions) {
     }
     val scope = rememberCoroutineScope()
 
+    val editLabel = stringResource(R.string.home_edit_birth_details)
+    // The whole card opens the birth details: tapping what you want to change beats hunting for
+    // a button under it. Long-press stays the easter egg it always was.
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(CardDefaults.shape)
             .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {},
+                onClickLabel = editLabel,
+                onClick = actions::onEditBirthDetails,
                 onLongClick = {
                     scope.launch { glitchFlicker(background, settleTo = cardColor) }
                     actions.onMoonLongPress()
@@ -816,12 +734,21 @@ private fun BirthStatsCard(baby: Baby, age: BabyAge?, actions: HomeActions) {
             ),
         colors = CardDefaults.cardColors(containerColor = background.value),
     ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = baby.name?.let { stringResource(R.string.home_arrived_title_named, it) }
-                    ?: stringResource(R.string.home_arrived_title),
-                style = MaterialTheme.typography.titleLarge,
-            )
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = baby.name?.let { stringResource(R.string.home_arrived_title_named, it) }
+                        ?: stringResource(R.string.home_arrived_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.Outlined.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
             baby.birthDate?.let { date ->
                 Text(
                     text = baby.birthTime
@@ -831,24 +758,7 @@ private fun BirthStatsCard(baby: Baby, age: BabyAge?, actions: HomeActions) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            age?.let { AgeLines(age = it) }
-            baby.birthWeightGrams?.let { grams ->
-                Text(
-                    text = stringResource(R.string.home_birth_weight, grams),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            baby.birthPlace?.let { place ->
-                Text(
-                    text = place,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            TextButton(onClick = actions::onEditBirthDetails) {
-                Text(stringResource(R.string.home_edit_birth_details))
-            }
+            age?.let { AgeLine(age = it) }
         }
     }
 }
@@ -1013,12 +923,9 @@ private object NoopHomeActions : HomeActions {
     override fun onPartnerOneNameChange(value: String) = Unit
     override fun onPartnerTwoNameChange(value: String) = Unit
     override fun onSubmit() = Unit
-    override fun onImportJson(json: String) = Unit
-    override fun onDismissImportResult() = Unit
     override fun onRefresh() = Unit
     override fun onMoonLongPress() = Unit
     override fun onDismissBookOfLove() = Unit
-    override fun onSelectChild(babyId: String) = Unit
     override fun onEditBirthDetails() = Unit
     override fun onDismissBirthSheet() = Unit
     override fun onOpenBirthDatePicker() = Unit

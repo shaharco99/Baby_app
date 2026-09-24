@@ -51,6 +51,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.oryareach.core.database.importer.WebImportOutcome
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -124,6 +127,7 @@ fun SettingsScreen(
             item { RecoverySection(actions = actions) }
             item { DevicesSection(actions = actions) }
             item { GoogleCalendarSection(uiState = uiState, actions = actions) }
+            item { WebImportSection(uiState = uiState, actions = actions) }
             item { footer() }
 
             item {
@@ -601,6 +605,60 @@ private fun NotificationsSection(uiState: SettingsUiState, actions: SettingsActi
 }
 
 @Composable
+private fun WebImportSection(uiState: SettingsUiState, actions: SettingsActions) {
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val text = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+        text?.let(actions::onImportJson)
+    }
+    SectionCard(title = stringResource(R.string.settings_import_title), collapsible = true) {
+        Text(
+            text = stringResource(R.string.settings_import_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            onClick = { launcher.launch(arrayOf("application/json")) },
+            enabled = !uiState.importing,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            BusyLabel(stringResource(R.string.settings_import_action), busy = uiState.importing)
+        }
+    }
+
+    uiState.importResult?.let { result ->
+        AlertDialog(
+            onDismissRequest = actions::onDismissImportResult,
+            confirmButton = {
+                TextButton(onClick = actions::onDismissImportResult) { Text(stringResource(R.string.settings_import_ok)) }
+            },
+            title = {
+                Text(
+                    stringResource(
+                        if (result is WebImportOutcome.Success) R.string.settings_import_done else R.string.settings_import_failed,
+                    ),
+                )
+            },
+            text = {
+                if (result is WebImportOutcome.Success) {
+                    Text(
+                        stringResource(
+                            R.string.settings_import_summary,
+                            result.taskCount,
+                            result.shoppingCount,
+                            result.dateCount,
+                        ),
+                    )
+                } else {
+                    Text(stringResource(R.string.settings_import_failed_body))
+                }
+            },
+        )
+    }
+}
+
+@Composable
 private fun RecoverySection(actions: SettingsActions) {
     SectionCard(title = stringResource(R.string.settings_recovery_title), collapsible = true) {
         Text(
@@ -784,6 +842,8 @@ private object NoopSettingsActions : SettingsActions {
     override fun onToggleCalendarSelection(calendarId: String) = Unit
     override fun onDisconnectGoogleCalendarClick() = Unit
     override fun onSetActiveChild(babyId: String) = Unit
+    override fun onImportJson(json: String) = Unit
+    override fun onDismissImportResult() = Unit
     override fun onAddChildClick() = Unit
     override fun onDismissAddChild() = Unit
     override fun onAddChild(name: String, dueDate: LocalDate?, makeActive: Boolean) = Unit

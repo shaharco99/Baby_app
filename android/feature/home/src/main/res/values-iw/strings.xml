@@ -24,19 +24,12 @@
     <string name="home_save">שמור</string>
     <string name="home_pick_confirm">אישור</string>
     <string name="home_pick_cancel">ביטול</string>
-    <string name="home_ok">אישור</string>
     <string name="home_edit_due_date">עריכת הווסת האחרונה והשם</string>
-    <string name="home_import_from_web">ייבוא מהאתר</string>
-    <string name="home_import_done">הייבוא הושלם</string>
-    <string name="home_import_summary">נוספו %1$d משימות, %2$d פריטי קניות ו-%3$d תאריכים. פריטים שכבר היו קיימים דולגו.</string>
-    <string name="home_import_failed">לא הצלחנו לקרוא את הקובץ</string>
-    <string name="home_import_failed_body">ודאו שזה קובץ JSON שיוצא מאתר אור ירח.</string>
     <string name="home_budget_spent_of_estimated">₪%1$.2f מתוך ₪%2$.2f הוצאו</string>
     <string name="home_budget_paid_by_us">₪%1$.2f שילמנו</string>
     <string name="home_budget_gifts">₪%1$.2f קיבלנו במתנה</string>
     <string name="home_book_of_love_title">ספר האהבה</string>
     <string name="home_book_of_love_close">אעשה את זה</string>
-    <string name="home_child_unnamed">תינוק/ת</string>
     <string name="home_baby_was_born">התינוק/ת כאן — הוספת פרטי הלידה</string>
     <string name="home_edit_birth_details">עריכת פרטי הלידה</string>
     <string name="home_birth_details_title">פרטי הלידה</string>
@@ -46,7 +39,6 @@
     <string name="home_birth_place_field">מקום הלידה</string>
     <string name="home_birth_date">נולד/ה ב-%1$s</string>
     <string name="home_birth_date_and_time">נולד/ה ב-%1$s בשעה %2$s</string>
-    <string name="home_birth_weight">%1$d גרם</string>
     <string name="home_next_feed_label">עד ההאכלה הבאה</string>
     <string name="home_feed_overdue_label">האכלה באיחור של</string>
     <string name="home_no_feeds_yet">עדיין לא נרשמה האכלה — אפשר להתחיל בלשונית ההאכלה.</string>
@@ -194,9 +186,7 @@
     <string name="home_pump_overdue_label">השאיבה באיחור של</string>
     <string name="home_pumping_now">שואבת כרגע</string>
     <string name="home_pump_paused">שאיבה בהשהיה</string>
-    <string name="home_age_primary">בגיל %1$s</string>
     <string name="home_age_separator">,\u0020</string>
-    <string name="home_age_detail">%1$s · %2$s</string>
     <plurals name="home_age_days">
         <item quantity="one">יום</item>
         <item quantity="two">יומיים</item>

@@ -81,8 +81,6 @@ data class HomeUiState(
     val birthSheetVisible: Boolean = false,
     val birthDatePickerVisible: Boolean = false,
     val birthTimePickerVisible: Boolean = false,
-    val importing: Boolean = false,
-    val importResult: ImportResult? = null,
     val refreshing: Boolean = false,
     /** Easter egg: long-pressing the moon shows the "Book of Love" tip, but only when the
      * partner has been active recently — see [HomeViewModel.onMoonLongPress]. */
@@ -97,8 +95,6 @@ data class HomeUiState(
      */
     val isBabyMode: Boolean get() = activeBaby?.isBorn == true
 
-    /** The switcher is pointless with a single child, and misleading before the seed runs. */
-    val showChildSwitcher: Boolean get() = children.size > 1
 
     /**
      * The pump card earns its place or is not drawn at all: before the first session there is
@@ -108,9 +104,4 @@ data class HomeUiState(
 
     val canSubmitForm: Boolean get() = editingLastPeriodDate != null
     val canSubmitBirthDetails: Boolean get() = editingBirthDate != null
-}
-
-sealed interface ImportResult {
-    data class Success(val taskCount: Int, val shoppingCount: Int, val dateCount: Int) : ImportResult
-    data object InvalidFile : ImportResult
 }

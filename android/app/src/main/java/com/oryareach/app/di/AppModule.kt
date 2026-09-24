@@ -2,6 +2,7 @@ package com.oryareach.app.di
 
 import com.oryareach.app.lock.AutoLockController
 import com.oryareach.app.notifications.AlarmFeedingReminderScheduler
+import com.oryareach.core.database.importer.WebImporter
 import com.oryareach.app.notifications.AlarmPumpReminderScheduler
 import com.oryareach.app.notifications.AlarmVitaminReminderScheduler
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
@@ -210,6 +211,7 @@ val appModule = module {
 
     single<SyncTrigger> { WorkManagerSyncTrigger(androidContext()) }
     single { TaskRepository(database = get(), syncTrigger = get()) }
+    single { WebImporter(settings = get(), tasks = get(), shopping = get(), dates = get()) }
     single { CycleRepository(database = get(), syncTrigger = get()) }
     single { CycleEntryRepository(database = get(), syncTrigger = get()) }
     single { BabyRepository(database = get(), syncTrigger = get()) }
@@ -327,7 +329,6 @@ val appModule = module {
             pumpRepository = get(),
             taskRepository = get(),
             shoppingRepository = get(),
-            importantDateRepository = get(),
             auth = get(),
             presence = get(),
             syncEngine = get(),
@@ -358,6 +359,7 @@ val appModule = module {
             appSettings = get(),
             feedingReminders = get(),
             pumpReminders = get(),
+            webImporter = get(),
             workspaceId = { get<SessionState>().workspaceId },
         )
     }

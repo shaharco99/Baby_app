@@ -27,6 +27,16 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 
 ---
 
+## 2026-09-24 (later) — Home reshaped (v1.13.0)
+
+User's call, same day: birth card back on top but short — title with name, born date/time, one age line — then feed, then pump. Age is one line only: days in week one, "1 week, 1 day" after, months (+ years) once there is a month; the "8 days old" line is gone. Weight and birth place are off Home (still in the edit sheet and on the doctor summary). Whole card taps to the birth-details sheet (pencil icon as the hint, `onClickLabel`), long-press still the easter egg; the "Edit birth details" button is gone.
+
+Moved to Settings: child switching (Home's chips removed — Settings' Children section already sets the active child) and "Import from web app" (new collapsible section; logic extracted from `HomeViewModel` into `:core:database`'s `importer/WebImporter`, so a feature doesn't own four repositories' writes). Unused home strings removed.
+
+v1.12.1 (summary week from first feed, age separator) published before this; not separately checked on a phone — rolled into v1.13.0's check.
+
+---
+
 ## 2026-09-24 — doctor summary, nappy counts, feed widget, Home feed-first
 
 User picked from a suggestion list; declined: diaper log (marks on feeds are enough), sleep log, growth/percentiles, vaccine schedule, notification quick-log, backup export, retiring pregnancy screens, night mode, PDF export.

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.oryareach.core.calendar.GoogleCalendarSyncRepository
 import com.oryareach.core.common.AppResult
 import com.oryareach.core.crypto.RecoveryPhrase
+import com.oryareach.core.database.importer.WebImporter
 import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.database.repository.AppSettingsRepository
@@ -55,6 +56,8 @@ interface SettingsActions {
     fun onToggleCalendarSelection(calendarId: String)
     fun onDisconnectGoogleCalendarClick()
     fun onSetActiveChild(babyId: String)
+    fun onImportJson(json: String)
+    fun onDismissImportResult()
     fun onAddChildClick()
     fun onDismissAddChild()
     fun onAddChild(name: String, dueDate: LocalDate?, makeActive: Boolean)
@@ -87,6 +90,7 @@ class SettingsViewModel(
     private val appSettings: AppSettingsRepository,
     private val feedingReminders: FeedingReminderRefresher,
     private val pumpReminders: PumpReminderRefresher,
+    private val webImporter: WebImporter,
     private val workspaceId: () -> String?,
 ) : ViewModel(), SettingsActions {
 
@@ -344,6 +348,23 @@ class SettingsViewModel(
             googleCalendarSync.refresh(emptyList())
         }
     }
+
+    /**
+     * Additive and re-runnable — see [WebImporter]. Local writes only, but a big export is a few
+     * hundred encrypted rows, so the button still shows it is working.
+     */
+    override fun onImportJson(json: String) {
+        val workspace = workspaceId() ?: return
+        if (_uiState.value.importing) return
+        set { it.copy(importing = true) }
+
+        viewModelScope.launch {
+            val outcome = webImporter.import(workspace, auth.currentUserId().orEmpty(), json)
+            set { it.copy(importing = false, importResult = outcome) }
+        }
+    }
+
+    override fun onDismissImportResult() = set { it.copy(importResult = null) }
 
     override fun onSetActiveChild(babyId: String) {
         val workspace = workspaceId() ?: return

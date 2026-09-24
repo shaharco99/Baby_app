@@ -3,6 +3,7 @@ package com.oryareach.feature.settings
 import android.content.IntentSender
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import com.oryareach.core.database.importer.WebImportOutcome
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 
@@ -42,6 +43,10 @@ data class SettingsUiState(
     /** The child whose birth details are open for editing, if any. */
     val editingChild: Baby? = null,
     val addChildVisible: Boolean = false,
+
+    // Bringing in a JSON export from the retired web app.
+    val importing: Boolean = false,
+    val importResult: WebImportOutcome? = null,
 ) {
     val autoLockOptionMinutes: List<Int> get() = listOf(1, 5, 15, 30)
 

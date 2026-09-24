@@ -6,13 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
-import com.oryareach.core.database.repository.ImportantDateRepository
 import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.baby.babyAge
-import com.oryareach.core.domain.importer.parseWebSnapshot
-import com.oryareach.core.domain.importer.toImportedSnapshot
 import com.oryareach.core.domain.feeding.nextFeedCountdown
 import com.oryareach.core.domain.pregnancy.dueDateFromLastPeriod
 import com.oryareach.core.domain.pregnancy.getPregnancyProgress
@@ -54,12 +51,9 @@ interface HomeActions {
     fun onPartnerOneNameChange(value: String)
     fun onPartnerTwoNameChange(value: String)
     fun onSubmit()
-    fun onImportJson(json: String)
-    fun onDismissImportResult()
     fun onRefresh()
     fun onMoonLongPress()
     fun onDismissBookOfLove()
-    fun onSelectChild(babyId: String)
     fun onEditBirthDetails()
     fun onDismissBirthSheet()
     fun onOpenBirthDatePicker()
@@ -85,7 +79,6 @@ class HomeViewModel(
     private val pumpRepository: PumpSessionRepository,
     private val taskRepository: TaskRepository,
     private val shoppingRepository: ShoppingItemRepository,
-    private val importantDateRepository: ImportantDateRepository,
     private val auth: AuthRepository,
     private val presence: PartnerPresence,
     private val syncEngine: SyncEngine,
@@ -93,7 +86,6 @@ class HomeViewModel(
     private val today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
     private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     private val ticker: () -> Flow<Unit> = ::secondTicker,
-    private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
 ) : ViewModel(), HomeActions {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -302,11 +294,6 @@ class HomeViewModel(
         }
     }
 
-    override fun onSelectChild(babyId: String) {
-        val workspace = workspaceId() ?: return
-        viewModelScope.launch { babyRepository.setActive(workspace, babyId) }
-    }
-
     override fun onEditBirthDetails() = set {
         val baby = it.activeBaby
         it.copy(
@@ -360,87 +347,6 @@ class HomeViewModel(
     }
 
     /**
-     * Additive and re-runnable: tasks/items/dates are skipped when something with the same
-     * title (and, for dates, the same day) already exists, same dedup approach as the
-     * hospital-bag preset. Settings (due date, baby name) are always overwritten — importing
-     * is a deliberate one-shot action, not a background merge.
-     */
-    override fun onImportJson(json: String) {
-        val workspace = workspaceId() ?: return
-        if (_uiState.value.importing) return
-        set { it.copy(importing = true) }
-
-        viewModelScope.launch {
-            val snapshot = parseWebSnapshot(json)
-            if (snapshot == null) {
-                set { it.copy(importing = false, importResult = ImportResult.InvalidFile) }
-                return@launch
-            }
-
-            val imported = snapshot.toImportedSnapshot(newId)
-            val userId = auth.currentUserId().orEmpty()
-
-            settingsRepository.save(
-                workspaceId = workspace,
-                userId = userId,
-                dueDate = imported.settings.dueDate,
-                babyName = imported.settings.babyName,
-                partnerOneName = _uiState.value.partnerOneName,
-                partnerTwoName = _uiState.value.partnerTwoName,
-            )
-
-            val existingTasks = taskTitlesSnapshot(workspace)
-            var taskCount = 0
-            imported.tasks.filter { it.title.trim().lowercase() !in existingTasks }.forEach { task ->
-                taskRepository.create(
-                    workspaceId = workspace,
-                    userId = userId,
-                    title = task.title,
-                    category = task.category,
-                    priority = task.priority,
-                    assignee = task.assignee,
-                    note = task.note,
-                    done = task.done,
-                )
-                taskCount++
-            }
-
-            val existingItems = shoppingNamesSnapshot(workspace)
-            var shoppingCount = 0
-            imported.shoppingItems.filter { it.name.trim().lowercase() !in existingItems }.forEach { item ->
-                shoppingRepository.create(
-                    workspaceId = workspace,
-                    userId = userId,
-                    name = item.name,
-                    category = item.category,
-                    estimatedPrice = item.estimatedPrice,
-                    priority = item.priority,
-                    assignee = item.assignee,
-                    note = item.note,
-                    link = item.link,
-                )
-                shoppingCount++
-            }
-
-            val existingDates = dateKeysSnapshot(workspace)
-            var dateCount = 0
-            imported.importantDates.filter { "${it.title.trim().lowercase()}|${it.date}" !in existingDates }.forEach { date ->
-                importantDateRepository.create(workspace, userId, date.date, date.title, date.wish)
-                dateCount++
-            }
-
-            set {
-                it.copy(
-                    importing = false,
-                    importResult = ImportResult.Success(taskCount, shoppingCount, dateCount),
-                )
-            }
-        }
-    }
-
-    override fun onDismissImportResult() = set { it.copy(importResult = null) }
-
-    /**
      * Book of Love easter egg: only surfaces when both of you have the app open at the same
      * moment, which is the whole point of it — a tip meant for two people reading it together.
      *
@@ -471,16 +377,6 @@ class HomeViewModel(
             set { it.copy(refreshing = false) }
         }
     }
-
-    private suspend fun taskTitlesSnapshot(workspace: String): Set<String> =
-        taskRepository.observeAll(workspace).first().map { it.title.trim().lowercase() }.toSet()
-
-    private suspend fun shoppingNamesSnapshot(workspace: String): Set<String> =
-        shoppingRepository.observeAll(workspace).first().map { it.name.trim().lowercase() }.toSet()
-
-    private suspend fun dateKeysSnapshot(workspace: String): Set<String> =
-        importantDateRepository.observeAll(workspace).first()
-            .map { "${it.title.trim().lowercase()}|${it.date}" }.toSet()
 
     private fun set(block: (HomeUiState) -> HomeUiState) {
         _uiState.value = block(_uiState.value)

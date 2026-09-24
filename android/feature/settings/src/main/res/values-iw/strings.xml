@@ -68,4 +68,12 @@
     <string name="settings_pump_interval">תזכורת שאיבה כל</string>
     <string name="settings_child_active_born_on">פעיל/ה · נולד/ה ב-%1$s</string>
     <string name="settings_child_born_unknown">נולד/ה</string>
+    <string name="settings_import_title">ייבוא מהאתר</string>
+    <string name="settings_import_body">ייבוא משימות, רשימת קניות ותאריכים מקובץ JSON שיוצא מאתר אור ירח. פריטים שכבר קיימים מדולגים, כך שאפשר להריץ שוב בבטחה.</string>
+    <string name="settings_import_action">בחירת קובץ</string>
+    <string name="settings_import_ok">אישור</string>
+    <string name="settings_import_done">הייבוא הושלם</string>
+    <string name="settings_import_summary">נוספו %1$d משימות, %2$d פריטי קניות ו-%3$d תאריכים. פריטים שכבר היו קיימים דולגו.</string>
+    <string name="settings_import_failed">לא הצלחנו לקרוא את הקובץ</string>
+    <string name="settings_import_failed_body">ודאו שזה קובץ JSON שיוצא מאתר אור ירח.</string>
 </resources>
