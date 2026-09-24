@@ -76,6 +76,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.oryareach.core.ui.component.NightWatchDialog
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -517,7 +518,7 @@ private fun VitaminHistoryDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.feeding_night_watch_close)) }
+            TextButton(onClick = onDismiss) { Text(stringResource(com.oryareach.core.ui.R.string.feeding_night_watch_close)) }
         },
         title = { Text(stringResource(R.string.vitamin_history_title)) },
         text = {
@@ -558,78 +559,6 @@ private fun Long.toTimeLabel(): String = toLocalDateTime().let { "%02d:%02d".for
 /** Minutes past midnight as a clock reading. */
 private fun Int.toTimeLabel(): String = "%02d:%02d".format(this / 60, this % 60)
 
-/**
- * The night-watch easter egg: what the small hours actually came to. Warm rather than clinical
- * — the numbers are real, the framing is a medal for whoever was awake.
- */
-@Composable
-private fun NightWatchDialog(tally: FeedingTally, mine: Int?, theirs: Int?, onDismiss: () -> Unit) {
-    val lines = androidx.compose.ui.res.stringArrayResource(R.array.feeding_night_watch_praise)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.feeding_night_watch_close)) } },
-        title = { Text(stringResource(R.string.feeding_night_watch_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = stringResource(R.string.feeding_night_watch_count, tally.nightFeeds),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = stringResource(R.string.feeding_night_watch_total, tally.totalFeeds),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                tally.totalMl?.let { ml ->
-                    Text(
-                        // Past a litre the number stops meaning anything as millilitres. It is
-                        // the same figure, said in a unit a person can picture.
-                        text = if (ml >= MILLILITRES_PER_LITRE) {
-                            stringResource(R.string.feeding_night_watch_litres, ml.toLitres())
-                        } else {
-                            stringResource(R.string.feeding_night_watch_ml, ml)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                tally.firstFeedEpochMillis?.let { first ->
-                    Text(
-                        text = stringResource(
-                            R.string.feeding_night_watch_since,
-                            dateLabel(first.toLocalDateTime().date),
-                            tally.daysLogged,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (mine != null && theirs != null) {
-                    Text(
-                        text = stringResource(R.string.feeding_night_watch_split, mine, theirs),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                tally.milestone?.let { milestone ->
-                    Text(
-                        text = stringResource(R.string.feeding_night_watch_milestone, milestone),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                // Keyed to the tally, so the line changes as the log grows rather than on
-                // every recomposition — a message that reshuffles mid-read is just noise.
-                Text(
-                    text = lines[tally.nightFeeds % lines.size],
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-        },
-    )
-}
 
 @Composable
 private fun NoBabyCard() {

@@ -35,7 +35,15 @@ data class BabyAge(
     val years: Int,
     val months: Int,
     val days: Int,
-)
+) {
+    /**
+     * The calendar remainder after the months, split into weeks and days — so a baby six weeks
+     * and three days old reads "1 month, 2 weeks and 3 days" rather than "1 month, 17 days".
+     */
+    val weeksAfterMonths: Int get() = days / 7
+
+    val daysAfterWeeks: Int get() = days % 7
+}
 
 /**
  * [BabyAge] on [on], or null before the child was born — the callers have nothing to say yet in

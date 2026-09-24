@@ -290,4 +290,6 @@
         <item quantity="other">Today: %1$d feeds</item>
     </plurals>
     <string name="home_today_feeds_with_ml">%1$s · %2$d ml</string>
+    <string name="home_age_and">%1$s and %2$s</string>
+    <string name="home_age_and_number">%1$s and %2$s</string>
 </resources>

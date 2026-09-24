@@ -2,6 +2,8 @@ package com.oryareach.feature.home
 
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.domain.feeding.FeedingTally
+import com.oryareach.core.domain.pumping.MilkStash
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.PumpSession
@@ -85,6 +87,11 @@ data class HomeUiState(
     /** Easter egg: long-pressing the moon shows the "Book of Love" tip, but only when the
      * partner has been active recently — see [HomeViewModel.onMoonLongPress]. */
     val bookOfLoveVisible: Boolean = false,
+    /** Easter eggs borrowed from the two logs: long-press the feed or pump card. */
+    val nightWatchTally: FeedingTally? = null,
+    val nightWatchMine: Int? = null,
+    val nightWatchTheirs: Int? = null,
+    val stash: MilkStash? = null,
 ) {
     val hasDueDate: Boolean get() = dueDate != null
 

@@ -67,6 +67,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.oryareach.core.ui.component.MilkStashDialog
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -370,66 +371,6 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
 }
 
 
-/**
- * The stash: what the pumping has added up to. Warm rather than clinical, on the same principle as
- * the feeding log's night watch — the numbers are real, the framing is for whoever did the work.
- */
-@Composable
-private fun MilkStashDialog(stash: MilkStash, onDismiss: () -> Unit) {
-    val lines = stringArrayResource(R.array.pumping_stash_praise)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.pumping_stash_close)) }
-        },
-        title = { Text(stringResource(R.string.pumping_stash_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = stringResource(R.string.pumping_stash_total, stash.totalMl),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                if (stash.feedsCovered > 0) {
-                    Text(
-                        text = stringResource(R.string.pumping_stash_feeds, stash.feedsCovered),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    // Hours and minutes, not a raw minute count: past a couple of days at the
-                    // pump "1100 minutes" stops being a length of time anyone can feel.
-                    text = stringResource(
-                        R.string.pumping_stash_sessions,
-                        stash.sessions,
-                        stash.totalMinutes.toHoursAndMinutes(),
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.pumping_stash_best_day, stash.bestDayMl),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                stash.milestoneMl?.let { milestone ->
-                    Text(
-                        text = stringResource(R.string.pumping_stash_milestone, milestone.toLitres()),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                // Keyed to the count, so the line changes as the log grows rather than on every
-                // recomposition — a message that reshuffles mid-read is just noise.
-                Text(
-                    text = lines[stash.sessions % lines.size],
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        },
-    )
-}
 
 /**
  * Turns red once it passes zero and counts *up* from there, because at that point "how late is

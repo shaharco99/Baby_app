@@ -51,23 +51,7 @@
     <string name="feeding_row_amount">מ״ל</string>
     <string name="feeding_row_urine">שתן</string>
     <string name="feeding_row_stool">צואה</string>
-    <string name="feeding_night_watch_title">שמירת לילה</string>
-    <string name="feeding_night_watch_close">חזרה</string>
-    <string name="feeding_night_watch_count">%1$d האכלות בין חצות לשש</string>
-    <string name="feeding_night_watch_total">%1$d האכלות בסך הכול</string>
-    <string name="feeding_night_watch_ml">%1$d מ״ל נמדדו</string>
-    <string name="feeding_night_watch_litres">%1$s ליטר נמדדו</string>
-    <string name="feeding_night_watch_since">רושמים מאז %1$s · %2$d ימים</string>
-    <string name="feeding_night_watch_split">רשמת %1$d מהן, בן/בת הזוג %2$d</string>
-    <string name="feeding_night_watch_milestone">האכלה מספר %1$d, וגם רשמתם אותה</string>
 
-    <string-array name="feeding_night_watch_praise">
-        <item>אף אחד לא ראה. זה עדיין נחשב.</item>
-        <item>לפחות הירח עשה לכם חברה.</item>
-        <item>מי שהיה/הייתה ערה — זה היה החלק הקשה, ועשיתם את זה.</item>
-        <item>מישהו כבר יישן לילה שלם. כנראה.</item>
-        <item>שניים מאיתנו, עריץ אחד קטן, וקומקום. קרב הוגן.</item>
-    </string-array>
     <string name="feeding_empty_hint">אפשר לרשום האכלה כשהיא קורית, או להוסיף אחת מקודם.</string>
     <string name="feeding_deleted">ההאכלה נמחקה</string>
     <string name="feeding_undo_action">ביטול</string>

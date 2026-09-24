@@ -27,6 +27,14 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 
 ---
 
+## 2026-09-24 (evening) — age wording, eggs on Home (v1.14.0)
+
+- Age reads "1 week and 1 day", then "1 month, 2 weeks and 3 days" (years in front later); zero parts dropped. `BabyAge.weeksAfterMonths`/`daysAfterWeeks` (tested). The "and" is a resource pair because Hebrew fuses ו onto a word (ויום) but hyphenates before a digit (ו-3 ימים).
+- Night-watch and stash eggs now also open by long-pressing Home's feed / pump card. Both dialogs and their strings moved to `:core:ui`'s `component/EasterEggDialogs.kt` (`:core:ui` now depends on `:core:domain`). Home state also now keeps `bookOfLoveVisible` across database emissions — before, any sync tick while the Book of Love was open closed it.
+- **v1.13.0 checked on the Xiaomi (English/dark):** short birth card on top, no child chips, tap opens birth-details sheet (dismissed, nothing saved), import section in Settings. **Widget placed by the user on the Xiaomi:** flipped to "Feed overdue by" in the error colour at the due time, counting up. **Pre-existing, not fixed:** birth-details sheet's Save button sits under the navigation bar.
+
+---
+
 ## 2026-09-24 (later) — Home reshaped (v1.13.0)
 
 User's call, same day: birth card back on top but short — title with name, born date/time, one age line — then feed, then pump. Age is one line only: days in week one, "1 week, 1 day" after, months (+ years) once there is a month; the "8 days old" line is gone. Weight and birth place are off Home (still in the edit sheet and on the doctor summary). Whole card taps to the birth-details sheet (pencil icon as the hint, `onClickLabel`), long-press still the easter egg; the "Edit birth details" button is gone.

@@ -51,23 +51,7 @@
     <string name="feeding_row_amount">ml</string>
     <string name="feeding_row_urine">Urine</string>
     <string name="feeding_row_stool">Stool</string>
-    <string name="feeding_night_watch_title">Night watch</string>
-    <string name="feeding_night_watch_close">Back to it</string>
-    <string name="feeding_night_watch_count">%1$d feeds between midnight and six</string>
-    <string name="feeding_night_watch_total">%1$d feeds logged in all</string>
-    <string name="feeding_night_watch_ml">%1$d ml measured out</string>
-    <string name="feeding_night_watch_litres">%1$s litres measured out</string>
-    <string name="feeding_night_watch_since">Logging since %1$s · %2$d days in</string>
-    <string name="feeding_night_watch_split">You logged %1$d of them, your partner %2$d</string>
-    <string name="feeding_night_watch_milestone">Feed number %1$d, and you wrote it down</string>
 
-    <string-array name="feeding_night_watch_praise">
-        <item>Nobody saw it. It still counted.</item>
-        <item>The moon kept you company, at least.</item>
-        <item>Whoever was awake: that was the hard part, and you did it.</item>
-        <item>Someone will sleep through the night eventually. Probably.</item>
-        <item>Two of you, one small tyrant, and the kettle. A fair fight.</item>
-    </string-array>
     <string name="feeding_empty_hint">Log a feed when it happens, or add one from earlier.</string>
     <string name="feeding_deleted">Feed deleted</string>
     <string name="feeding_undo_action">Undo</string>

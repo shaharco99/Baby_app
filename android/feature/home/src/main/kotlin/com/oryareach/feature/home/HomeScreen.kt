@@ -58,6 +58,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.oryareach.core.ui.component.MilkStashDialog
+import com.oryareach.core.ui.component.NightWatchDialog
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.ui.geometry.Offset
@@ -137,10 +139,18 @@ fun HomeScreen(
                         actions = actions,
                     )
 
-                    FeedCountdownCard(uiState = uiState, onClick = onNavigateToFeeding)
+                    FeedCountdownCard(
+                        uiState = uiState,
+                        onClick = onNavigateToFeeding,
+                        onLongClick = actions::onFeedCardLongPress,
+                    )
 
                     if (uiState.showPumpCard) {
-                        PumpCountdownCard(uiState = uiState, onClick = onNavigateToPumping)
+                        PumpCountdownCard(
+                            uiState = uiState,
+                            onClick = onNavigateToPumping,
+                            onLongClick = actions::onPumpCardLongPress,
+                        )
                     }
 
                     BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
@@ -164,7 +174,11 @@ fun HomeScreen(
                     uiState.progress?.let { progress -> WeeklyInfoCard(progress = progress) }
 
                     if (uiState.showPumpCard) {
-                        PumpCountdownCard(uiState = uiState, onClick = onNavigateToPumping)
+                        PumpCountdownCard(
+                            uiState = uiState,
+                            onClick = onNavigateToPumping,
+                            onLongClick = actions::onPumpCardLongPress,
+                        )
                     }
 
                     BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
@@ -186,6 +200,17 @@ fun HomeScreen(
             }
         }
     }
+
+    uiState.nightWatchTally?.let { tally ->
+        NightWatchDialog(
+            tally = tally,
+            mine = uiState.nightWatchMine,
+            theirs = uiState.nightWatchTheirs,
+            onDismiss = actions::onDismissNightWatch,
+        )
+    }
+
+    uiState.stash?.let { stash -> MilkStashDialog(stash = stash, onDismiss = actions::onDismissStash) }
 
     if (uiState.bookOfLoveVisible) {
         val tips = androidx.compose.ui.res.stringArrayResource(R.array.home_book_of_love_tips)
@@ -539,8 +564,8 @@ private fun OpenTasksCard(count: Int, onClick: () -> Unit) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PumpCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+private fun PumpCountdownCard(uiState: HomeUiState, onClick: () -> Unit, onLongClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clip(CardDefaults.shape).combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -600,9 +625,9 @@ private const val MILLIS_PER_MINUTE = 60_000L
 /** Baby mode's headline number; tapping it opens the feeding tab, where a feed can be logged. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FeedCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
+private fun FeedCountdownCard(uiState: HomeUiState, onClick: () -> Unit, onLongClick: () -> Unit) {
     val countdown = uiState.feedCountdown
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth().clip(CardDefaults.shape).combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -661,29 +686,44 @@ private fun FeedCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
 }
 
 /**
- * How old the child is, in the one form people say it: days in the first week, then weeks and
- * days, then months (and years) once there is a month to count. Components that are zero are
- * dropped — "1 week" rather than "1 week, 0 days".
+ * How old the child is, said the way people say it: "6 days", "1 week and 1 day", then
+ * "1 month, 2 weeks and 3 days" (and years in front once there is one). Zero parts are dropped,
+ * so a baby exactly a month old is "1 month", not "1 month, 0 weeks and 0 days".
  */
 @Composable
 private fun AgeLine(age: BabyAge) {
-    val separator = stringResource(R.string.home_age_separator)
-    val text = when {
-        age.years > 0 || age.months > 0 -> listOfNotNull(
+    val parts = if (age.years > 0 || age.months > 0) {
+        listOfNotNull(
             pluralStringResource(R.plurals.home_age_years, age.years, age.years).takeIf { age.years > 0 },
             pluralStringResource(R.plurals.home_age_months, age.months, age.months).takeIf { age.months > 0 },
-            pluralStringResource(R.plurals.home_age_days, age.days, age.days).takeIf { age.days > 0 },
-        ).joinToString(separator)
-
-        age.weeks > 0 -> listOfNotNull(
+            pluralStringResource(R.plurals.home_age_weeks, age.weeksAfterMonths, age.weeksAfterMonths)
+                .takeIf { age.weeksAfterMonths > 0 },
+            pluralStringResource(R.plurals.home_age_days, age.daysAfterWeeks, age.daysAfterWeeks)
+                .takeIf { age.daysAfterWeeks > 0 },
+        )
+    } else if (age.weeks > 0) {
+        listOfNotNull(
             pluralStringResource(R.plurals.home_age_weeks, age.weeks, age.weeks),
             pluralStringResource(R.plurals.home_age_days, age.daysInWeek, age.daysInWeek)
                 .takeIf { age.daysInWeek > 0 },
-        ).joinToString(separator)
-
-        else -> pluralStringResource(R.plurals.home_age_days, age.totalDays, age.totalDays)
+        )
+    } else {
+        listOf(pluralStringResource(R.plurals.home_age_days, age.totalDays, age.totalDays))
     }
-    Text(text = text, style = MaterialTheme.typography.titleMedium)
+    Text(text = joinAgeParts(parts), style = MaterialTheme.typography.titleMedium)
+}
+
+/**
+ * "a, b and c". The "and" is a resource because Hebrew fuses it onto the next word (ויום), and
+ * writes it with a hyphen before a digit (ו-3 ימים) — hence the second form.
+ */
+@Composable
+private fun joinAgeParts(parts: List<String>): String {
+    if (parts.size < 2) return parts.firstOrNull().orEmpty()
+    val head = parts.dropLast(1).joinToString(stringResource(R.string.home_age_separator))
+    val last = parts.last()
+    val and = if (last.first().isDigit()) R.string.home_age_and_number else R.string.home_age_and
+    return stringResource(and, head, last)
 }
 
 /**
@@ -927,6 +967,10 @@ private object NoopHomeActions : HomeActions {
     override fun onMoonLongPress() = Unit
     override fun onDismissBookOfLove() = Unit
     override fun onEditBirthDetails() = Unit
+    override fun onFeedCardLongPress() = Unit
+    override fun onDismissNightWatch() = Unit
+    override fun onPumpCardLongPress() = Unit
+    override fun onDismissStash() = Unit
     override fun onDismissBirthSheet() = Unit
     override fun onOpenBirthDatePicker() = Unit
     override fun onDismissBirthDatePicker() = Unit

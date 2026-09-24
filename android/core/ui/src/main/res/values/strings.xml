@@ -37,4 +37,34 @@
     <string name="drawer_header_description">%1$s, %2$d items. %3$s.</string>
     <string name="drawer_header_description_plain">%1$s. %2$s.</string>
     <string name="copied_to_clipboard">Copied</string>
+    <string name="feeding_night_watch_title">Night watch</string>
+    <string name="feeding_night_watch_close">Back to it</string>
+    <string name="feeding_night_watch_count">%1$d feeds between midnight and six</string>
+    <string name="feeding_night_watch_total">%1$d feeds logged in all</string>
+    <string name="feeding_night_watch_ml">%1$d ml measured out</string>
+    <string name="feeding_night_watch_litres">%1$s litres measured out</string>
+    <string name="feeding_night_watch_since">Logging since %1$s · %2$d days in</string>
+    <string name="feeding_night_watch_split">You logged %1$d of them, your partner %2$d</string>
+    <string name="feeding_night_watch_milestone">Feed number %1$d, and you wrote it down</string>
+    <string-array name="feeding_night_watch_praise">
+        <item>Nobody saw it. It still counted.</item>
+        <item>The moon kept you company, at least.</item>
+        <item>Whoever was awake: that was the hard part, and you did it.</item>
+        <item>Someone will sleep through the night eventually. Probably.</item>
+        <item>Two of you, one small tyrant, and the kettle. A fair fight.</item>
+    </string-array>
+    <string name="pumping_stash_title">The stash</string>
+    <string name="pumping_stash_close">Back to it</string>
+    <string name="pumping_stash_total">%1$d ml pumped, all told</string>
+    <string name="pumping_stash_feeds">About %1$d feeds\' worth</string>
+    <string name="pumping_stash_sessions">%1$d sessions, %2$s on the pump</string>
+    <string name="pumping_stash_best_day">Best day: %1$d ml</string>
+    <string name="pumping_stash_milestone">Past %1$s litres</string>
+    <string-array name="pumping_stash_praise">
+        <item>Made out of nothing but you. Quietly astonishing.</item>
+        <item>Every drop of that was an hour you gave up.</item>
+        <item>Nobody claps for this one. They should.</item>
+        <item>The freezer is filling up because you sat there.</item>
+        <item>Liquid gold, and you made all of it.</item>
+    </string-array>
 </resources>

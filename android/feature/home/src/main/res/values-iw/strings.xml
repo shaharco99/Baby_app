@@ -215,4 +215,6 @@
         <item quantity="other">היום: %1$d האכלות</item>
     </plurals>
     <string name="home_today_feeds_with_ml">%1$s · %2$d מ״ל</string>
+    <string name="home_age_and">%1$s ו%2$s</string>
+    <string name="home_age_and_number">%1$s ו-%2$s</string>
 </resources>

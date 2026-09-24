@@ -68,6 +68,16 @@ class BabyAgeTest {
     }
 
     @Test
+    fun `past a month the remaining days split into weeks and days`() {
+        val age = babyAge(LocalDate(2026, 9, 16), LocalDate(2026, 11, 3))!!
+
+        age.months shouldBe 1
+        age.days shouldBe 18
+        age.weeksAfterMonths shouldBe 2
+        age.daysAfterWeeks shouldBe 4
+    }
+
+    @Test
     fun `a month from the 31st lands on the short month's end`() {
         // 31 Jan + one month has no 31 Feb to land on, so the period is 28 days and no month.
         val age = babyAge(LocalDate(2026, 1, 31), LocalDate(2026, 2, 28))!!

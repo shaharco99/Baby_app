@@ -37,4 +37,34 @@
     <string name="drawer_header_description">%1$s, %2$d פריטים. %3$s.</string>
     <string name="drawer_header_description_plain">%1$s. %2$s.</string>
     <string name="copied_to_clipboard">הועתק</string>
+    <string name="feeding_night_watch_title">שמירת לילה</string>
+    <string name="feeding_night_watch_close">חזרה</string>
+    <string name="feeding_night_watch_count">%1$d האכלות בין חצות לשש</string>
+    <string name="feeding_night_watch_total">%1$d האכלות בסך הכול</string>
+    <string name="feeding_night_watch_ml">%1$d מ״ל נמדדו</string>
+    <string name="feeding_night_watch_litres">%1$s ליטר נמדדו</string>
+    <string name="feeding_night_watch_since">רושמים מאז %1$s · %2$d ימים</string>
+    <string name="feeding_night_watch_split">רשמת %1$d מהן, בן/בת הזוג %2$d</string>
+    <string name="feeding_night_watch_milestone">האכלה מספר %1$d, וגם רשמתם אותה</string>
+    <string-array name="feeding_night_watch_praise">
+        <item>אף אחד לא ראה. זה עדיין נחשב.</item>
+        <item>לפחות הירח עשה לכם חברה.</item>
+        <item>מי שהיה/הייתה ערה — זה היה החלק הקשה, ועשיתם את זה.</item>
+        <item>מישהו כבר יישן לילה שלם. כנראה.</item>
+        <item>שניים מאיתנו, עריץ אחד קטן, וקומקום. קרב הוגן.</item>
+    </string-array>
+    <string name="pumping_stash_title">המלאי</string>
+    <string name="pumping_stash_close">חזרה</string>
+    <string name="pumping_stash_total">%1$d מ״ל נשאבו בסך הכול</string>
+    <string name="pumping_stash_feeds">בערך %1$d האכלות</string>
+    <string name="pumping_stash_sessions">%1$d שאיבות, %2$s על המשאבה</string>
+    <string name="pumping_stash_best_day">היום הטוב ביותר: %1$d מ״ל</string>
+    <string name="pumping_stash_milestone">עברת %1$s ליטר</string>
+    <string-array name="pumping_stash_praise">
+        <item>הכול מגיע ממך. פשוט מדהים.</item>
+        <item>כל טיפה שם היא שעה שוויתרת עליה.</item>
+        <item>אף אחד לא מוחא כפיים על זה. מגיע לך.</item>
+        <item>המקפיא מתמלא כי ישבת שם.</item>
+        <item>זהב נוזלי, והכול שלך.</item>
+    </string-array>
 </resources>

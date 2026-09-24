@@ -10,7 +10,9 @@ import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
 import com.oryareach.core.domain.baby.babyAge
+import com.oryareach.core.domain.feeding.feedingTally
 import com.oryareach.core.domain.feeding.nextFeedCountdown
+import com.oryareach.core.domain.pumping.milkStash
 import com.oryareach.core.domain.pregnancy.dueDateFromLastPeriod
 import com.oryareach.core.domain.pregnancy.getPregnancyProgress
 import com.oryareach.core.domain.pregnancy.lastPeriodFromDueDate
@@ -55,6 +57,10 @@ interface HomeActions {
     fun onMoonLongPress()
     fun onDismissBookOfLove()
     fun onEditBirthDetails()
+    fun onFeedCardLongPress()
+    fun onDismissNightWatch()
+    fun onPumpCardLongPress()
+    fun onDismissStash()
     fun onDismissBirthSheet()
     fun onOpenBirthDatePicker()
     fun onDismissBirthDatePicker()
@@ -139,6 +145,11 @@ class HomeViewModel(
                             sinceLastFeedMillis = current.sinceLastFeedMillis,
                             todayFeedCount = current.todayFeedCount,
                             todayFeedMl = current.todayFeedMl,
+                            bookOfLoveVisible = current.bookOfLoveVisible,
+                            nightWatchTally = current.nightWatchTally,
+                            nightWatchMine = current.nightWatchMine,
+                            nightWatchTheirs = current.nightWatchTheirs,
+                            stash = current.stash,
                             pumpCountdown = current.pumpCountdown,
                             pumpRunning = current.pumpRunning,
                             pumpElapsedMillis = current.pumpElapsedMillis,
@@ -293,6 +304,49 @@ class HomeViewModel(
             set { it.copy(sheetVisible = false) }
         }
     }
+
+    /**
+     * The feeding log's night-watch egg, reachable from Home too. Same rules as there: read over
+     * the whole log, and silent until a feed has actually been logged between midnight and six.
+     */
+    override fun onFeedCardLongPress() {
+        val workspace = workspaceId() ?: return
+        val baby = _uiState.value.activeBaby ?: return
+
+        viewModelScope.launch {
+            val all = feedingRepository.observeInRange(workspace, baby.id, 0L, Long.MAX_VALUE).first()
+            val tally = feedingTally(all, TimeZone.currentSystemDefault())
+            if (tally.nightFeeds == 0) return@launch
+
+            val byCreator = feedingRepository.countByCreator(workspace, baby.id)
+            val selfId = auth.currentUserId()
+            val mine = byCreator.firstOrNull { it.createdBy == selfId }?.count ?: 0
+            val theirs = byCreator.filterNot { it.createdBy == selfId }.sumOf { it.count }
+            val shared = mine > 0 && theirs > 0
+            set {
+                it.copy(
+                    nightWatchTally = tally,
+                    nightWatchMine = mine.takeIf { shared },
+                    nightWatchTheirs = theirs.takeIf { shared },
+                )
+            }
+        }
+    }
+
+    override fun onDismissNightWatch() =
+        set { it.copy(nightWatchTally = null, nightWatchMine = null, nightWatchTheirs = null) }
+
+    /** The pumping log's stash egg, from Home. Silent until something has been measured. */
+    override fun onPumpCardLongPress() {
+        val workspace = workspaceId() ?: return
+        viewModelScope.launch {
+            val all = pumpRepository.observeInRange(workspace, 0L, Long.MAX_VALUE).first()
+            val stash = milkStash(all, TimeZone.currentSystemDefault()) ?: return@launch
+            set { it.copy(stash = stash) }
+        }
+    }
+
+    override fun onDismissStash() = set { it.copy(stash = null) }
 
     override fun onEditBirthDetails() = set {
         val baby = it.activeBaby
