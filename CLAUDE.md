@@ -38,9 +38,17 @@ Read `docs/architecture/001-android-architecture.md` first. Short. Covers module
 
 **Testing the database** needs Docker + CLI via `npx` (no local install): `npx -y supabase@latest start`, then `db reset` (applies every migration from scratch; real check that migration file works on empty database) and `test db` (pgTAP suite in `supabase/tests/`). Run there, never against live project: tests insert into `auth.users` and create `tests` schema, mid-script failure leaves both behind. `001_access_control.sql` asserts **exact** set of public tables, so migration adding one must update that list in same change.
 
-**Shared UI pieces live in `:core:ui`**, not copied between features. Features can't depend on each other, so widget two of them need goes here. `theme/` (colours, shapes, type), `text/` (`dayLabel`/`monthLabel`/`dateLabel`, bidi helpers), `component/` (`DrawerHeader`/`CollapsibleDrawer`: shut-by-default drawer that shopping, tasks, cycle, both logs and Settings fold finished rows into). All Material 3 colour roles defined in `theme/Theme.kt`, incl. *container* roles and surface ladder. `surfaceContainerHighest` must stay card colour, since filled `Card` reads it.
+**Shared UI pieces live in `:core:ui`**, not copied between features. Features can't depend on each other, so widget two of them need goes here. `theme/` (colours, shapes, type), `text/` (`dayLabel`/`monthLabel`/`dateLabel`, bidi helpers, `sensitiveClipEntry`, `confirmCopied`), `component/` (`DrawerHeader`/`CollapsibleDrawer`: shut-by-default drawer that shopping, tasks, cycle, both logs and Settings fold finished rows into; `BusyLabel`; `DropFall`; `EasterEggDialogs.kt`: night watch + stash, opened from their logs *and* Home). `:core:ui` depends on `:core:domain` (for those dialogs' types). All Material 3 colour roles defined in `theme/Theme.kt`, incl. *container* roles and surface ladder. `surfaceContainerHighest` must stay card colour, since filled `Card` reads it. Cards overriding container to `surface` are the app-wide norm (~17), not drift — user chose to keep them.
 
-**Strings bilingual**: `values/` (English fallback) + `values-iw/` (Hebrew) in every module w/ UI. Add both together, never one.
+**Strings bilingual**: `values/` (English fallback) + `values-iw/` (Hebrew) in every module w/ UI. Add both together, never one. aapt strips leading/trailing whitespace from a string value: write `,\u0020`, never `", "` (the age separator lost its space this way). Units (h/min/ml) always come from strings, never built in Kotlin.
+
+**Insets: the host owns the top.** `TakesTwoApp`'s `Scaffold` (top bar) passes every tab `Modifier.padding(padding).consumeWindowInsets(padding)`; screens keep their own `safeDrawingPadding()`, which is then a no-op at the top. A new tab must get that same `content` modifier, or an empty status-bar-high band appears above its title. User rule: no wasted vertical space, anywhere — check the top of every screen you touch.
+
+**Form bottom sheets** use `rememberModalBottomSheetState(skipPartiallyExpanded = true)`; half-expanded left Save under the nav buttons.
+
+**Home-screen widget** (`:app`'s `widget/FeedWidget.kt`, RemoteViews + `Chronometer`, no Glance) never reads the database — it works while the app is locked from two timestamps in plain prefs (`feed-widget`), written only by `AlarmFeedingReminderScheduler`. Anything that moves the feed reminder moves the widget; keep it that way. Re-drawn on reminder fire and `rearmAll`.
+
+**Web-app import** lives in `:core:database`'s `importer/WebImporter` and is offered from Settings (not Home).
 
 ## Web app (legacy)
 
