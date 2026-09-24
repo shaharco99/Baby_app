@@ -3,6 +3,7 @@ package com.oryareach.app.notifications
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
+import com.oryareach.app.widget.FeedWidget
 import android.content.Intent
 import android.os.Build
 import androidx.core.content.ContextCompat
@@ -116,6 +117,8 @@ object ReminderAlarms {
      * armed and never got the chance.
      */
     fun rearmAll(context: Context, now: Long = System.currentTimeMillis()) {
+        // Same broadcasts the widget needs: after a reboot its chronometer base is meaningless.
+        FeedWidget.refresh(context)
         for (kind in ReminderKind.entries) {
             val dueAt = prefs(context).getLong(kind.prefKey, 0L).takeIf { it > 0L } ?: continue
             if (kind.repeatsDaily) {
@@ -143,6 +146,8 @@ object ReminderAlarms {
         prefs(context).edit().remove(kind.prefKey).apply()
         kind.ensureChannel(context)
         kind.show(context)
+        // The feed is due this moment: the widget's "next feed in" has to become "overdue by".
+        if (kind == ReminderKind.FEEDING) FeedWidget.refresh(context)
         // A daily reminder arms the next one the moment it rings, so the chain survives even if
         // the app is never opened again. Whatever the app works out later — today's dose already
         // given, the time moved, the reminder turned off — replaces this.

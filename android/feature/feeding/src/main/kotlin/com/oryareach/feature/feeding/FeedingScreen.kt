@@ -73,6 +73,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -179,15 +180,40 @@ fun FeedingScreen(
             onRefresh = actions::onRefresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
+            uiState.doctorSummary?.let { summary ->
+                DoctorSummaryScreen(
+                    summary = summary,
+                    baby = uiState.baby,
+                    today = uiState.today,
+                    onClose = actions::onCloseDoctorSummary,
+                )
+                return@PullToRefreshBox
+            }
+
             Column(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = stringResource(R.string.feeding_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.semantics { heading() },
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.feeding_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.weight(1f).semantics { heading() },
+                    )
+                    if (uiState.hasBaby) {
+                        // A labelled button, not a bare icon: "summary" is not a shape anyone
+                        // recognises, and this is looked for in a waiting room, not discovered.
+                        TextButton(onClick = actions::onOpenDoctorSummary) {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.Assignment,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.feeding_summary_open))
+                        }
+                    }
+                }
 
                 if (!uiState.hasBaby) {
                     NoBabyCard()
@@ -1449,7 +1475,10 @@ private fun DayTotalLine(
     val breakdown = day.takeIf { it.hasSourceBreakdown }
     val guidance = birthDate?.let { feedGuidance(ageInDays(it, day.date)) }
 
-    val description = when {
+    val marks = day.takeIf { it.urineCount > 0 || it.stoolCount > 0 }
+        ?.let { stringResource(R.string.feeding_day_marks, it.urineCount, it.stoolCount) }
+
+    val totals = when {
         breakdown == null -> header
         else -> stringResource(
             R.string.feeding_day_header_breakdown,
@@ -1459,6 +1488,7 @@ private fun DayTotalLine(
             breakdown.formulaMl ?: 0,
         )
     }
+    val description = listOfNotNull(totals, marks).joinToString(SEPARATOR)
 
     Column(
         modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
@@ -1486,6 +1516,16 @@ private fun DayTotalLine(
                         guidance.dailyMinMl,
                         guidance.dailyMaxMl,
                     ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // What the day's nappies came to — the marks are ticked one feed at a time, and the
+            // count is what gets asked for. Absent on a day with none marked, not "0 · 0".
+            marks?.let {
+                Text(
+                    text = it,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1645,5 +1685,7 @@ private object NoopFeedingActions : FeedingActions {
     override fun onClearVitaminTime() = Unit
     override fun onOpenVitaminHistory() = Unit
     override fun onDismissVitaminHistory() = Unit
+    override fun onOpenDoctorSummary() = Unit
+    override fun onCloseDoctorSummary() = Unit
     override fun onRefresh() = Unit
 }

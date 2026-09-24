@@ -3,6 +3,7 @@ package com.oryareach.feature.feeding
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.domain.baby.ageInDays
 import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.domain.feeding.DoctorSummary
 import com.oryareach.core.domain.feeding.FeedGuidance
 import com.oryareach.core.domain.feeding.FeedingDay
 import com.oryareach.core.domain.feeding.FeedingTally
@@ -68,6 +69,12 @@ data class FeedingUiState(
     val vitaminHistory: List<VitaminDose> = emptyList(),
     val vitaminTimePickerVisible: Boolean = false,
     val vitaminHistoryVisible: Boolean = false,
+
+    /**
+     * The quick look for a checkup, while it is open. Non-null is what shows it: it is read once
+     * when opened rather than kept live, since it is glanced at in a waiting room, not watched.
+     */
+    val doctorSummary: DoctorSummary? = null,
 
     // Transient UI-only.
     val historyView: HistoryView = HistoryView.LIST,

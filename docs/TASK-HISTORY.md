@@ -27,6 +27,22 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 
 ---
 
+## 2026-09-24 — doctor summary, nappy counts, feed widget, Home feed-first
+
+User picked from a suggestion list; declined: diaper log (marks on feeds are enough), sleep log, growth/percentiles, vaccine schedule, notification quick-log, backup export, retiring pregnancy screens, night mode, PDF export.
+
+**Build + test + lint green. Nothing below seen on a phone yet.**
+
+- **Urine/stool per day.** `FeedingDay.urineCount`/`stoolCount` (`:core:domain`); day line in both log views gains "3 urine · 1 stool" / "שתן 3 · צואה 1" after the guidance band, hidden on days with no marks, included in the merged TalkBack description.
+- **Summary for the doctor** — in-app only, no PDF. "Summary" button beside the Feeding title opens a sub-screen (VM `doctorSummary` non-null, `BackHandler` closes). `:core:domain`'s `feeding/FeedingSummary.kt` (`doctorSummary`, `summarizeFeeds`, unit-tested): last 24h rolling (feeds, ml + breast/formula split, average interval, urine, stool); daily averages over the 7 **complete** days before today, clipped at birth date; vitamin D "N of M days"; bar chart of daily ml (plain boxes in a Row, so RTL mirrors itself) + day-by-day table. Read once on open, not live. Longest gap deliberately left out (user dropped it from night watch).
+- **Home, baby mode:** feed card now first (above birth card), adds "Last feed at 14:05 · 2 h 10 min ago" and "Today: 6 feeds · 420 ml" (Hebrew plurals incl. two).
+- **Feed widget** (`:app/widget/FeedWidget.kt`, RemoteViews, no new dependency). Chronometer counts down to due time / up once overdue, "Last feed at …". Reads two timestamps from plain prefs (`feed-widget`) written by `AlarmFeedingReminderScheduler` — the path every feed move goes through, incl. partner sync — so it works with the app locked; no child/amount stored. Re-drawn on feed move, when the feed alarm fires (label flips to overdue), on `rearmAll` (boot/update). Times visible on the home screen by design of a widget.
+- **Audit leftovers:** Settings 7-tap title now `detectTapGestures` (no ripple, not a TalkBack button); cycle history row has paper-clip + chevron, ≥48dp, `onClickLabel` show/hide attachments; copy buttons toast "Copied" below Android 13 (`:core:ui` `text/confirmCopied`). **Card colour closed, not a bug:** `surface` is the app-wide card override (~17 cards: shopping, tasks, cycle, calendar, home, search, settings, pairing), not Folders drift as the 2026-09-23 audit assumed. User chose to keep it — do not "fix".
+
+**To see on phones (release, both languages):** summary screen (chart direction in Hebrew, table widths at 200% font, "no full day yet" state), day-line marks wrapping, Home card order + two new lines, widget add/resize/dark, overdue flip at due time, widget after reboot, cycle row chevron.
+
+---
+
 ## 2026-09-23 — UI/UX audit (docs/UIUX.md run end to end)
 
 Grep-driven sweep of every `:feature:*` screen for classes of mistake (a11y descriptions, delete paths, raw error text, touch targets, hardcoded colours/sizes/strings, EN/IW string parity, FAB padding, empty/loading states). App mostly clean: every delete already confirmed, no hardcoded `.sp`, string parity exact (home's only gap = two `translatable="false"` emoji arrays), FAB lists padded.
@@ -57,11 +73,10 @@ Grep-driven sweep of every `:feature:*` screen for classes of mistake (a11y desc
 
 **Still unseen:** error branches (update check failing, calendar fetch failing — need airplane mode), pairing spinners (fresh join only), sign-out and web-import spinners (destructive / create data), remember-me row (signed-out only), Pixel pass. Update-check spinner is faint on the disabled outlined button — readable, noted.
 
-**Recommendations, not done (P2/P3):**
+**Recommendations (P2/P3) — all three below done 2026-09-24, see that entry:**
 - Settings title's 7-tap easter egg uses `clickable` — ripple on a heading, TalkBack announces it as a button. Swap to `pointerInput { detectTapGestures }`.
 - Cycle history row toggles attachments by tapping its text, no affordance (chevron or "N attachments" hint).
 - Copy buttons give no feedback below Android 13 (13+ shows system toast). Snackbar "Copied" on older.
-- Folders/documents cards override container to `surface`, unlike other features' `surfaceContainerHighest` cards — deliberate or drift? Look on device before changing.
 
 ---
 

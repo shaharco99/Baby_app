@@ -91,4 +91,30 @@
     <string name="vitamin_history_given">%1$s · ניתן ב-%2$s</string>
     <string name="vitamin_history_missed">%1$s · לא נרשם</string>
     <string name="feeding_milestone_snackbar">האכלה מספר %1$d 🎉</string>
+    <string name="feeding_day_marks">שתן %1$d · צואה %2$d</string>
+    <string name="feeding_summary_open">סיכום</string>
+    <string name="feeding_summary_title">סיכום לרופא/ה</string>
+    <string name="feeding_summary_close">סגירת הסיכום</string>
+    <string name="feeding_summary_born">נולד/ה ב-%1$s</string>
+    <string name="feeding_summary_birth_weight">משקל לידה %1$d גר׳</string>
+    <string name="feeding_summary_last_24h">24 השעות האחרונות</string>
+    <plurals name="feeding_summary_week_title">
+        <item quantity="one">אתמול</item>
+        <item quantity="two">ממוצע יומי, יומיים אחרונים</item>
+        <item quantity="other">ממוצע יומי, %d הימים האחרונים</item>
+    </plurals>
+    <string name="feeding_summary_week_title_empty">ממוצע יומי</string>
+    <string name="feeding_summary_no_days">עדיין אין יום מלא ביומן — הממוצעים יתחילו מחר.</string>
+    <string name="feeding_summary_feeds">האכלות</string>
+    <string name="feeding_summary_milk">חלב</string>
+    <string name="feeding_summary_source_split">%1$d מ״ל הנקה · %2$d מ״ל תמ״ל</string>
+    <string name="feeding_summary_not_measured">לא נמדד</string>
+    <string name="feeding_summary_interval">זמן בין האכלות</string>
+    <string name="feeding_summary_interval_value">%1$d ש׳ %2$d דק׳</string>
+    <string name="feeding_summary_vitamin">ויטמין D</string>
+    <string name="feeding_summary_vitamin_value">%1$d מתוך %2$d ימים</string>
+    <string name="feeding_summary_by_day">יום אחרי יום</string>
+    <string name="feeding_summary_col_day">יום</string>
+    <string name="feeding_summary_col_feeds">האכלות</string>
+    <string name="feeding_summary_footnote">לפי מה שנרשם באפליקציה. החלב כולל רק האכלות שהוזנה בהן כמות; שתן וצואה נספרים לפי ההאכלות שבהן סומנו.</string>
 </resources>

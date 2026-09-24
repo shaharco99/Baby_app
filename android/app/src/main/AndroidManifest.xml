@@ -68,6 +68,20 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!-- Home-screen widget: next-feed countdown. Draws from plain-preference timestamps,
+             never the database, so it works while the app is locked. See FeedWidget.kt. -->
+        <receiver
+            android:name=".widget.FeedWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_feed_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_feed_info" />
+        </receiver>
     </application>
 
 </manifest>

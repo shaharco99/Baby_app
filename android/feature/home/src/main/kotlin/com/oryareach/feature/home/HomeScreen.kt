@@ -76,6 +76,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.oryareach.core.domain.feeding.FeedCountdown
+import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.domain.feeding.formatCountdown
 import com.oryareach.core.domain.home.dailyMessageIndex
 import com.oryareach.core.domain.pregnancy.PregnancyProgress
@@ -137,13 +138,15 @@ fun HomeScreen(
                 }
 
                 if (uiState.isBabyMode) {
+                    // The feed first: it is what the page is opened for, several times a night.
+                    // The birth card is a keepsake, read far less often than it is scrolled past.
+                    FeedCountdownCard(uiState = uiState, onClick = onNavigateToFeeding)
+
                     BirthStatsCard(
                         baby = requireNotNull(uiState.activeBaby),
                         age = uiState.babyAge,
                         actions = actions,
                     )
-
-                    FeedCountdownCard(countdown = uiState.feedCountdown, onClick = onNavigateToFeeding)
 
                     if (uiState.showPumpCard) {
                         PumpCountdownCard(uiState = uiState, onClick = onNavigateToPumping)
@@ -648,10 +651,19 @@ private fun PumpCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
     }
 }
 
+private fun formatClock(epochMillis: Long): String {
+    val time = Instant.fromEpochMilliseconds(epochMillis)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    return "%02d:%02d".format(time.hour, time.minute)
+}
+
+private const val MILLIS_PER_MINUTE = 60_000L
+
 /** Baby mode's headline number; tapping it opens the feeding tab, where a feed can be logged. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FeedCountdownCard(countdown: FeedCountdown?, onClick: () -> Unit) {
+private fun FeedCountdownCard(uiState: HomeUiState, onClick: () -> Unit) {
+    val countdown = uiState.feedCountdown
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(20.dp),
@@ -682,6 +694,30 @@ private fun FeedCountdownCard(countdown: FeedCountdown?, onClick: () -> Unit) {
                     MaterialTheme.colorScheme.onSurface
                 },
             )
+            uiState.lastFedAtEpochMillis?.let { fedAt ->
+                val minutes = (uiState.sinceLastFeedMillis / MILLIS_PER_MINUTE).toInt()
+                Text(
+                    text = stringResource(
+                        R.string.home_last_feed,
+                        formatClock(fedAt).asLtrIsolate(),
+                        stringResource(R.string.home_duration_hours_minutes, minutes / 60, minutes % 60),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (uiState.todayFeedCount > 0) {
+                val feeds = pluralStringResource(R.plurals.home_today_feeds, uiState.todayFeedCount, uiState.todayFeedCount)
+                Text(
+                    text = uiState.todayFeedMl
+                        ?.let { stringResource(R.string.home_today_feeds_with_ml, feeds, it) }
+                        ?: feeds,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

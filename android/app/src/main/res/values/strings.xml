@@ -22,4 +22,10 @@
     <string name="app_exit_message">You\'re on the home screen. Press back again or confirm to close Takes Two of Us.</string>
     <string name="app_exit_confirm">Close</string>
     <string name="app_exit_cancel">Stay</string>
+    <string name="widget_feed_name">Next feed</string>
+    <string name="widget_feed_description">How long until the next feed, and when the last one was.</string>
+    <string name="widget_feed_next">Next feed in</string>
+    <string name="widget_feed_overdue">Feed overdue by</string>
+    <string name="widget_feed_last">Last feed at %1$s</string>
+    <string name="widget_feed_empty">No feeds logged yet</string>
 </resources>

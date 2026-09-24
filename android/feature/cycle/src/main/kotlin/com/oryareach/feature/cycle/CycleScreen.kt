@@ -57,6 +57,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -505,12 +508,38 @@ private fun HistoryRow(cycle: MenstrualCycle, uiState: CycleUiState, actions: Cy
                     )
                 } ?: stringResource(R.string.cycle_history_row_ongoing, dateLabel(cycle.startDate))
 
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f).clickable { actions.onToggleAttachments(cycle.id) },
-                )
+                val expanded = uiState.expandedCycleId == cycle.id
+                // The dates, a paper-clip and a chevron are one tap target: tapping the row used
+                // to open its attachments with nothing on screen saying it would.
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(
+                            onClickLabel = stringResource(
+                                if (expanded) R.string.cycle_hide_attachments else R.string.cycle_show_attachments,
+                            ),
+                        ) { actions.onToggleAttachments(cycle.id) }
+                        .heightIn(min = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        Icons.Default.AttachFile,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Icon(
+                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 IconButton(onClick = onDeleteClick) {
                     Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cycle_delete))
                 }

@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -59,6 +60,7 @@ import com.oryareach.core.security.InvitationToken
 import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.theme.OrYareachTheme
 import com.oryareach.core.ui.component.BusyLabel
+import com.oryareach.core.ui.text.confirmCopied
 import com.oryareach.core.ui.text.sensitiveClipEntry
 import kotlinx.coroutines.launch
 
@@ -186,11 +188,14 @@ private fun RecoveryPhraseStage(
     }
 
     val clipboard = LocalClipboard.current
+
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     OutlinedButton(
         onClick = {
             scope.launch {
                 clipboard.setClipEntry(sensitiveClipEntry("recovery-phrase", stage.words.joinToString(" ")))
+                context.confirmCopied()
             }
         },
         modifier = Modifier.fillMaxWidth(),
@@ -388,6 +393,7 @@ private fun ReadyStage(
         ) { Text(stringResource(R.string.pairing_invite_generate)) }
     } else {
         val clipboard = LocalClipboard.current
+        val context = LocalContext.current
         val scope = rememberCoroutineScope()
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(
@@ -420,6 +426,7 @@ private fun ReadyStage(
                         scope.launch {
                             val text = InvitationToken.forDisplay(stage.inviteCode)
                             clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("invite-code", text)))
+                            context.confirmCopied()
                         }
                     },
                 ) {

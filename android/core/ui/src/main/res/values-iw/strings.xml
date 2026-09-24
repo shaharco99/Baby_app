@@ -36,4 +36,5 @@
     <string name="drawer_collapse_action">סגירה</string>
     <string name="drawer_header_description">%1$s, %2$d פריטים. %3$s.</string>
     <string name="drawer_header_description_plain">%1$s. %2$s.</string>
+    <string name="copied_to_clipboard">הועתק</string>
 </resources>

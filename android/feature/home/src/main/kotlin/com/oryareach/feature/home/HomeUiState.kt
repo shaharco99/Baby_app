@@ -34,6 +34,14 @@ data class HomeUiState(
     val babyAge: BabyAge? = null,
     /** Baby mode only: how long until this child's next feed. Null until a first feed exists. */
     val feedCountdown: FeedCountdown? = null,
+    /** When the last feed was, for the card's "last feed at" line. Null until a first feed exists. */
+    val lastFedAtEpochMillis: Long? = null,
+    /** How long ago that was, recomputed with the countdown's tick. */
+    val sinceLastFeedMillis: Long = 0,
+    /** Today's feeds for this child, in the phone's own day — the running tally under the timer. */
+    val todayFeedCount: Int = 0,
+    /** Null when none of today's feeds had an amount entered. */
+    val todayFeedMl: Int? = null,
     /**
      * How long until the next pump. Not baby-scoped and not baby-mode-only: pumping belongs to
      * the mother, so this shows on the moon page too once there is anything to count from.

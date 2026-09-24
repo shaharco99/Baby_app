@@ -56,6 +56,15 @@ data class FeedingDay(
      * [breastMl] equal to its total, and repeating that number beside itself says nothing.
      */
     val hasSourceBreakdown: Boolean get() = breastMl != null && formulaMl != null
+
+    /**
+     * How many of the day's feeds had a wet or a dirty nappy marked. Counts of marks, not of
+     * nappies: the marks ride on the feed they were noticed at, so this is how often each was
+     * seen, which is the number a nurse asks for in the first weeks.
+     */
+    val urineCount: Int get() = feeds.count { it.hadUrine }
+
+    val stoolCount: Int get() = feeds.count { it.hadStool }
 }
 
 /**

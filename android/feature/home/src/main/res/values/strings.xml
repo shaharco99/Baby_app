@@ -293,4 +293,11 @@
         <item quantity="one">%1$d year</item>
         <item quantity="other">%1$d years</item>
     </plurals>
+    <string name="home_last_feed">Last feed at %1$s · %2$s ago</string>
+    <string name="home_duration_hours_minutes">%1$d h %2$d min</string>
+    <plurals name="home_today_feeds">
+        <item quantity="one">Today: 1 feed</item>
+        <item quantity="other">Today: %1$d feeds</item>
+    </plurals>
+    <string name="home_today_feeds_with_ml">%1$s · %2$d ml</string>
 </resources>

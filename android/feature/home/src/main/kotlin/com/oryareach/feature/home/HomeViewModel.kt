@@ -33,10 +33,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -140,6 +143,10 @@ class HomeViewModel(
                             editingBirthWeightGrams = current.editingBirthWeightGrams,
                             editingBirthPlace = current.editingBirthPlace,
                             feedCountdown = current.feedCountdown,
+                            lastFedAtEpochMillis = current.lastFedAtEpochMillis,
+                            sinceLastFeedMillis = current.sinceLastFeedMillis,
+                            todayFeedCount = current.todayFeedCount,
+                            todayFeedMl = current.todayFeedMl,
                             pumpCountdown = current.pumpCountdown,
                             pumpRunning = current.pumpRunning,
                             pumpElapsedMillis = current.pumpElapsedMillis,
@@ -158,7 +165,7 @@ class HomeViewModel(
                     }
                     .let { latestFeed ->
                         combine(latestFeed, settingsRepository.observe(id), ticker()) { feed, settings, _ ->
-                            nextFeedCountdown(
+                            feed?.fedAtEpochMillis to nextFeedCountdown(
                                 lastFedAtEpochMillis = feed?.fedAtEpochMillis,
                                 intervalMinutes = settings?.feedIntervalMinutes
                                     ?: AppSettings.DEFAULT_FEED_INTERVAL_MINUTES,
@@ -166,7 +173,40 @@ class HomeViewModel(
                             )
                         }
                     }
-                    .collect { countdown -> set { it.copy(feedCountdown = countdown) } }
+                    .collect { (lastFedAt, countdown) ->
+                        set {
+                            it.copy(
+                                feedCountdown = countdown,
+                                lastFedAtEpochMillis = lastFedAt,
+                                sinceLastFeedMillis = lastFedAt?.let { fedAt -> (now() - fedAt).coerceAtLeast(0) } ?: 0,
+                            )
+                        }
+                    }
+            }
+
+            // Today's running tally under the timer. Re-subscribes when the local day rolls over,
+            // which is why the day's start is derived from the ticker rather than read once.
+            viewModelScope.launch {
+                combine(
+                    babyRepository.observeActive(id),
+                    ticker().map { today() }.distinctUntilChanged(),
+                ) { baby, day -> baby to day }
+                    .flatMapLatest { (baby, day) ->
+                        if (baby == null) {
+                            flowOf(emptyList())
+                        } else {
+                            val start = day.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                            feedingRepository.observeInRange(id, baby.id, start, Long.MAX_VALUE)
+                        }
+                    }
+                    .collect { feeds ->
+                        set {
+                            it.copy(
+                                todayFeedCount = feeds.size,
+                                todayFeedMl = feeds.mapNotNull { feed -> feed.totalMl }.takeIf { ml -> ml.isNotEmpty() }?.sum(),
+                            )
+                        }
+                    }
             }
 
             // The pump countdown, on the same terms as the feed one: the repository directly,

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette.Dark in :core:ui: card, foreground, mutedForeground, destructive. -->
+    <color name="widget_background">#FF332E45</color>
+    <color name="widget_foreground">#FFF3ECDD</color>
+    <color name="widget_muted">#FFC7BFAE</color>
+    <color name="widget_error">#FFE07856</color>
+</resources>

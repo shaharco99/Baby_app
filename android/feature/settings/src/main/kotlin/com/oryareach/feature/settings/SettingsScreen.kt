@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -65,6 +67,7 @@ import com.oryareach.core.model.Baby
 import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
+import com.oryareach.core.ui.text.confirmCopied
 import com.oryareach.core.ui.text.sensitiveClipEntry
 import com.oryareach.core.ui.component.BusyLabel
 import kotlinx.datetime.LocalDate
@@ -98,13 +101,17 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_title),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
+                    // A raw tap detector, not `clickable`: the easter egg must not give the
+                    // heading a ripple or make TalkBack announce it as a button.
                     modifier = Modifier
                         .semantics { heading() }
-                        .clickable {
-                            titleTapCount++
-                            if (titleTapCount >= 7) {
-                                titleTapCount = 0
-                                Toast.makeText(context, easterEggMessage, Toast.LENGTH_LONG).show()
+                        .pointerInput(easterEggMessage) {
+                            detectTapGestures {
+                                titleTapCount++
+                                if (titleTapCount >= 7) {
+                                    titleTapCount = 0
+                                    Toast.makeText(context, easterEggMessage, Toast.LENGTH_LONG).show()
+                                }
                             }
                         },
                 )
@@ -154,6 +161,7 @@ fun SettingsScreen(
                 TextButton(onClick = {
                     scope.launch {
                         clipboard.setClipEntry(sensitiveClipEntry("recovery-phrase", words.joinToString(" ")))
+                        context.confirmCopied()
                     }
                 }) {
                     Text(stringResource(R.string.settings_recovery_phrase_copy))

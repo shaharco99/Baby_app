@@ -91,4 +91,29 @@
     <string name="vitamin_history_given">%1$s · given at %2$s</string>
     <string name="vitamin_history_missed">%1$s · not logged</string>
     <string name="feeding_milestone_snackbar">Feed number %1$d 🎉</string>
+    <string name="feeding_day_marks">%1$d urine · %2$d stool</string>
+    <string name="feeding_summary_open">Summary</string>
+    <string name="feeding_summary_title">Summary for the doctor</string>
+    <string name="feeding_summary_close">Close the summary</string>
+    <string name="feeding_summary_born">Born %1$s</string>
+    <string name="feeding_summary_birth_weight">%1$d g at birth</string>
+    <string name="feeding_summary_last_24h">Last 24 hours</string>
+    <plurals name="feeding_summary_week_title">
+        <item quantity="one">Yesterday</item>
+        <item quantity="other">Daily average, last %d days</item>
+    </plurals>
+    <string name="feeding_summary_week_title_empty">Daily average</string>
+    <string name="feeding_summary_no_days">No full day logged yet — the averages start tomorrow.</string>
+    <string name="feeding_summary_feeds">Feeds</string>
+    <string name="feeding_summary_milk">Milk</string>
+    <string name="feeding_summary_source_split">%1$d ml breast · %2$d ml formula</string>
+    <string name="feeding_summary_not_measured">Not measured</string>
+    <string name="feeding_summary_interval">Time between feeds</string>
+    <string name="feeding_summary_interval_value">%1$d h %2$d min</string>
+    <string name="feeding_summary_vitamin">Vitamin D</string>
+    <string name="feeding_summary_vitamin_value">%1$d of %2$d days</string>
+    <string name="feeding_summary_by_day">Day by day</string>
+    <string name="feeding_summary_col_day">Day</string>
+    <string name="feeding_summary_col_feeds">Feeds</string>
+    <string name="feeding_summary_footnote">From what was logged in the app. Milk counts only feeds with an amount entered; urine and stool count the feeds they were marked on.</string>
 </resources>

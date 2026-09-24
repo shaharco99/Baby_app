@@ -10,6 +10,8 @@ import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.domain.feeding.FeedingDay
 import com.oryareach.core.domain.feeding.FEED_MILESTONES
+import com.oryareach.core.domain.feeding.SUMMARY_WEEK_DAYS
+import com.oryareach.core.domain.feeding.doctorSummary
 import com.oryareach.core.domain.feeding.feedingTally
 import com.oryareach.core.domain.feeding.groupFeedsByDay
 import com.oryareach.core.domain.feeding.nextFeedCountdown
@@ -82,6 +84,8 @@ interface FeedingActions {
     fun onClearVitaminTime()
     fun onOpenVitaminHistory()
     fun onDismissVitaminHistory()
+    fun onOpenDoctorSummary()
+    fun onCloseDoctorSummary()
     fun onRefresh()
 }
 
@@ -448,6 +452,32 @@ class FeedingViewModel(
 
     override fun onDismissVitaminHistory() = set { it.copy(vitaminHistoryVisible = false) }
 
+    /**
+     * Reads the week behind today once and hands it to [doctorSummary]. One extra day on the
+     * window so the first of the seven complete days is whole in any time zone.
+     */
+    override fun onOpenDoctorSummary() {
+        val workspace = workspaceId() ?: return
+        val baby = _uiState.value.baby ?: return
+
+        viewModelScope.launch {
+            val nowMillis = now()
+            val from = nowMillis - (SUMMARY_WEEK_DAYS + 1) * MILLIS_PER_DAY
+            val feeds = repository.observeInRange(workspace, baby.id, from, nowMillis).first()
+            val doses = vitaminRepository.observeInRange(workspace, baby.id, from, nowMillis).first()
+            val summary = doctorSummary(
+                feeds = feeds,
+                doses = doses,
+                nowEpochMillis = nowMillis,
+                timeZone = timeZone(),
+                birthDate = baby.birthDate,
+            )
+            set { it.copy(doctorSummary = summary) }
+        }
+    }
+
+    override fun onCloseDoctorSummary() = set { it.copy(doctorSummary = null) }
+
     /** The local day the phone is in right now, as the epoch-millis range the queries take. */
     private fun todayBounds(): Pair<Long, Long> {
         val zone = timeZone()
@@ -491,6 +521,8 @@ class FeedingViewModel(
 
         /** The table view scrolls sideways through days; a fortnight is as far back as it reads. */
         const val HISTORY_WINDOW_MILLIS = 14L * 24 * 60 * 60 * 1000
+
+        const val MILLIS_PER_DAY = 24L * 60 * 60 * 1000
     }
 }
 

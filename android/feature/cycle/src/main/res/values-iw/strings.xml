@@ -75,4 +75,6 @@
     <string name="cycle_attach_document">צירוף מסמך</string>
     <string name="cycle_scan_document">סריקת מסמך</string>
     <string name="cycle_remove_attachment">הסרת קובץ מצורף</string>
+    <string name="cycle_show_attachments">הצגת הקבצים המצורפים</string>
+    <string name="cycle_hide_attachments">הסתרת הקבצים המצורפים</string>
 </resources>

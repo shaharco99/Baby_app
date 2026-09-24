@@ -12,4 +12,5 @@ dependencies {
     implementation(project(":core:sync"))
     implementation(project(":core:domain"))
     implementation(libs.compose.material.icons.extended)
+    implementation(libs.androidx.activity.compose)
 }

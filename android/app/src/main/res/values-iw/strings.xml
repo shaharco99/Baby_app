@@ -22,4 +22,10 @@
     <string name="app_exit_message">את/ה במסך הבית. לחיצה נוספת על חזרה או אישור תסגור את שנינו ביחד.</string>
     <string name="app_exit_confirm">סגירה</string>
     <string name="app_exit_cancel">להישאר</string>
+    <string name="widget_feed_name">ההאכלה הבאה</string>
+    <string name="widget_feed_description">כמה זמן נשאר עד ההאכלה הבאה, ומתי הייתה האחרונה.</string>
+    <string name="widget_feed_next">עד ההאכלה הבאה</string>
+    <string name="widget_feed_overdue">האכלה באיחור של</string>
+    <string name="widget_feed_last">האכלה אחרונה ב-%1$s</string>
+    <string name="widget_feed_empty">עדיין לא נרשמה האכלה</string>
 </resources>

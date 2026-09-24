@@ -217,4 +217,12 @@
         <item quantity="two">שנתיים</item>
         <item quantity="other">%1$d שנים</item>
     </plurals>
+    <string name="home_last_feed">האכלה אחרונה ב-%1$s · לפני %2$s</string>
+    <string name="home_duration_hours_minutes">%1$d ש׳ %2$d דק׳</string>
+    <plurals name="home_today_feeds">
+        <item quantity="one">היום: האכלה אחת</item>
+        <item quantity="two">היום: שתי האכלות</item>
+        <item quantity="other">היום: %1$d האכלות</item>
+    </plurals>
+    <string name="home_today_feeds_with_ml">%1$s · %2$d מ״ל</string>
 </resources>

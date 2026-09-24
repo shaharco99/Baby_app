@@ -75,4 +75,6 @@
     <string name="cycle_attach_document">Attach document</string>
     <string name="cycle_scan_document">Scan document</string>
     <string name="cycle_remove_attachment">Remove attachment</string>
+    <string name="cycle_show_attachments">Show attachments</string>
+    <string name="cycle_hide_attachments">Hide attachments</string>
 </resources>
