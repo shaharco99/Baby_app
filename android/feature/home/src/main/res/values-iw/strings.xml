@@ -195,7 +195,7 @@
     <string name="home_pumping_now">שואבת כרגע</string>
     <string name="home_pump_paused">שאיבה בהשהיה</string>
     <string name="home_age_primary">בגיל %1$s</string>
-    <string name="home_age_separator">, </string>
+    <string name="home_age_separator">,\u0020</string>
     <string name="home_age_detail">%1$s · %2$s</string>
     <plurals name="home_age_days">
         <item quantity="one">יום</item>

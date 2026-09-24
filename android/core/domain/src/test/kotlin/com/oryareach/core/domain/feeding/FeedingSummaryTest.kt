@@ -67,6 +67,7 @@ class FeedingSummaryTest {
             nowEpochMillis = at("2026-09-24T12:00:00Z"),
             timeZone = zone,
             birthDate = null,
+            firstFeedEpochMillis = null,
         )
 
         summary.days.map { it.date } shouldBe (17..23).map { LocalDate(2026, 9, it) }
@@ -88,6 +89,7 @@ class FeedingSummaryTest {
             nowEpochMillis = at("2026-09-24T12:00:00Z"),
             timeZone = zone,
             birthDate = null,
+            firstFeedEpochMillis = null,
         )
 
         summary.last24Hours.feeds shouldBe 2
@@ -107,6 +109,7 @@ class FeedingSummaryTest {
             nowEpochMillis = at("2026-09-24T12:00:00Z"),
             timeZone = zone,
             birthDate = LocalDate(2026, 9, 21),
+            firstFeedEpochMillis = null,
         )
 
         summary.dayCount shouldBe 3
@@ -122,10 +125,30 @@ class FeedingSummaryTest {
             nowEpochMillis = at("2026-09-24T12:00:00Z"),
             timeZone = zone,
             birthDate = LocalDate(2026, 9, 24),
+            firstFeedEpochMillis = null,
         )
 
         summary.dayCount shouldBe 0
         summary.averageFeedsPerDay shouldBe null
+    }
+
+    @Test
+    fun `days before the log began are not counted as empty days`() {
+        val summary = doctorSummary(
+            feeds = listOf(
+                feed("first", "2026-09-19T10:00:00Z", breast = 30),
+                feed("second", "2026-09-23T10:00:00Z", breast = 90),
+            ),
+            doses = emptyList(),
+            nowEpochMillis = at("2026-09-24T12:00:00Z"),
+            timeZone = zone,
+            birthDate = LocalDate(2026, 9, 16),
+            firstFeedEpochMillis = at("2026-09-19T10:00:00Z"),
+        )
+
+        summary.days.first().date shouldBe LocalDate(2026, 9, 19)
+        summary.dayCount shouldBe 5
+        summary.averageMlPerDay shouldBe 120.0 / 5
     }
 
     private fun feed(

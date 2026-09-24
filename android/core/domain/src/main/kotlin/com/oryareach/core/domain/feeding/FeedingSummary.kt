@@ -32,7 +32,8 @@ data class FeedingStretch(
  *
  * The week is complete days only — yesterday and the six before it, never today. Today is still
  * being logged, and folding a half day into a daily average drags it down every morning. Days
- * before the birth are left out rather than counted as empty.
+ * before the birth, and before the first feed was ever logged, are left out rather than counted
+ * as empty: a day nobody was logging yet is not a day the baby went unfed.
  */
 data class DoctorSummary(
     val last24Hours: FeedingStretch,
@@ -77,14 +78,18 @@ fun doctorSummary(
     nowEpochMillis: Long,
     timeZone: TimeZone,
     birthDate: LocalDate?,
+    /** When the log begins — the first feed ever logged, not the first in [feeds]. */
+    firstFeedEpochMillis: Long?,
     weekDays: Int = SUMMARY_WEEK_DAYS,
 ): DoctorSummary {
     fun Long.localDate(): LocalDate = Instant.fromEpochMilliseconds(this).toLocalDateTime(timeZone).date
 
     val today = nowEpochMillis.localDate()
+    val logStart = firstFeedEpochMillis?.localDate()
     val dates = (weekDays downTo 1)
         .map { today.minus(it, DateTimeUnit.DAY) }
         .filter { birthDate == null || it >= birthDate }
+        .filter { logStart == null || it >= logStart }
 
     val byDate = feeds.groupBy { it.fedAtEpochMillis.localDate() }
     val days = dates.map { date ->

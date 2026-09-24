@@ -275,7 +275,7 @@
     <string name="home_pumping_now">Pumping now</string>
     <string name="home_pump_paused">Pumping, paused</string>
     <string name="home_age_primary">%1$s old</string>
-    <string name="home_age_separator">, </string>
+    <string name="home_age_separator">,\u0020</string>
     <string name="home_age_detail">%1$s · %2$s</string>
     <plurals name="home_age_days">
         <item quantity="one">%1$d day</item>

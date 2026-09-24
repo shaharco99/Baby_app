@@ -465,12 +465,17 @@ class FeedingViewModel(
             val from = nowMillis - (SUMMARY_WEEK_DAYS + 1) * MILLIS_PER_DAY
             val feeds = repository.observeInRange(workspace, baby.id, from, nowMillis).first()
             val doses = vitaminRepository.observeInRange(workspace, baby.id, from, nowMillis).first()
+            // The log's true start, not the window's: a week that begins before anyone was
+            // logging must not count those days as feeds that never happened.
+            val firstFeed = repository.observeInRange(workspace, baby.id, 0L, nowMillis).first()
+                .minOfOrNull { it.fedAtEpochMillis }
             val summary = doctorSummary(
                 feeds = feeds,
                 doses = doses,
                 nowEpochMillis = nowMillis,
                 timeZone = timeZone(),
                 birthDate = baby.birthDate,
+                firstFeedEpochMillis = firstFeed,
             )
             set { it.copy(doctorSummary = summary) }
         }
