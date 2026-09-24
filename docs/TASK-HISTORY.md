@@ -27,6 +27,15 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 
 ---
 
+## 2026-09-24 (night) — wasted space, sheets, units (v1.14.1)
+
+- **Empty band above every page title** (user: "never want to see things like this"). Host `Scaffold` in `TakesTwoApp` padded for the top bar (which already covers the status bar), and each tab screen's `safeDrawingPadding()` added the status bar again. Host now passes `padding(padding).consumeWindowInsets(padding)` to every tab — one fix for all eleven. Screens outside the host (auth, pairing) own their insets and are unchanged.
+- **Form sheets open fully expanded** (`skipPartiallyExpanded = true`, all nine). The birth-details sheet opened half-way with Save at the screen edge under the nav buttons.
+- **Stash "16h 56m" in the Hebrew dialog** — units now `duration_*` strings in `:core:ui`. Dead `toLitres`/constants left in feeding/pumping after the dialog move removed.
+- **v1.14.0 checked:** Xiaomi (English/dark) "1 week and 1 day", night watch from Home's feed card; Pixel (Hebrew/light) "שבוע ויום", stash from the pump card, summary week starts 18.9 (6 days, 7.0 feeds/day, 300 ml) — v1.12.1's fix confirmed.
+
+---
+
 ## 2026-09-24 (evening) — age wording, eggs on Home (v1.14.0)
 
 - Age reads "1 week and 1 day", then "1 month, 2 weeks and 3 days" (years in front later); zero parts dropped. `BabyAge.weeksAfterMonths`/`daysAfterWeeks` (tested). The "and" is a resource pair because Hebrew fuses ו onto a word (ויום) but hyphenates before a digit (ו-3 ימים).

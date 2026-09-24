@@ -67,4 +67,6 @@
         <item>המקפיא מתמלא כי ישבת שם.</item>
         <item>זהב נוזלי, והכול שלך.</item>
     </string-array>
+    <string name="duration_minutes">%1$d דק׳</string>
+    <string name="duration_hours_minutes">%1$d ש׳ %2$d דק׳</string>
 </resources>

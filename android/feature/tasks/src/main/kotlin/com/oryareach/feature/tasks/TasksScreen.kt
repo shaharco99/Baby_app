@@ -246,7 +246,7 @@ fun TasksScreen(
     }
 
     if (uiState.sheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             TaskForm(uiState = uiState, actions = actions)
         }

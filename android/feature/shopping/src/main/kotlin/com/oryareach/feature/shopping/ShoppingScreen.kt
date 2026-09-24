@@ -196,7 +196,7 @@ fun ShoppingScreen(
     }
 
     if (uiState.sheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             ShoppingForm(uiState = uiState, actions = actions)
         }

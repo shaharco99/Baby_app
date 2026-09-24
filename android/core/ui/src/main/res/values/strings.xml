@@ -67,4 +67,6 @@
         <item>The freezer is filling up because you sat there.</item>
         <item>Liquid gold, and you made all of it.</item>
     </string-array>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
 </resources>

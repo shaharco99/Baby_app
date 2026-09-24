@@ -327,7 +327,7 @@ fun FeedingScreen(
     }
 
     if (uiState.sheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             LogFeedForm(uiState = uiState, actions = actions)
         }
@@ -492,7 +492,6 @@ private fun VitaminMark(given: Boolean) {
 /** Thin enough to read as a pencil mark rather than a button. */
 private const val STROKE_WIDTH_DP = 1.5f
 
-
 /**
  * The fortnight behind the card, one line per day. Days with no dose are listed as missed rather
  * than left out: "nothing here" and "we forgot" look the same in a list that only shows hits.
@@ -549,16 +548,10 @@ private fun VitaminHistoryDialog(
 
 private const val VITAMIN_HISTORY_DAYS = 14
 
-private const val MILLILITRES_PER_LITRE = 1_000
-
-/** One decimal place: "1.4 litres" is a quantity, "1.437 litres" is a reading. */
-private fun Int.toLitres(): String = "%.1f".format(this / MILLILITRES_PER_LITRE.toFloat())
-
 private fun Long.toTimeLabel(): String = toLocalDateTime().let { "%02d:%02d".format(it.hour, it.minute) }
 
 /** Minutes past midnight as a clock reading. */
 private fun Int.toTimeLabel(): String = "%02d:%02d".format(this / 60, this % 60)
-
 
 @Composable
 private fun NoBabyCard() {

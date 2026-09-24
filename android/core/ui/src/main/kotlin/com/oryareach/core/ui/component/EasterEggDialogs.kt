@@ -160,8 +160,14 @@ fun MilkStashDialog(stash: MilkStash, onDismiss: () -> Unit) {
 /** One decimal place: "1.5 litres" is a quantity, "1.487 litres" is a reading. */
 private fun Int.toLitres(): String = "%.1f".format(this / MILLILITRES_PER_LITRE.toFloat())
 
+/** Units from resources: "16h 56m" was English letters sitting inside the Hebrew line. */
+@Composable
 private fun Int.toHoursAndMinutes(): String =
-    if (this < MINUTES_PER_HOUR) "${this}m" else "${this / MINUTES_PER_HOUR}h ${this % MINUTES_PER_HOUR}m"
+    if (this < MINUTES_PER_HOUR) {
+        stringResource(R.string.duration_minutes, this)
+    } else {
+        stringResource(R.string.duration_hours_minutes, this / MINUTES_PER_HOUR, this % MINUTES_PER_HOUR)
+    }
 
 private const val MILLILITRES_PER_LITRE = 1000
 private const val MINUTES_PER_HOUR = 60

@@ -245,14 +245,14 @@ fun HomeScreen(
     }
 
     if (uiState.sheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             DueDateForm(uiState = uiState, actions = actions)
         }
     }
 
     if (uiState.birthSheetVisible) {
-        val birthSheetState = rememberModalBottomSheetState()
+        val birthSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissBirthSheet, sheetState = birthSheetState) {
             BirthDetailsForm(uiState = uiState, actions = actions)
         }

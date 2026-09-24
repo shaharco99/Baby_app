@@ -41,6 +41,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -421,45 +422,49 @@ private fun HomeRoute() {
             )
         },
     ) { padding ->
+        // The bar above already made room for the status bar. Consuming that here is what stops
+        // each screen's own safeDrawingPadding() from adding the status bar's height a second
+        // time, which left an empty band above every page title.
+        val content = androidx.compose.ui.Modifier.padding(padding).consumeWindowInsets(padding)
         when (tab) {
             HomeTab.Home -> HomeTabRoute(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
+                modifier = content,
                 onNavigateToShopping = { navigateTo(HomeTab.Shopping) },
                 onNavigateToTasks = { navigateTo(HomeTab.Tasks) },
                 onNavigateToFeeding = { navigateTo(HomeTab.Feeding) },
                 onNavigateToPumping = { navigateTo(HomeTab.Pumping) },
             )
             HomeTab.Tasks -> TasksRoute(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
+                modifier = content,
                 highlightId = highlightId,
                 onHighlightConsumed = { highlightId = null },
             )
             HomeTab.Shopping -> ShoppingRoute(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
+                modifier = content,
                 highlightId = highlightId,
                 onHighlightConsumed = { highlightId = null },
             )
-            HomeTab.Folders -> FoldersRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
-            HomeTab.Feeding -> FeedingRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
-            HomeTab.Pumping -> PumpingRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
-            HomeTab.Cycle -> CycleRoute(modifier = androidx.compose.ui.Modifier.padding(padding))
+            HomeTab.Folders -> FoldersRoute(modifier = content)
+            HomeTab.Feeding -> FeedingRoute(modifier = content)
+            HomeTab.Pumping -> PumpingRoute(modifier = content)
+            HomeTab.Cycle -> CycleRoute(modifier = content)
             HomeTab.Calendar -> CalendarRoute(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
+                modifier = content,
                 onNavigateToTab = { destination, recordId -> navigateTo(destination); highlightId = recordId },
             )
             HomeTab.Search -> SearchRoute(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
+                modifier = content,
                 onNavigateToTab = { destination, recordId -> navigateTo(destination); highlightId = recordId },
             )
             HomeTab.Settings -> if (showDeviceManagement) {
                 DeviceManagementRoute(
                     onBack = { showDeviceManagement = false },
-                    modifier = androidx.compose.ui.Modifier.padding(padding),
+                    modifier = content,
                 )
             } else {
                 SettingsRoute(
                     onManageDevices = { showDeviceManagement = true },
-                    modifier = androidx.compose.ui.Modifier.padding(padding),
+                    modifier = content,
                 )
             }
         }

@@ -167,7 +167,7 @@ fun CycleScreen(
     }
 
     if (uiState.daySheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissDaySheet, sheetState = sheetState) {
             DayForm(uiState = uiState, actions = actions, onDeleteClick = { deleteConfirmEntry = true })
         }

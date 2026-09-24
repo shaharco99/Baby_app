@@ -215,7 +215,7 @@ fun PumpingScreen(
     }
 
     if (uiState.sheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             PumpSessionForm(uiState = uiState, actions = actions)
         }
@@ -369,8 +369,6 @@ private fun TimerCard(uiState: PumpingUiState, actions: PumpingActions) {
         }
     }
 }
-
-
 
 /**
  * Turns red once it passes zero and counts *up* from there, because at that point "how late is
@@ -992,13 +990,3 @@ private object NoopPumpingActions : PumpingActions {
     override fun onHistoryViewChange(value: PumpHistoryView) = Unit
     override fun onRefresh() = Unit
 }
-
-private const val MINUTES_PER_HOUR = 60
-private const val MILLILITRES_PER_LITRE = 1_000
-
-/** "18h 20m" above an hour, "45m" below it. */
-private fun Int.toHoursAndMinutes(): String =
-    if (this < MINUTES_PER_HOUR) "${this}m" else "${this / MINUTES_PER_HOUR}h ${this % MINUTES_PER_HOUR}m"
-
-/** One decimal place: "1.5 litres" is a quantity, "1.487 litres" is a reading. */
-private fun Int.toLitres(): String = "%.1f".format(this / MILLILITRES_PER_LITRE.toFloat())

@@ -151,14 +151,14 @@ fun CalendarScreen(
     }
 
     if (uiState.daySheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissDaySheet, sheetState = sheetState) {
             DaySheetContent(uiState = uiState, actions = actions, onDeleteClick = { deleteConfirmDate = it })
         }
     }
 
     if (uiState.sheetVisible) {
-        val sheetState = rememberModalBottomSheetState()
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissSheet, sheetState = sheetState) {
             DateForm(uiState = uiState, actions = actions)
         }
