@@ -49,7 +49,17 @@ fun diaperDays(
     feeds: List<FeedingEntry>,
     changes: List<DiaperChange>,
     timeZone: TimeZone,
-): List<DiaperDay> {
+): List<DiaperDay> =
+    diaperEvents(feeds, changes)
+        .groupBy { Instant.fromEpochMilliseconds(it.atEpochMillis).toLocalDateTime(timeZone).date }
+        .map { (date, events) -> DiaperDay(date = date, events = events.sortedBy { it.atEpochMillis }) }
+        .sortedByDescending { it.date }
+
+/**
+ * Every nappy change in [feeds] and [changes], oldest first — the same rows the nappy page shows,
+ * ungrouped, so the doctor summary counts exactly what that page counts.
+ */
+fun diaperEvents(feeds: List<FeedingEntry>, changes: List<DiaperChange>): List<DiaperEvent> {
     val fromFeeds = feeds
         .filter { it.hadUrine || it.hadStool }
         .map {
@@ -72,10 +82,7 @@ fun diaperDays(
             fromFeed = false,
         )
     }
-    return (fromFeeds + own)
-        .groupBy { Instant.fromEpochMilliseconds(it.atEpochMillis).toLocalDateTime(timeZone).date }
-        .map { (date, events) -> DiaperDay(date = date, events = events.sortedBy { it.atEpochMillis }) }
-        .sortedByDescending { it.date }
+    return (fromFeeds + own).sortedBy { it.atEpochMillis }
 }
 
 /** Nappies changed on [from] and every day after it, for the "last 7 days" line. */

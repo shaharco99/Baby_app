@@ -299,6 +299,7 @@ val appModule = module {
             babyRepository = get(),
             settingsRepository = get(),
             vitaminRepository = get(),
+            diaperRepository = get(),
             vitaminReminders = get(),
             auth = get(),
             syncEngine = get(),

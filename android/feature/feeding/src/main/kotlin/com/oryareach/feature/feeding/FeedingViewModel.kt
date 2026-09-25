@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.VitaminDoseRepository
+import com.oryareach.core.database.repository.DiaperChangeRepository
 import com.oryareach.core.database.reminder.VitaminReminderRefresher
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
@@ -103,6 +104,7 @@ class FeedingViewModel(
     private val babyRepository: BabyRepository,
     private val settingsRepository: AppSettingsRepository,
     private val vitaminRepository: VitaminDoseRepository,
+    private val diaperRepository: DiaperChangeRepository,
     private val vitaminReminders: VitaminReminderRefresher,
     private val auth: AuthRepository,
     private val syncEngine: SyncEngine,
@@ -465,6 +467,8 @@ class FeedingViewModel(
             val from = nowMillis - (SUMMARY_WEEK_DAYS + 1) * MILLIS_PER_DAY
             val feeds = repository.observeInRange(workspace, baby.id, from, nowMillis).first()
             val doses = vitaminRepository.observeInRange(workspace, baby.id, from, nowMillis).first()
+            // Nappies logged on the nappy page, so the summary counts what that page counts.
+            val changes = diaperRepository.observeInRange(workspace, baby.id, from, nowMillis).first()
             // The log's true start, not the window's: a week that begins before anyone was
             // logging must not count those days as feeds that never happened.
             val firstFeed = repository.observeInRange(workspace, baby.id, 0L, nowMillis).first()
@@ -472,6 +476,7 @@ class FeedingViewModel(
             val summary = doctorSummary(
                 feeds = feeds,
                 doses = doses,
+                changes = changes,
                 nowEpochMillis = nowMillis,
                 timeZone = timeZone(),
                 birthDate = baby.birthDate,

@@ -1,5 +1,6 @@
 package com.oryareach.core.domain.feeding
 
+import com.oryareach.core.model.DiaperChange
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.model.VitaminDose
@@ -150,6 +151,46 @@ class FeedingSummaryTest {
         summary.dayCount shouldBe 5
         summary.averageMlPerDay shouldBe 120.0 / 5
     }
+
+    @Test
+    fun `nappies count the nappy page's changes as well as marked feeds`() {
+        val summary = doctorSummary(
+            feeds = listOf(
+                feed("marked", "2026-09-23T08:00:00Z", urine = true),
+                feed("unmarked", "2026-09-23T11:00:00Z"),
+                feed("recent", "2026-09-24T09:00:00Z", stool = true),
+            ),
+            doses = emptyList(),
+            changes = listOf(
+                change("wet-dirty", "2026-09-23T09:00:00Z", urine = true, stool = true),
+                change("dry", "2026-09-23T15:00:00Z"),
+                change("recent-wet", "2026-09-24T10:00:00Z", urine = true),
+            ),
+            nowEpochMillis = at("2026-09-24T12:00:00Z"),
+            timeZone = zone,
+            birthDate = LocalDate(2026, 9, 23),
+            firstFeedEpochMillis = null,
+        )
+
+        summary.week.diaperCount shouldBe 3
+        summary.week.urineCount shouldBe 2
+        summary.week.stoolCount shouldBe 1
+        summary.averageDiapersPerDay shouldBe 3.0
+        summary.diapers.single().changeCount shouldBe 3
+        // From 12:00 on the 23rd: the dry change, the stool feed and the wet change.
+        summary.last24Hours.diaperCount shouldBe 3
+        summary.last24Hours.urineCount shouldBe 1
+        summary.last24Hours.stoolCount shouldBe 1
+    }
+
+    private fun change(id: String, time: String, urine: Boolean = false, stool: Boolean = false) =
+        DiaperChange(
+            id = id,
+            babyId = "baby",
+            changedAtEpochMillis = at(time),
+            hadUrine = urine,
+            hadStool = stool,
+        )
 
     private fun feed(
         id: String,

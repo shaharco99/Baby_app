@@ -98,6 +98,7 @@
     <string name="feeding_summary_vitamin_value">%1$d of %2$d days</string>
     <string name="feeding_summary_by_day">Day by day</string>
     <string name="feeding_summary_col_day">Day</string>
+    <string name="feeding_summary_diapers">Diapers</string>
     <string name="feeding_summary_col_feeds">Feeds</string>
-    <string name="feeding_summary_footnote">From what was logged in the app. Milk counts only feeds with an amount entered; urine and stool count the feeds they were marked on.</string>
+    <string name="feeding_summary_footnote">From what was logged in the app. Milk counts only feeds with an amount entered; diapers, urine and stool match the Diapers page — feeds marked with urine or stool plus changes logged there.</string>
 </resources>

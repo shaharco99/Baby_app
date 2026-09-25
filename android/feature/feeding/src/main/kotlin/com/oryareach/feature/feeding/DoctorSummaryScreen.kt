@@ -134,6 +134,7 @@ private fun StretchCard(title: String, stretch: FeedingStretch) {
                 value = stringResource(R.string.feeding_summary_interval_value, minutes / 60, minutes % 60),
             )
         }
+        FigureRow(stringResource(R.string.feeding_summary_diapers), stretch.diaperCount.toString())
         FigureRow(stringResource(R.string.feeding_urine), stretch.urineCount.toString())
         FigureRow(stringResource(R.string.feeding_stool), stretch.stoolCount.toString())
     }
@@ -175,6 +176,7 @@ private fun WeekCard(summary: DoctorSummary) {
                 value = stringResource(R.string.feeding_summary_interval_value, minutes / 60, minutes % 60),
             )
         }
+        FigureRow(stringResource(R.string.feeding_summary_diapers), summary.averageDiapersPerDay.oneDecimal())
         FigureRow(stringResource(R.string.feeding_urine), summary.averageUrinePerDay.oneDecimal())
         FigureRow(stringResource(R.string.feeding_stool), summary.averageStoolPerDay.oneDecimal())
         FigureRow(
@@ -240,19 +242,22 @@ private fun DayByDayCard(summary: DoctorSummary, today: LocalDate?) {
                 stringResource(R.string.feeding_summary_col_day),
                 stringResource(R.string.feeding_summary_col_feeds),
                 stringResource(R.string.feeding_row_amount),
+                stringResource(R.string.feeding_summary_diapers),
                 stringResource(R.string.feeding_row_urine),
                 stringResource(R.string.feeding_row_stool),
             ),
             header = true,
         )
-        summary.days.asReversed().forEach { day ->
+        // `diapers` is one to one with `days`, so the two walk together.
+        summary.days.zip(summary.diapers).asReversed().forEach { (day, diapers) ->
             TableRow(
                 cells = listOf(
                     today?.let { dayLabel(day.date, it) } ?: dateLabel(day.date),
                     day.feeds.size.toString(),
                     day.totalMl?.toString() ?: "–",
-                    day.urineCount.toString(),
-                    day.stoolCount.toString(),
+                    diapers.changeCount.toString(),
+                    diapers.urineCount.toString(),
+                    diapers.stoolCount.toString(),
                 ),
             )
         }
