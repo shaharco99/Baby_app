@@ -335,9 +335,10 @@ private fun Double?.oneDecimal(): String = this?.let { "%.1f".format(it) } ?: "�
 private const val SEPARATOR = " · "
 /**
  * Day, feeds, ml, diapers, urine, stool. At an even share the one-word headers broke mid-word
- * ("Diaper / s", "האכלו / ת"), so feeds and diapers get wider columns and the day, which can wrap
- * at its comma, a narrower one.
+ * ("Diaper / s", "האכלו / ת"), and a day squeezed too far broke "Wednesda / y". Sized from what
+ * the two phones actually drew: the day fits its longest weekday, feeds and diapers fit their
+ * headers, and the short numeric columns give up the difference.
  */
-private val ColumnWeights = listOf(1.5f, 1.25f, 1f, 1.4f, 1f, 1f)
+private val ColumnWeights = listOf(1.75f, 1.1f, 0.9f, 1.2f, 0.95f, 0.95f)
 private const val MIN_BAR_FRACTION = 0.04f
 private val CHART_HEIGHT = 96.dp
