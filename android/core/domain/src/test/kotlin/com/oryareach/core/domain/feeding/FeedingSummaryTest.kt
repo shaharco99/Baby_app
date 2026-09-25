@@ -159,6 +159,7 @@ class FeedingSummaryTest {
                 feed("marked", "2026-09-23T08:00:00Z", urine = true),
                 feed("unmarked", "2026-09-23T11:00:00Z"),
                 feed("recent", "2026-09-24T09:00:00Z", stool = true),
+                feed("seen-only", "2026-09-23T20:00:00Z", urine = true).copy(diaperChanged = false),
             ),
             doses = emptyList(),
             changes = listOf(
@@ -172,14 +173,16 @@ class FeedingSummaryTest {
             firstFeedEpochMillis = null,
         )
 
+        // The seen-only feed adds urine but no nappy.
         summary.week.diaperCount shouldBe 3
-        summary.week.urineCount shouldBe 2
+        summary.week.urineCount shouldBe 3
         summary.week.stoolCount shouldBe 1
         summary.averageDiapersPerDay shouldBe 3.0
         summary.diapers.single().changeCount shouldBe 3
-        // From 12:00 on the 23rd: the dry change, the stool feed and the wet change.
+        // From 12:00 on the 23rd: the dry change, the stool feed, the wet change, and the
+        // seen-only feed's urine (no nappy).
         summary.last24Hours.diaperCount shouldBe 3
-        summary.last24Hours.urineCount shouldBe 1
+        summary.last24Hours.urineCount shouldBe 2
         summary.last24Hours.stoolCount shouldBe 1
     }
 

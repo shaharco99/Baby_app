@@ -22,6 +22,11 @@ data class DiaperEvent(
     val hadStool: Boolean,
     val note: String?,
     val fromFeed: Boolean,
+    /**
+     * False for a feed where urine or stool was seen but the nappy stayed on: its marks still
+     * count, the nappy count does not.
+     */
+    val changed: Boolean = true,
 ) {
     val isDry: Boolean get() = !hadUrine && !hadStool
 }
@@ -31,8 +36,8 @@ data class DiaperDay(
     val date: LocalDate,
     val events: List<DiaperEvent>,
 ) {
-    /** Nappies changed that day — every event, dry ones included. */
-    val changeCount: Int get() = events.size
+    /** Nappies changed that day — dry ones included, "seen, not changed" feeds left out. */
+    val changeCount: Int get() = events.count { it.changed }
 
     val urineCount: Int get() = events.count { it.hadUrine }
 
@@ -70,6 +75,7 @@ fun diaperEvents(feeds: List<FeedingEntry>, changes: List<DiaperChange>): List<D
                 hadStool = it.hadStool,
                 note = null,
                 fromFeed = true,
+                changed = it.diaperChanged,
             )
         }
     val own = changes.map {

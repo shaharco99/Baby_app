@@ -706,3 +706,13 @@ val MIGRATION_21_22 = object : Migration(21, 22) {
         )
     }
 }
+
+/**
+ * "Urine seen, nappy not changed" on a feed. DEFAULT 1: every feed already logged was a change,
+ * which is what the marks meant until now.
+ */
+val MIGRATION_22_23 = object : Migration(22, 23) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `diaper_changed` INTEGER NOT NULL DEFAULT 1")
+    }
+}

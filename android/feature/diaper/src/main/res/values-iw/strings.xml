@@ -16,6 +16,7 @@
     <string name="diaper_urine">שתן</string>
     <string name="diaper_stool">צואה</string>
     <string name="diaper_both">שתן וצואה</string>
+    <string name="diaper_not_changed">%1$s · החיתול לא הוחלף</string>
     <string name="diaper_dry">יבש</string>
     <string name="diaper_from_feed">נרשם עם האכלה · עורכים בדף ההאכלה</string>
     <string name="diaper_empty_history">אין החלפות חיתול בשבועיים האחרונים.</string>

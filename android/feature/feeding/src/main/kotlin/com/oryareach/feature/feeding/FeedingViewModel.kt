@@ -60,6 +60,7 @@ interface FeedingActions {
     fun onFormulaMlChange(value: String)
     fun onToggleUrine()
     fun onToggleStool()
+    fun onToggleDiaperChanged()
     fun onNoteChange(value: String)
     fun onOpenDatePicker()
     fun onDismissDatePicker()
@@ -198,6 +199,7 @@ class FeedingViewModel(
             formFormulaMl = "",
             formHadUrine = false,
             formHadStool = false,
+            formDiaperChanged = true,
             formNote = "",
             // Now, the overwhelmingly common case: the feed just happened. A retroactive entry
             // walks it back from here.
@@ -220,6 +222,7 @@ class FeedingViewModel(
                     ?.toString().orEmpty(),
             formHadUrine = feed.hadUrine,
             formHadStool = feed.hadStool,
+            formDiaperChanged = feed.diaperChanged,
             formNote = feed.note.orEmpty(),
             formFedAtEpochMillis = feed.fedAtEpochMillis,
         )
@@ -239,6 +242,7 @@ class FeedingViewModel(
 
     override fun onToggleUrine() = set { it.copy(formHadUrine = !it.formHadUrine) }
     override fun onToggleStool() = set { it.copy(formHadStool = !it.formHadStool) }
+    override fun onToggleDiaperChanged() = set { it.copy(formDiaperChanged = !it.formDiaperChanged) }
     override fun onNoteChange(value: String) = set { it.copy(formNote = value) }
     override fun onHistoryViewChange(value: HistoryView) = set { it.copy(historyView = value) }
 
@@ -293,6 +297,7 @@ class FeedingViewModel(
                     formulaMl = state.enteredFormulaMl(),
                     hadUrine = state.formHadUrine,
                     hadStool = state.formHadStool,
+                    diaperChanged = state.savedDiaperChanged(),
                     note = state.formNote.ifBlank { null },
                     intervalMinutes = state.intervalMinutes,
                     fedAt = state.formFedAtEpochMillis,
@@ -307,6 +312,7 @@ class FeedingViewModel(
                     formulaMl = state.enteredFormulaMl(),
                     hadUrine = state.formHadUrine,
                     hadStool = state.formHadStool,
+                    diaperChanged = state.savedDiaperChanged(),
                     note = state.formNote.ifBlank { null },
                     fedAt = state.formFedAtEpochMillis,
                     intervalMinutes = state.intervalMinutes,

@@ -331,7 +331,9 @@ private const val OLDER_DAYS_DRAWER_KEY = "older-days-drawer"
 @Composable
 private fun EventRow(event: DiaperEvent, onEdit: () -> Unit, onDelete: () -> Unit) {
     val clock = formatClock(event.atEpochMillis)
-    val marks = stringResource(event.marksRes())
+    val marks = stringResource(event.marksRes()).let {
+        if (event.changed) it else stringResource(R.string.diaper_not_changed, it)
+    }
     val source = if (event.fromFeed) stringResource(R.string.diaper_from_feed) else null
     val description = listOfNotNull(clock, marks, event.note, source).joinToString(", ")
 

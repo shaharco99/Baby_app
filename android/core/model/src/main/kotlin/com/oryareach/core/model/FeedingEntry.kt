@@ -39,6 +39,12 @@ data class FeedingEntry(
     val amountMl: Int? = null,
     val hadUrine: Boolean = false,
     val hadStool: Boolean = false,
+    /**
+     * False when urine or stool was seen at the feed but the nappy was left on. The marks still
+     * count as urine/stool; only the nappy count skips it. True by default, which is what every
+     * record from before this field existed meant.
+     */
+    val diaperChanged: Boolean = true,
     val note: String? = null,
 ) {
     /**

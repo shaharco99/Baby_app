@@ -70,6 +70,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.outlined.BabyChangingStation
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.Icons
@@ -133,6 +134,8 @@ fun FeedingScreen(
     uiState: FeedingUiState,
     actions: FeedingActions,
     modifier: Modifier = Modifier,
+    /** Opens the Diapers tab. Passed in by `:app`, since features never depend on each other. */
+    onOpenDiapers: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     // Hoisted above the list/table switch on purpose: the two views are the same log read two
@@ -212,6 +215,15 @@ fun FeedingScreen(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.feeding_summary_open))
+                        }
+                        TextButton(onClick = onOpenDiapers) {
+                            Icon(
+                                Icons.Outlined.BabyChangingStation,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.feeding_open_diapers))
                         }
                     }
                 }
@@ -1186,7 +1198,7 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
         // Chips, not checkboxes. A checkbox is a 20dp target; these get tapped one-handed, in
         // the dark, holding a baby. The whole chip is the target, and it reads as pressed
         // rather than needing a tick to be spotted.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = uiState.formHadUrine,
                 onClick = actions::onToggleUrine,
@@ -1197,6 +1209,15 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
                 onClick = actions::onToggleStool,
                 label = { Text(stringResource(R.string.feeding_stool)) },
             )
+            // Only once something was seen: on by default, off for "saw it, left the nappy on",
+            // which still counts the urine/stool but not a nappy on the Diapers page.
+            if (uiState.formHadUrine || uiState.formHadStool) {
+                FilterChip(
+                    selected = uiState.formDiaperChanged,
+                    onClick = actions::onToggleDiaperChanged,
+                    label = { Text(stringResource(R.string.feeding_diaper_changed)) },
+                )
+            }
         }
 
         OutlinedTextField(
@@ -1582,6 +1603,7 @@ private object NoopFeedingActions : FeedingActions {
     override fun onFormulaMlChange(value: String) = Unit
     override fun onToggleUrine() = Unit
     override fun onToggleStool() = Unit
+    override fun onToggleDiaperChanged() = Unit
     override fun onNoteChange(value: String) = Unit
     override fun onOpenDatePicker() = Unit
     override fun onDismissDatePicker() = Unit

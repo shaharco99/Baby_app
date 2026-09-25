@@ -44,6 +44,10 @@ data class HomeUiState(
     val todayFeedCount: Int = 0,
     /** Null when none of today's feeds had an amount entered. */
     val todayFeedMl: Int? = null,
+    /** Diapers changed today, counted as the Diapers page counts them. */
+    val todayDiaperCount: Int = 0,
+    /** When today's last diaper was changed; null before the first one today. */
+    val lastDiaperChangeAt: Long? = null,
     /**
      * How long until the next pump. Not baby-scoped and not baby-mode-only: pumping belongs to
      * the mother, so this shows on the moon page too once there is anything to count from.

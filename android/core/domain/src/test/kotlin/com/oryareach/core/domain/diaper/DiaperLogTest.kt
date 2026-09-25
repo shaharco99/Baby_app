@@ -64,4 +64,21 @@ class DiaperLogTest {
         )
         changesSince(days, LocalDate(2026, 9, 23)) shouldBe 2
     }
+
+    @Test
+    fun `urine seen without a change counts the urine, not the nappy`() {
+        val days = diaperDays(
+            feeds = listOf(
+                feed("seen", at(24, 8), urine = true).copy(diaperChanged = false),
+                feed("changed", at(24, 11), urine = true),
+            ),
+            changes = emptyList(),
+            timeZone = zone,
+        )
+        val day = days.single()
+        day.events.size shouldBe 2
+        day.changeCount shouldBe 1
+        day.urineCount shouldBe 2
+        day.events.first().changed shouldBe false
+    }
 }

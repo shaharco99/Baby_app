@@ -53,6 +53,8 @@ data class FeedingUiState(
     val formFormulaMl: String = "",
     val formHadUrine: Boolean = false,
     val formHadStool: Boolean = false,
+    /** Only asked once a mark is set; off means urine/stool was seen but the nappy stayed on. */
+    val formDiaperChanged: Boolean = true,
     val formNote: String = "",
     /** When the feed happened. Defaults to now; retroactive entries move it back. */
     val formFedAtEpochMillis: Long = 0,
@@ -111,6 +113,12 @@ data class FeedingUiState(
      * already scheduled off it — so it is set once, when the feed is entered, and everything else
      * about the row stays correctable.
      */
+    /**
+     * What goes into the feed's `diaperChanged`: the chip only means something while a mark is
+     * set, so a feed with no marks is saved as the default rather than a stale "not changed".
+     */
+    fun savedDiaperChanged(): Boolean = formDiaperChanged || (!formHadUrine && !formHadStool)
+
     val isEditing: Boolean get() = editingFeedId != null
 
     /**

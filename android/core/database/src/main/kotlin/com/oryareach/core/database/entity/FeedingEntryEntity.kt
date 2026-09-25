@@ -35,6 +35,8 @@ data class FeedingEntryEntity(
     @ColumnInfo(name = "amount_ml") val amountMl: Int?,
     @ColumnInfo(name = "had_urine") val hadUrine: Boolean,
     @ColumnInfo(name = "had_stool") val hadStool: Boolean,
+    /** See [com.oryareach.core.model.FeedingEntry.diaperChanged]. */
+    @ColumnInfo(name = "diaper_changed", defaultValue = "1") val diaperChanged: Boolean = true,
     val note: String?,
     @Embedded val sync: SyncMetaEntity,
 )

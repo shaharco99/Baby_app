@@ -99,6 +99,8 @@
     <string name="feeding_summary_vitamin_value">%1$d מתוך %2$d ימים</string>
     <string name="feeding_summary_by_day">יום אחרי יום</string>
     <string name="feeding_summary_col_day">יום</string>
+    <string name="feeding_diaper_changed">הוחלף חיתול</string>
+    <string name="feeding_open_diapers">חיתולים</string>
     <string name="feeding_summary_diapers">חיתולים</string>
     <string name="feeding_summary_col_feeds">האכלות</string>
     <string name="feeding_summary_footnote">לפי מה שנרשם באפליקציה. החלב כולל רק האכלות שהוזנה בהן כמות; חיתולים, שתן וצואה כמו בדף החיתולים — האכלות שסומן בהן שתן או צואה והחלפות שנרשמו שם.</string>

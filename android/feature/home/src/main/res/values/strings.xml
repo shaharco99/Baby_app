@@ -283,6 +283,12 @@
         <item quantity="one">%1$d year</item>
         <item quantity="other">%1$d years</item>
     </plurals>
+    <plurals name="home_today_diapers">
+        <item quantity="one">Diapers today: %d</item>
+        <item quantity="other">Diapers today: %d</item>
+    </plurals>
+    <string name="home_no_diapers_today">No diaper changes yet today</string>
+    <string name="home_last_diaper">Last change at %1$s</string>
     <string name="home_last_feed">Last feed at %1$s · %2$s ago</string>
     <string name="home_duration_hours_minutes">%1$d h %2$d min</string>
     <plurals name="home_today_feeds">

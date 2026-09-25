@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -110,6 +111,7 @@ fun HomeScreen(
     onNavigateToTasks: () -> Unit = {},
     onNavigateToFeeding: () -> Unit = {},
     onNavigateToPumping: () -> Unit = {},
+    onNavigateToDiapers: () -> Unit = {},
 ) {
     Scaffold(modifier = modifier.fillMaxSize().safeDrawingPadding()) { padding ->
         PullToRefreshBox(
@@ -145,6 +147,8 @@ fun HomeScreen(
                         onLongClick = actions::onFeedCardLongPress,
                     )
 
+                    DiaperCard(uiState = uiState, onClick = onNavigateToDiapers)
+
                     if (uiState.showPumpCard) {
                         PumpCountdownCard(
                             uiState = uiState,
@@ -153,11 +157,11 @@ fun HomeScreen(
                         )
                     }
 
-                    BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
-
                     if (uiState.openTaskCount > 0) {
                         OpenTasksCard(count = uiState.openTaskCount, onClick = onNavigateToTasks)
                     }
+
+                    BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
                 } else if (!uiState.hasDueDate) {
                     NoDueDateCard(actions = actions)
                 } else {
@@ -181,11 +185,11 @@ fun HomeScreen(
                         )
                     }
 
-                    BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
-
                     if (uiState.openTaskCount > 0) {
                         OpenTasksCard(count = uiState.openTaskCount, onClick = onNavigateToTasks)
                     }
+
+                    BudgetSummaryCard(uiState = uiState, onClick = onNavigateToShopping)
 
                     TextButton(onClick = actions::onEditDueDate, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.home_edit_due_date))
@@ -545,6 +549,33 @@ private fun BudgetSummaryCard(uiState: HomeUiState, onClick: () -> Unit) {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+/** Today's diapers at a glance; the whole card is the shortcut to the Diapers page. */
+@Composable
+private fun DiaperCard(uiState: HomeUiState, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = if (uiState.todayDiaperCount > 0) {
+                    pluralStringResource(R.plurals.home_today_diapers, uiState.todayDiaperCount, uiState.todayDiaperCount)
+                } else {
+                    stringResource(R.string.home_no_diapers_today)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            uiState.lastDiaperChangeAt?.let { at ->
+                Text(
+                    text = stringResource(R.string.home_last_diaper, formatClock(at).asLtrIsolate()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun OpenTasksCard(count: Int, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {

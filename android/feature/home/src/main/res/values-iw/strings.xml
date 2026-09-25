@@ -207,6 +207,13 @@
         <item quantity="two">שנתיים</item>
         <item quantity="other">%1$d שנים</item>
     </plurals>
+    <plurals name="home_today_diapers">
+        <item quantity="one">חיתול אחד היום</item>
+        <item quantity="two">2 חיתולים היום</item>
+        <item quantity="other">%d חיתולים היום</item>
+    </plurals>
+    <string name="home_no_diapers_today">עוד לא הוחלף חיתול היום</string>
+    <string name="home_last_diaper">החלפה אחרונה ב-%1$s</string>
     <string name="home_last_feed">האכלה אחרונה ב-%1$s · לפני %2$s</string>
     <string name="home_duration_hours_minutes">%1$d ש׳ %2$d דק׳</string>
     <plurals name="home_today_feeds">

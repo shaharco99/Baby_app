@@ -102,6 +102,7 @@ fun FeedingEntryEntity.toFeedingEntry() = FeedingEntry(
     amountMl = amountMl,
     hadUrine = hadUrine,
     hadStool = hadStool,
+    diaperChanged = diaperChanged,
     note = note,
 )
 
@@ -243,6 +244,7 @@ fun FeedingEntry.toEntity(workspaceId: String, record: RemoteRecord, now: Long) 
     amountMl = totalMl,
     hadUrine = hadUrine,
     hadStool = hadStool,
+    diaperChanged = diaperChanged,
     note = note,
     sync = record.toSyncMeta(workspaceId, now),
 )

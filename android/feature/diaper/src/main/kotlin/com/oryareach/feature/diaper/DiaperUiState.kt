@@ -37,6 +37,9 @@ data class DiaperUiState(
 
     val todayDay: DiaperDay? get() = days.firstOrNull { it.date == today }
 
-    /** The newest change anywhere in the log, for the "last change at" line. */
-    val lastChange: DiaperEvent? get() = days.firstOrNull()?.events?.lastOrNull()
+    /**
+     * The newest nappy actually changed, for the "last change at" line — a feed where urine was
+     * only seen does not reset it.
+     */
+    val lastChange: DiaperEvent? get() = days.firstNotNullOfOrNull { day -> day.events.lastOrNull { it.changed } }
 }

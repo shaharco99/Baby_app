@@ -62,6 +62,7 @@ class FeedingEntryRepository(
         formulaMl: Int?,
         hadUrine: Boolean,
         hadStool: Boolean,
+        diaperChanged: Boolean = true,
         note: String?,
         intervalMinutes: Int,
         fedAt: Long = now(),
@@ -77,6 +78,7 @@ class FeedingEntryRepository(
             amountMl = mirrorTotal(breastMl, formulaMl),
             hadUrine = hadUrine,
             hadStool = hadStool,
+            diaperChanged = diaperChanged,
             note = note,
             sync = SyncMetaEntity(
                 workspaceId = workspaceId,
@@ -110,6 +112,7 @@ class FeedingEntryRepository(
         formulaMl: Int?,
         hadUrine: Boolean,
         hadStool: Boolean,
+        diaperChanged: Boolean = true,
         note: String?,
         fedAt: Long,
         intervalMinutes: Int,
@@ -124,6 +127,7 @@ class FeedingEntryRepository(
             amountMl = mirrorTotal(breastMl, formulaMl),
             hadUrine = hadUrine,
             hadStool = hadStool,
+            diaperChanged = diaperChanged,
             note = note,
             sync = existing.sync.copy(
                 updatedAt = timestamp,

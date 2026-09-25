@@ -37,6 +37,15 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 
 ---
 
+## 2026-09-25 (later) — diaper shortcuts, "seen, not changed" (v1.16.0)
+
+- **Urine/stool seen, diaper not changed.** `FeedingEntry.diaperChanged` (default true; Room 22→23, `diaper_changed INTEGER NOT NULL DEFAULT 1`; no Supabase change — inside ciphertext). Feed sheet shows a third chip "Diaper changed" (on) once urine or stool is marked; off = marks still count, diaper does not. `DiaperEvent.changed`; `DiaperDay.changeCount` and the summary's `diaperCount` count only changed ones; urine/stool count all. Diapers page row: "Urine · diaper not changed"; "last change" skips seen-only feeds. A partner on ≤1.15.1 editing such a feed resets it to changed.
+- **Shortcuts.** Home (baby mode): small Diapers card under the feed card — "Diapers today: N" + last change time, tap → Diapers tab. Feeding title row: "Diapers" button beside "Summary" (callback from `:app`, features stay independent).
+- **Home order:** open-tasks card now above the budget card, both modes.
+- Build + test + lint green. **Not seen on a phone.** Check: chip wrap in Hebrew, Feeding title row with two buttons (Hebrew, 200% font), Home card + order, DB upgrade 22→23 keeps data.
+
+---
+
 ## 2026-09-25 — diaper log (v1.15.0)
 
 User reversed the 2026-09-24 "declined: diaper log": wants its own page, fed by the feeding page's marks, with a count of diapers changed.

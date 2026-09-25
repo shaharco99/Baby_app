@@ -444,6 +444,7 @@ private fun HomeRoute() {
                 onNavigateToTasks = { navigateTo(HomeTab.Tasks) },
                 onNavigateToFeeding = { navigateTo(HomeTab.Feeding) },
                 onNavigateToPumping = { navigateTo(HomeTab.Pumping) },
+                onNavigateToDiapers = { navigateTo(HomeTab.Diaper) },
             )
             HomeTab.Tasks -> TasksRoute(
                 modifier = content,
@@ -456,7 +457,7 @@ private fun HomeRoute() {
                 onHighlightConsumed = { highlightId = null },
             )
             HomeTab.Folders -> FoldersRoute(modifier = content)
-            HomeTab.Feeding -> FeedingRoute(modifier = content)
+            HomeTab.Feeding -> FeedingRoute(modifier = content, onOpenDiapers = { navigateTo(HomeTab.Diaper) })
             HomeTab.Diaper -> DiaperRoute(modifier = content)
             HomeTab.Pumping -> PumpingRoute(modifier = content)
             HomeTab.Cycle -> CycleRoute(modifier = content)
@@ -508,6 +509,7 @@ private fun HomeTabRoute(
     onNavigateToTasks: () -> Unit = {},
     onNavigateToFeeding: () -> Unit = {},
     onNavigateToPumping: () -> Unit = {},
+    onNavigateToDiapers: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -519,6 +521,7 @@ private fun HomeTabRoute(
         onNavigateToTasks = onNavigateToTasks,
         onNavigateToFeeding = onNavigateToFeeding,
         onNavigateToPumping = onNavigateToPumping,
+        onNavigateToDiapers = onNavigateToDiapers,
     )
 }
 
@@ -551,10 +554,11 @@ private fun FoldersRoute(
 @Composable
 private fun FeedingRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    onOpenDiapers: () -> Unit = {},
     viewModel: FeedingViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    FeedingScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+    FeedingScreen(uiState = uiState, actions = viewModel, modifier = modifier, onOpenDiapers = onOpenDiapers)
 }
 
 @Composable

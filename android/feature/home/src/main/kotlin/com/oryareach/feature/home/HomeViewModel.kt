@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
+import com.oryareach.core.database.repository.DiaperChangeRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
+import com.oryareach.core.domain.diaper.diaperEvents
+import com.oryareach.core.model.DiaperChange
+import com.oryareach.core.model.FeedingEntry
 import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.ShoppingItemRepository
 import com.oryareach.core.database.repository.TaskRepository
@@ -82,6 +86,7 @@ class HomeViewModel(
     private val settingsRepository: AppSettingsRepository,
     private val babyRepository: BabyRepository,
     private val feedingRepository: FeedingEntryRepository,
+    private val diaperRepository: DiaperChangeRepository,
     private val pumpRepository: PumpSessionRepository,
     private val taskRepository: TaskRepository,
     private val shoppingRepository: ShoppingItemRepository,
@@ -196,17 +201,25 @@ class HomeViewModel(
                 ) { baby, day -> baby to day }
                     .flatMapLatest { (baby, day) ->
                         if (baby == null) {
-                            flowOf(emptyList())
+                            flowOf(emptyList<FeedingEntry>() to emptyList<DiaperChange>())
                         } else {
                             val start = day.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
-                            feedingRepository.observeInRange(id, baby.id, start, Long.MAX_VALUE)
+                            // Diapers read the same way the Diapers page does: marked feeds plus
+                            // changes logged there, so the two numbers always agree.
+                            combine(
+                                feedingRepository.observeInRange(id, baby.id, start, Long.MAX_VALUE),
+                                diaperRepository.observeInRange(id, baby.id, start, Long.MAX_VALUE),
+                            ) { feeds, changes -> feeds to changes }
                         }
                     }
-                    .collect { feeds ->
+                    .collect { (feeds, changes) ->
+                        val diapers = diaperEvents(feeds, changes).filter { it.changed }
                         set {
                             it.copy(
                                 todayFeedCount = feeds.size,
                                 todayFeedMl = feeds.mapNotNull { feed -> feed.totalMl }.takeIf { ml -> ml.isNotEmpty() }?.sum(),
+                                todayDiaperCount = diapers.size,
+                                lastDiaperChangeAt = diapers.lastOrNull()?.atEpochMillis,
                             )
                         }
                     }
