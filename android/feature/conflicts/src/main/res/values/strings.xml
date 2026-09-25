@@ -21,6 +21,7 @@
     <string name="conflicts_type_feeding_entry">Feeding log</string>
     <string name="conflicts_type_pump_session">Pumping log</string>
     <string name="conflicts_type_vitamin_dose">Vitamin dose</string>
+    <string name="conflicts_type_diaper_change">Diaper change</string>
     <string name="conflicts_edited_at">Edited %1$s</string>
     <string name="conflicts_edited_at_older">Edited %1$s · the earlier one</string>
     <plurals name="conflicts_title_count">

@@ -21,6 +21,7 @@
     <string name="conflicts_type_feeding_entry">רישום האכלה</string>
     <string name="conflicts_type_pump_session">רישום שאיבה</string>
     <string name="conflicts_type_vitamin_dose">מנת ויטמין</string>
+    <string name="conflicts_type_diaper_change">החלפת חיתול</string>
     <string name="conflicts_edited_at">נערך ב-%1$s</string>
     <string name="conflicts_edited_at_older">נערך ב-%1$s · המוקדם מבין השניים</string>
     <plurals name="conflicts_title_count">

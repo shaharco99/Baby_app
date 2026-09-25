@@ -20,6 +20,7 @@ import com.oryareach.core.database.mapper.toBaby
 import com.oryareach.core.database.mapper.toFeedingEntry
 import com.oryareach.core.database.mapper.toPumpSession
 import com.oryareach.core.database.mapper.toVitaminDose
+import com.oryareach.core.database.mapper.toDiaperChange
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.CycleEntry
@@ -31,6 +32,7 @@ import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.VitaminDose
+import com.oryareach.core.model.DiaperChange
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
@@ -69,6 +71,7 @@ class RoomSyncStore(
     private val feedingEntries get() = database.feedingEntryDao()
     private val pumpSessions get() = database.pumpSessionDao()
     private val vitaminDoses get() = database.vitaminDoseDao()
+    private val diaperChanges get() = database.diaperChangeDao()
     private val search = SearchIndexer(database)
     private val operations get() = database.syncOperationDao()
     private val state get() = database.syncStateDao()
@@ -105,6 +108,7 @@ class RoomSyncStore(
                 EntityType.FEEDING_ENTRY -> feedingEntries.markSynced(recordId, SyncStatus.SYNCED, version)
                 EntityType.PUMP_SESSION -> pumpSessions.markSynced(recordId, SyncStatus.SYNCED, version)
                 EntityType.VITAMIN_DOSE -> vitaminDoses.markSynced(recordId, SyncStatus.SYNCED, version)
+                EntityType.DIAPER_CHANGE -> diaperChanges.markSynced(recordId, SyncStatus.SYNCED, version)
                 else -> tasks.markSynced(recordId, SyncStatus.SYNCED, version)
             }
             operations.removeByRecord(recordId)
@@ -141,6 +145,7 @@ class RoomSyncStore(
                 EntityType.FEEDING_ENTRY -> feedingEntries.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 EntityType.PUMP_SESSION -> pumpSessions.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 EntityType.VITAMIN_DOSE -> vitaminDoses.markSynced(recordId, SyncStatus.CONFLICT, server.version)
+                EntityType.DIAPER_CHANGE -> diaperChanges.markSynced(recordId, SyncStatus.CONFLICT, server.version)
                 else -> tasks.markSynced(recordId, SyncStatus.CONFLICT, server.version)
             }
             // The queued operation is dropped: replaying it would just conflict again. The
@@ -290,6 +295,14 @@ class RoomSyncStore(
                         vitaminDoses.upsert(dose.toEntity(workspace, record, now()))
                         reindex(EntityType.VITAMIN_DOSE, record, workspace, "", dose.note.orEmpty())
                     }
+
+                    EntityType.DIAPER_CHANGE -> {
+                        val change = runCatching {
+                            json.decodeFromString<DiaperChange>(decoded.data)
+                        }.getOrNull() ?: continue
+                        diaperChanges.upsert(change.toEntity(workspace, record, now()))
+                        reindex(EntityType.DIAPER_CHANGE, record, workspace, "", change.note.orEmpty())
+                    }
                 }
             }
         }
@@ -362,6 +375,10 @@ class RoomSyncStore(
         EntityType.VITAMIN_DOSE -> vitaminDoses.findById(recordId)?.let {
             Payload(json.encodeToString(it.toVitaminDose()), it.sync.version)
         }
+
+        EntityType.DIAPER_CHANGE -> diaperChanges.findById(recordId)?.let {
+            Payload(json.encodeToString(it.toDiaperChange()), it.sync.version)
+        }
     }
 
     /** Every syncable table is checked in turn; `TASK` is the fallback for a row not found
@@ -378,6 +395,7 @@ class RoomSyncStore(
         feedingEntries.findById(recordId) != null -> EntityType.FEEDING_ENTRY
         pumpSessions.findById(recordId) != null -> EntityType.PUMP_SESSION
         vitaminDoses.findById(recordId) != null -> EntityType.VITAMIN_DOSE
+        diaperChanges.findById(recordId) != null -> EntityType.DIAPER_CHANGE
         else -> EntityType.TASK
     }
 }

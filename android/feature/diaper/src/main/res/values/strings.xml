@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diaper_title">Diapers</string>
+    <string name="diaper_today_label">Changed today</string>
+    <plurals name="diaper_count">
+        <item quantity="one">%d diaper</item>
+        <item quantity="other">%d diapers</item>
+    </plurals>
+    <string name="diaper_marks_count">%1$d urine · %2$d stool</string>
+    <string name="diaper_last_change">Last change at %1$s</string>
+    <string name="diaper_week_total">Last 7 days: %1$s</string>
+    <string name="diaper_log_action">Log a diaper change</string>
+    <string name="diaper_day_header">%1$s · %2$s</string>
+    <string name="diaper_day_header_marks">%1$s · %2$s · %3$d urine · %4$d stool</string>
+    <string name="diaper_urine">Urine</string>
+    <string name="diaper_stool">Stool</string>
+    <string name="diaper_both">Urine and stool</string>
+    <string name="diaper_dry">Dry</string>
+    <string name="diaper_from_feed">Logged with a feed · edit it on Feeding</string>
+    <string name="diaper_empty_history">No diaper changes in the last two weeks.</string>
+    <string name="diaper_empty_hint">Log one here, or mark urine or stool when you log a feed — it shows up here too.</string>
+    <string name="diaper_new_title">New diaper change</string>
+    <string name="diaper_edit_title">Edit diaper change</string>
+    <string name="diaper_marks_prompt">What was in it?</string>
+    <string name="diaper_marks_hint">Neither marked means a dry diaper.</string>
+    <string name="diaper_note_field">Note</string>
+    <string name="diaper_add_action">Save</string>
+    <string name="diaper_save_changes">Save changes</string>
+    <string name="diaper_delete">Delete</string>
+    <string name="diaper_delete_confirm">Delete the %1$s diaper change?</string>
+    <string name="diaper_deleted">Diaper change deleted</string>
+    <string name="diaper_undo_action">Undo</string>
+    <string name="diaper_pick_confirm">Set</string>
+    <string name="diaper_pick_cancel">Cancel</string>
+    <string name="diaper_older_days_drawer">Earlier days</string>
+</resources>

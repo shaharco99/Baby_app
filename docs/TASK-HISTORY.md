@@ -2,7 +2,7 @@
 
 One file for all that used to live in `docs/FOLLOWUP.md` and `docs/specs/`: what still open, what already done (so nobody redo), specs fully absorbed into code. Point Claude here to resume from last session.
 
-Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); Pixel runs it, Xiaomi on v1.11.1 (differences: spinner colour, calendar row height). Supabase migrations **0001–0013 all applied**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
+Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); Pixel runs it, Xiaomi on v1.11.1 (differences: spinner colour, calendar row height). Supabase migrations **0001–0013 applied; 0014 (diaper_change) applies with v1.15.0 tag**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
 
 `git log --oneline feature/android-app` = real history. This file = condensed version.
 
@@ -34,6 +34,18 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 - **Stash "16h 56m" in the Hebrew dialog** — units now `duration_*` strings in `:core:ui`. Dead `toLitres`/constants left in feeding/pumping after the dialog move removed.
 - **v1.14.1 checked on the Xiaomi (English/dark):** band gone on all ten tabs (Home, Tasks, Shopping, Documents, Feeding, Pumping, Cycle, Calendar, Search, Settings) — title sits right under the bar; Home now fits the tasks card on one screen. **Pixel (v1.14.1, Hebrew/light):** band gone on Home; birth-details sheet opens fully with Save above the gesture bar (dismissed, nothing saved). **Updater gotcha:** relaunching the app (adb `monkey`) while the system install prompt or Play Protect's scan dialog is up cancels it — the update then fails with `INSTALL_FAILED_VERIFICATION_FAILURE`. Tap Install and wait; don't relaunch.
 - **v1.14.0 checked:** Xiaomi (English/dark) "1 week and 1 day", night watch from Home's feed card; Pixel (Hebrew/light) "שבוע ויום", stash from the pump card, summary week starts 18.9 (6 days, 7.0 feeds/day, 300 ml) — v1.12.1's fix confirmed.
+
+---
+
+## 2026-09-25 — diaper log (v1.15.0)
+
+User reversed the 2026-09-24 "declined: diaper log": wants its own page, fed by the feeding page's marks, with a count of diapers changed.
+
+- New synced entity `DiaperChange` (`diaper_changes`, Room 21→22, Supabase `0014` — enum value only). Child-scoped like a feed. Both marks off = dry diaper, still counted.
+- **Sync with feeding = a read, not a copy.** `:core:domain`'s `diaper/DiaperLog.kt` (`diaperDays`, `changesSince`, tested) merges feeds with urine/stool marked + changes logged on the diaper page into days. A feed with no mark is not a change. Editing/deleting the feed on Feeding moves the diaper row with it; nothing duplicated, so the two screens cannot drift.
+- New `:feature:diaper` tab (drawer, after Feeding; `BabyChangingStation` icon). Card: diapers changed today, "N urine · M stool", last change time, last-7-days total, "Log a diaper change". List by day ("Today · 6 diapers · 4 urine · 2 stool"), older days in the drawer. Feed-sourced rows read-only ("Logged with a feed · edit it on Feeding"), no trash; own rows tap to edit (date/time editable), trash → confirm dialog → undo snackbar.
+- Not changed: Feeding's day line and the doctor summary still count marks on feeds only — they do not include changes logged on the diaper page. Say so if asked; extend `doctorSummary` if wanted.
+- Build + test + lint green. **Nothing seen on a phone yet.** To check (release, both languages): empty state, a feed with marks appearing on Diaper on both phones, add/edit/delete/undo own change, plurals (Hebrew "חיתול אחד" / "2 חיתולים"), top of screen (no band), sheet opens fully, dark/light.
 
 ---
 

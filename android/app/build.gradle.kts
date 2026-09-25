@@ -103,6 +103,7 @@ dependencies {
     implementation(project(":feature:cycle"))
     implementation(project(":feature:feeding"))
     implementation(project(":feature:pumping"))
+    implementation(project(":feature:diaper"))
     implementation(project(":feature:update"))
     implementation(project(":feature:shopping"))
     implementation(project(":feature:home"))

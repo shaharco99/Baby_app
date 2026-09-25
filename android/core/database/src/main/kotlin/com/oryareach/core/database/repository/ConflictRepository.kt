@@ -16,6 +16,7 @@ import com.oryareach.core.database.mapper.toFolder
 import com.oryareach.core.database.mapper.toImportantDate
 import com.oryareach.core.database.mapper.toPumpSession
 import com.oryareach.core.database.mapper.toVitaminDose
+import com.oryareach.core.database.mapper.toDiaperChange
 import com.oryareach.core.database.mapper.toShoppingItem
 import com.oryareach.core.database.mapper.toTask
 import com.oryareach.core.domain.conflict.recordDifferences
@@ -30,6 +31,7 @@ import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.VitaminDose
+import com.oryareach.core.model.DiaperChange
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
@@ -112,6 +114,7 @@ class ConflictRepository(
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.let { json.encodeToString(it.toFeedingEntry()) }
         EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.let { json.encodeToString(it.toPumpSession()) }
         EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.let { json.encodeToString(it.toVitaminDose()) }
+        EntityType.DIAPER_CHANGE -> database.diaperChangeDao().findById(recordId)?.let { json.encodeToString(it.toDiaperChange()) }
     }
 
     /** Keeps this device's edit: re-queues it for push, based on the server's version so the
@@ -217,6 +220,11 @@ class ConflictRepository(
                 database.vitaminDoseDao().upsert(dose.toEntity(workspace, record, now()))
                 search.index(entityType, recordId(record), workspace, "", dose.note.orEmpty())
             }
+            EntityType.DIAPER_CHANGE -> {
+                val change = runCatching { json.decodeFromString<DiaperChange>(payload) }.getOrNull() ?: return
+                database.diaperChangeDao().upsert(change.toEntity(workspace, record, now()))
+                search.index(entityType, recordId(record), workspace, "", change.note.orEmpty())
+            }
         }
     }
 
@@ -260,6 +268,9 @@ class ConflictRepository(
             EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.let {
                 database.vitaminDoseDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
             }
+            EntityType.DIAPER_CHANGE -> database.diaperChangeDao().findById(recordId)?.let {
+                database.diaperChangeDao().upsert(it.copy(sync = it.sync.copy(version = baseVersion, syncStatus = SyncStatus.PENDING_UPDATE)))
+            }
         }
     }
 
@@ -276,6 +287,7 @@ class ConflictRepository(
         EntityType.FEEDING_ENTRY -> database.feedingEntryDao().findById(recordId)?.sync?.workspaceId
         EntityType.PUMP_SESSION -> database.pumpSessionDao().findById(recordId)?.sync?.workspaceId
         EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.sync?.workspaceId
+        EntityType.DIAPER_CHANGE -> database.diaperChangeDao().findById(recordId)?.sync?.workspaceId
     }
 
     private suspend fun localTitleAndUpdatedAt(entityType: EntityType, recordId: String): Pair<String, Long>? = when (entityType) {
@@ -296,6 +308,9 @@ class ConflictRepository(
         }
         EntityType.VITAMIN_DOSE -> database.vitaminDoseDao().findById(recordId)?.let {
             (it.note ?: momentLabel(it.givenAt)) to it.sync.updatedAt
+        }
+        EntityType.DIAPER_CHANGE -> database.diaperChangeDao().findById(recordId)?.let {
+            (it.note ?: momentLabel(it.changedAt)) to it.sync.updatedAt
         }
     }
 
@@ -322,6 +337,9 @@ class ConflictRepository(
                 }
                 EntityType.VITAMIN_DOSE -> json.decodeFromString<VitaminDose>(payload).let {
                     it.note ?: momentLabel(it.givenAtEpochMillis)
+                }
+                EntityType.DIAPER_CHANGE -> json.decodeFromString<DiaperChange>(payload).let {
+                    it.note ?: momentLabel(it.changedAtEpochMillis)
                 }
             }
         }.getOrNull()

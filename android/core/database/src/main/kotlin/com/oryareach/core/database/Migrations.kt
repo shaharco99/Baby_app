@@ -664,3 +664,45 @@ val MIGRATION_20_21 = object : Migration(20, 21) {
         db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `vitamin_d_minute_of_day` INTEGER")
     }
 }
+
+/**
+ * Nappy changes logged on their own. A new table only; changes marked on a feed stay on the
+ * feed's row and are read from there.
+ */
+val MIGRATION_21_22 = object : Migration(21, 22) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `diaper_changes` (
+                `id` TEXT NOT NULL,
+                `baby_id` TEXT NOT NULL,
+                `changed_at` INTEGER NOT NULL,
+                `had_urine` INTEGER NOT NULL,
+                `had_stool` INTEGER NOT NULL,
+                `note` TEXT,
+                `workspace_id` TEXT NOT NULL,
+                `created_by` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `deleted_at` INTEGER,
+                `version` INTEGER NOT NULL,
+                `sync_status` TEXT NOT NULL,
+                `client_mutation_id` TEXT,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_diaper_changes_sync_status` " +
+                "ON `diaper_changes` (`sync_status`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_diaper_changes_workspace_id_updated_at` " +
+                "ON `diaper_changes` (`workspace_id`, `updated_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_diaper_changes_workspace_id_baby_id_changed_at` " +
+                "ON `diaper_changes` (`workspace_id`, `baby_id`, `changed_at`)",
+        )
+    }
+}

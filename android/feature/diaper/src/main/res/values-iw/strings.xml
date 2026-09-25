@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diaper_title">חיתולים</string>
+    <string name="diaper_today_label">הוחלפו היום</string>
+    <plurals name="diaper_count">
+        <item quantity="one">חיתול אחד</item>
+        <item quantity="two">2 חיתולים</item>
+        <item quantity="other">%d חיתולים</item>
+    </plurals>
+    <string name="diaper_marks_count">שתן %1$d · צואה %2$d</string>
+    <string name="diaper_last_change">החלפה אחרונה ב-%1$s</string>
+    <string name="diaper_week_total">ב-7 הימים האחרונים: %1$s</string>
+    <string name="diaper_log_action">רישום החלפת חיתול</string>
+    <string name="diaper_day_header">%1$s · %2$s</string>
+    <string name="diaper_day_header_marks">%1$s · %2$s · שתן %3$d · צואה %4$d</string>
+    <string name="diaper_urine">שתן</string>
+    <string name="diaper_stool">צואה</string>
+    <string name="diaper_both">שתן וצואה</string>
+    <string name="diaper_dry">יבש</string>
+    <string name="diaper_from_feed">נרשם עם האכלה · עורכים בדף ההאכלה</string>
+    <string name="diaper_empty_history">אין החלפות חיתול בשבועיים האחרונים.</string>
+    <string name="diaper_empty_hint">רשמו כאן, או סמנו שתן או צואה ברישום האכלה — זה יופיע גם כאן.</string>
+    <string name="diaper_new_title">החלפת חיתול חדשה</string>
+    <string name="diaper_edit_title">עריכת החלפת חיתול</string>
+    <string name="diaper_marks_prompt">מה היה בחיתול?</string>
+    <string name="diaper_marks_hint">בלי סימון = חיתול יבש.</string>
+    <string name="diaper_note_field">הערה</string>
+    <string name="diaper_add_action">שמירה</string>
+    <string name="diaper_save_changes">שמירת שינויים</string>
+    <string name="diaper_delete">מחיקה</string>
+    <string name="diaper_delete_confirm">למחוק את החלפת החיתול של %1$s?</string>
+    <string name="diaper_deleted">החלפת החיתול נמחקה</string>
+    <string name="diaper_undo_action">ביטול</string>
+    <string name="diaper_pick_confirm">אישור</string>
+    <string name="diaper_pick_cancel">ביטול</string>
+    <string name="diaper_older_days_drawer">ימים קודמים</string>
+</resources>

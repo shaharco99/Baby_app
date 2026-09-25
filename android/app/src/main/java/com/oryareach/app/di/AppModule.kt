@@ -34,6 +34,7 @@ import com.oryareach.core.database.repository.DocumentRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.database.repository.VitaminDoseRepository
+import com.oryareach.core.database.repository.DiaperChangeRepository
 import com.oryareach.core.database.repository.FolderRepository
 import com.oryareach.core.database.repository.ConflictRepository
 import com.oryareach.core.database.repository.ImportantDateRepository
@@ -64,6 +65,7 @@ import com.oryareach.feature.tasks.TasksViewModel
 import com.oryareach.feature.cycle.CycleViewModel
 import com.oryareach.feature.feeding.FeedingViewModel
 import com.oryareach.feature.pumping.PumpingViewModel
+import com.oryareach.feature.diaper.DiaperViewModel
 import com.oryareach.feature.update.UpdateViewModel
 import com.oryareach.feature.shopping.ShoppingViewModel
 import com.oryareach.feature.home.HomeViewModel
@@ -218,6 +220,7 @@ val appModule = module {
     single { FeedingEntryRepository(database = get(), syncTrigger = get(), reminders = get()) }
     single { PumpSessionRepository(database = get(), syncTrigger = get(), reminders = get()) }
     single { VitaminDoseRepository(database = get(), syncTrigger = get()) }
+    single { DiaperChangeRepository(database = get(), syncTrigger = get()) }
     single { ShoppingItemRepository(database = get(), syncTrigger = get()) }
     single { ImportantDateRepository(database = get(), syncTrigger = get()) }
     single { AppSettingsRepository(database = get(), syncTrigger = get()) }
@@ -297,6 +300,16 @@ val appModule = module {
             settingsRepository = get(),
             vitaminRepository = get(),
             vitaminReminders = get(),
+            auth = get(),
+            syncEngine = get(),
+            workspaceId = { get<SessionState>().workspaceId },
+        )
+    }
+    viewModel {
+        DiaperViewModel(
+            repository = get(),
+            feedingRepository = get(),
+            babyRepository = get(),
             auth = get(),
             syncEngine = get(),
             workspaceId = { get<SessionState>().workspaceId },

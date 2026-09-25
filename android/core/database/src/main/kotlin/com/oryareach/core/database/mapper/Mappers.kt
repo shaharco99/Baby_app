@@ -10,6 +10,7 @@ import com.oryareach.core.database.entity.ImportantDateEntity
 import com.oryareach.core.database.entity.MenstrualCycleEntity
 import com.oryareach.core.database.entity.PumpSessionEntity
 import com.oryareach.core.database.entity.VitaminDoseEntity
+import com.oryareach.core.database.entity.DiaperChangeEntity
 import com.oryareach.core.database.entity.ShoppingItemEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.TaskEntity
@@ -23,6 +24,7 @@ import com.oryareach.core.model.ImportantDate
 import com.oryareach.core.model.MenstrualCycle
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.VitaminDose
+import com.oryareach.core.model.DiaperChange
 import com.oryareach.core.model.ShoppingItem
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.model.Task
@@ -119,6 +121,15 @@ fun VitaminDoseEntity.toVitaminDose() = VitaminDose(
     babyId = babyId,
     givenAtEpochMillis = givenAt,
     kind = kind,
+    note = note,
+)
+
+fun DiaperChangeEntity.toDiaperChange() = DiaperChange(
+    id = id,
+    babyId = babyId,
+    changedAtEpochMillis = changedAt,
+    hadUrine = hadUrine,
+    hadStool = hadStool,
     note = note,
 )
 
@@ -253,6 +264,16 @@ fun VitaminDose.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     babyId = babyId,
     givenAt = givenAtEpochMillis,
     kind = kind,
+    note = note,
+    sync = record.toSyncMeta(workspaceId, now),
+)
+
+fun DiaperChange.toEntity(workspaceId: String, record: RemoteRecord, now: Long) = DiaperChangeEntity(
+    id = id,
+    babyId = babyId,
+    changedAt = changedAtEpochMillis,
+    hadUrine = hadUrine,
+    hadStool = hadStool,
     note = note,
     sync = record.toSyncMeta(workspaceId, now),
 )

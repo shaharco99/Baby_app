@@ -18,6 +18,7 @@ enum class EntityType(val wireName: String) {
     FEEDING_ENTRY("feeding_entry"),
     PUMP_SESSION("pump_session"),
     VITAMIN_DOSE("vitamin_dose"),
+    DIAPER_CHANGE("diaper_change"),
     ;
 
     companion object {

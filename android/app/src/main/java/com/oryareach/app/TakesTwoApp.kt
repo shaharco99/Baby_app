@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.BabyChangingStation
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.LocalDrink
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.BabyChangingStation
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -87,6 +89,8 @@ import com.oryareach.feature.cycle.CycleScreen
 import com.oryareach.feature.feeding.FeedingScreen
 import com.oryareach.feature.feeding.FeedingViewModel
 import com.oryareach.feature.pumping.PumpingScreen
+import com.oryareach.feature.diaper.DiaperScreen
+import com.oryareach.feature.diaper.DiaperViewModel
 import com.oryareach.feature.pumping.PumpingViewModel
 import com.oryareach.feature.cycle.CycleViewModel
 import com.oryareach.feature.pairing.PairingEffect
@@ -262,7 +266,7 @@ private fun UpdateHost(viewModel: UpdateViewModel = koinViewModel()) {
     }
 }
 
-private enum class HomeTab { Home, Tasks, Shopping, Folders, Feeding, Pumping, Cycle, Calendar, Search, Settings }
+private enum class HomeTab { Home, Tasks, Shopping, Folders, Feeding, Diaper, Pumping, Cycle, Calendar, Search, Settings }
 
 /**
  * A plain tab switch, not `navigation-compose`: two peer screens with no back-stack semantics
@@ -375,6 +379,13 @@ private fun HomeRoute() {
                         onClick = { navigateTo(HomeTab.Feeding); drawerScope.launch { drawerState.close() } },
                     ),
                     MoonNavItem(
+                        label = stringResource(com.oryareach.feature.diaper.R.string.diaper_title),
+                        selectedIcon = Icons.Filled.BabyChangingStation,
+                        unselectedIcon = Icons.Outlined.BabyChangingStation,
+                        selected = tab == HomeTab.Diaper,
+                        onClick = { navigateTo(HomeTab.Diaper); drawerScope.launch { drawerState.close() } },
+                    ),
+                    MoonNavItem(
                         label = stringResource(com.oryareach.feature.pumping.R.string.pumping_title),
                         selectedIcon = Icons.Filled.Timer,
                         unselectedIcon = Icons.Outlined.Timer,
@@ -446,6 +457,7 @@ private fun HomeRoute() {
             )
             HomeTab.Folders -> FoldersRoute(modifier = content)
             HomeTab.Feeding -> FeedingRoute(modifier = content)
+            HomeTab.Diaper -> DiaperRoute(modifier = content)
             HomeTab.Pumping -> PumpingRoute(modifier = content)
             HomeTab.Cycle -> CycleRoute(modifier = content)
             HomeTab.Calendar -> CalendarRoute(
@@ -546,6 +558,15 @@ private fun FeedingRoute(
 }
 
 @Composable
+private fun DiaperRoute(
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    viewModel: DiaperViewModel = koinViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    DiaperScreen(uiState = uiState, actions = viewModel, modifier = modifier)
+}
+
+@Composable
 private fun PumpingRoute(
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
     viewModel: PumpingViewModel = koinViewModel(),
@@ -624,6 +645,7 @@ private fun com.oryareach.core.model.EntityType.toHomeTab(): HomeTab = when (thi
     com.oryareach.core.model.EntityType.FEEDING_ENTRY -> HomeTab.Feeding
     com.oryareach.core.model.EntityType.PUMP_SESSION -> HomeTab.Pumping
     com.oryareach.core.model.EntityType.VITAMIN_DOSE -> HomeTab.Feeding
+    com.oryareach.core.model.EntityType.DIAPER_CHANGE -> HomeTab.Diaper
     // A child itself has no screen of its own; the switcher that picks one lives on Home.
     com.oryareach.core.model.EntityType.BABY -> HomeTab.Home
 }
