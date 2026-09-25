@@ -2,7 +2,7 @@
 
 One file for all that used to live in `docs/FOLLOWUP.md` and `docs/specs/`: what still open, what already done (so nobody redo), specs fully absorbed into code. Point Claude here to resume from last session.
 
-Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); Pixel runs it, Xiaomi on v1.11.1 (differences: spinner colour, calendar row height). Supabase migrations **0001–0013 applied; 0014 (diaper_change) applies with v1.15.0 tag**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
+Branch `feature/android-app`, pushed. Latest release **v1.16.2** (2026-09-25); both phones run it (checked). Supabase migrations **0001–0014 applied**, only by `supabase-deploy.yml` pipeline — see rule in `CLAUDE.md`. Every migration file must stay idempotent.
 
 `git log --oneline feature/android-app` = real history. This file = condensed version.
 
@@ -16,6 +16,10 @@ Branch `feature/android-app`, pushed. Latest release **v1.11.2** (2026-09-23); P
 4. **Confirm before deleting session — done, confirmed on both phones (v1.11.x); remove from this list next pass.** Trash icon on pumping session and on feed now opens dialog naming what goes ("Delete the 14:04 session, 98 ml?" / "למחוק את השאיבה של 14:04, 98 מ״ל?"; no amount, no "ml"), Undo snackbar still follows. Delete inside edit sheet unchanged. Left: release, then check on both phones, both languages — tap Cancel, never Delete, on real row. Shipped v1.11.0; confirmed on Xiaomi (English) and Pixel (Hebrew), Cancel on real rows.
 
 **Small open items:**
+- **Updater stuck on "Installing…"** (pre-existing): if the system "Update?" prompt is dismissed without an answer (e.g. MIUI control centre over it), `UpdateViewModel.installing` never resets; only force-stop clears it. Fix: treat the confirm activity returning without a result as abort / time out the flag.
+- Diaper form's date button wraps "25 September / 2026" in English (cosmetic; feed sheet has the same pair of buttons but wider).
+- Feeding page's day line ("3 urine · 0 stool") still counts feed marks only, not diaper-page changes; feed rows don't show "diaper not changed". User only asked for the summary + Diapers page — ask before changing.
+- Diaper page's `today` only refreshes on a DB emission (no ticker) — stale header across midnight until something changes.
 - No Macrobenchmark startup module. Needs spare device or emulator; benchmark build breaks release-only rule on real phones.
 - Supabase security advisor: leaked-password protection off, few MFA options enabled. Both dashboard toggles — user's to flip. "SECURITY DEFINER callable by authenticated" warnings intended — every such RPC checks membership itself.
 

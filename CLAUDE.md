@@ -48,6 +48,10 @@ Read `docs/architecture/001-android-architecture.md` first. Short. Covers module
 
 **Home-screen widget** (`:app`'s `widget/FeedWidget.kt`, RemoteViews + `Chronometer`, no Glance) never reads the database — it works while the app is locked from two timestamps in plain prefs (`feed-widget`), written only by `AlarmFeedingReminderScheduler`. Anything that moves the feed reminder moves the widget; keep it that way. Re-drawn on reminder fire and `rearmAll`.
 
+**Diaper log is a read, not a copy.** `:feature:diaper` shows feeds with urine/stool marked *plus* `DiaperChange` rows logged there, merged by `:core:domain`'s `diaper/diaperEvents()`/`diaperDays()`. Never copy feed marks into `DiaperChange` rows — editing or deleting the feed must move the diaper row with it. `FeedingEntry.diaperChanged` (default true) = false means "urine/stool seen, diaper left on": marks count, the diaper count (`DiaperEvent.changed`) does not. Home's diaper card and the doctor summary (`doctorSummary(changes = …)`) count through the same functions, so all three always agree. Feed rows are read-only on the diaper page (edit on Feeding).
+
+**Device tests (both phones are the family's daily phones):** launch the app with `adb shell am start -n com.oryareach.app/.MainActivity` — **never `monkey`**, which turns the user's rotation lock off. Record `settings get system accelerometer_rotation` at session start and restore it at the end. Only tap when `dumpsys window | grep mCurrentFocus` shows the app (not `NotificationShade` / MIUI `control_center` / keyguard). Keep-awake with `svc power stayon true` (Pixel charges as AC, `usb` doesn't hold), set `false` at the end. The user may be using a phone during tests — a feed that appears mid-test may be theirs; check the server row's `created_at`, ask before touching.
+
 **Web-app import** lives in `:core:database`'s `importer/WebImporter` and is offered from Settings (not Home).
 
 ## Web app (legacy)

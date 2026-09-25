@@ -197,6 +197,8 @@ has no JVM Compose harness. Before calling UI work done:
    release APKs, never uninstall). Check empty lists, open drawers, forms, dialogs, font scale,
    both directions — bugs hide where nothing renders.
 4. Screenshot before any tap near a trash icon or transient snackbar during device tests.
+   Launch with `am start -n com.oryareach.app/.MainActivity`, never `monkey` (it unlocks the
+   phone's rotation lock). Tap only when the app has focus; restore any system setting you moved.
 5. Record what shipped and what is still unseen in `docs/TASK-HISTORY.md`.
 
 For a full-app audit (not a single feature), follow `docs/UIUX.md` end to end and prioritise
