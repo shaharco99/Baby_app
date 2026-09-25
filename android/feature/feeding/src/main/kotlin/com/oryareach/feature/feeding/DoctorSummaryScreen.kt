@@ -280,7 +280,7 @@ private fun TableRow(cells: List<String>, header: Boolean = false) {
                 },
                 color = if (header) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 textAlign = if (index == 0) TextAlign.Start else TextAlign.Center,
-                modifier = Modifier.weight(if (index == 0) DAY_COLUMN_WEIGHT else 1f),
+                modifier = Modifier.weight(ColumnWeights.getOrElse(index) { 1f }),
             )
         }
     }
@@ -333,6 +333,11 @@ private fun FigureRow(label: String, value: String, detail: String? = null) {
 private fun Double?.oneDecimal(): String = this?.let { "%.1f".format(it) } ?: "–"
 
 private const val SEPARATOR = " · "
-private const val DAY_COLUMN_WEIGHT = 2.2f
+/**
+ * Day, feeds, ml, diapers, urine, stool. At an even share the one-word headers broke mid-word
+ * ("Diaper / s", "האכלו / ת"), so feeds and diapers get wider columns and the day, which can wrap
+ * at its comma, a narrower one.
+ */
+private val ColumnWeights = listOf(1.5f, 1.25f, 1f, 1.4f, 1f, 1f)
 private const val MIN_BAR_FRACTION = 0.04f
 private val CHART_HEIGHT = 96.dp
