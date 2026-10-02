@@ -829,6 +829,15 @@ private fun BirthStatsCard(baby: Baby, age: BabyAge?, actions: HomeActions) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            // Under the birth line, where it is looked up at a reception desk. Isolated so the
+            // digits keep their order in Hebrew; Settings has the copy button.
+            baby.idNumber?.let { id ->
+                Text(
+                    text = stringResource(R.string.home_id_number, id.asLtrIsolate()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             age?.let { AgeLine(age = it) }
         }
     }
