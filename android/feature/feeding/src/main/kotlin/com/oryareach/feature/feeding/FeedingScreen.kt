@@ -417,10 +417,12 @@ private fun NursingControls(uiState: FeedingUiState, actions: FeedingActions) {
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.feeding_nursing_start_short), maxLines = 1)
+                    Text(stringResource(R.string.feeding_nursing_start_short), textAlign = TextAlign.Center)
                 }
+                // No maxLines: at a large font scale the label wraps inside a taller button rather
+                // than being cut off.
                 Button(onClick = actions::onLogFeedClick, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.feeding_log_feed), maxLines = 1)
+                    Text(stringResource(R.string.feeding_log_feed), textAlign = TextAlign.Center)
                 }
             }
         }
@@ -1203,9 +1205,13 @@ private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
         // views say the same thing the same way.
         TableCellBox(modifier = Modifier.weight(ColumnWeights[1])) { FeedTypeMarks(feed) }
         VerticalDivider()
-        // A breastfeed has minutes, not millilitres; the unit says which the cell holds.
+        // The column is headed "ml": a breastfeed with a top-up shows its millilitres like any
+        // feed, and only one with none falls back to its minutes, unit included so it cannot be
+        // read as ml. "15 min · 60 ml" was too long for the cell.
         TableCell(
-            text = if (feed.isNursing) feedAmountLabel(feed).orEmpty() else feed.totalMl?.toString().orEmpty(),
+            text = feed.totalMl?.toString()
+                ?: feed.nursingMinutes?.let { stringResource(R.string.feeding_nursing_minutes, it) }
+                ?: if (feed.isNursingRunning) "…" else "",
             modifier = Modifier.weight(ColumnWeights[2]),
         )
         VerticalDivider()
@@ -1283,40 +1289,27 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
 
         if (uiState.formKind == FeedKind.NURSING) {
             SideRow(selected = uiState.formNursingSide, onChange = actions::onNursingSideChange)
-            Row(
+            OutlinedTextField(
+                value = uiState.formNursingMinutes,
+                onValueChange = actions::onNursingMinutesChange,
+                label = { Text(stringResource(R.string.feeding_nursing_minutes_field)) },
+                suffix = { Text(stringResource(R.string.feeding_unit_min)) },
+                isError = uiState.nursingMinutesError,
+                supportingText = if (uiState.nursingMinutesError) {
+                    { Text(stringResource(R.string.feeding_nursing_minutes_required)) }
+                } else {
+                    null
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OutlinedTextField(
-                    value = uiState.formNursingMinutes,
-                    onValueChange = actions::onNursingMinutesChange,
-                    label = { Text(stringResource(R.string.feeding_nursing_minutes_field)) },
-                    isError = uiState.nursingMinutesError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                AmountField(
-                    value = uiState.formFormulaMl,
-                    onValueChange = actions::onFormulaMlChange,
-                    // "Formula", not "Formula top-up": the longer label wrapped at half width.
-                    label = R.string.feeding_amount_formula_field,
-                    icon = R.drawable.ic_feed_bottle,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            if (uiState.nursingMinutesError) {
-                Text(
-                    text = stringResource(R.string.feeding_nursing_minutes_required),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+            )
         }
 
         // Two fields, not one with a picker: a breastfeed topped up with a bottle is one feed
         // with two numbers, and making that a mode to switch between is a step too many at 4am.
         // Either, both, or neither may be filled; filling both is what "we did both" means.
+        // A breastfeed gets them too, as top-ups after the breast: pumped milk, formula, or both.
         if (uiState.formTakesAmounts) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1325,7 +1318,13 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
                 AmountField(
                     value = uiState.formBreastMl,
                     onValueChange = actions::onBreastMlChange,
-                    label = R.string.feeding_amount_breast_field,
+                    // Beside a breastfeed, "Breast" would read as the breastfeed itself; the
+                    // millilitres here are what was pumped and given after it.
+                    label = if (uiState.formKind == FeedKind.NURSING) {
+                        R.string.feeding_amount_pumped_field
+                    } else {
+                        R.string.feeding_amount_breast_field
+                    },
                     icon = R.drawable.ic_feed_breast,
                     modifier = Modifier.weight(1f),
                 )

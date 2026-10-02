@@ -124,4 +124,6 @@
     <string name="feeding_day_nursing">%1$d min breastfeeding</string>
     <string name="feeding_summary_id_number">ID %1$s</string>
     <string name="feeding_nursing_start_short">Breastfeed</string>
+    <string name="feeding_amount_pumped_field">Pumped</string>
+    <string name="feeding_unit_min">min</string>
 </resources>

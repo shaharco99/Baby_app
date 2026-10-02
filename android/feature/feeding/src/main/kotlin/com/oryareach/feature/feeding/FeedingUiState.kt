@@ -167,8 +167,8 @@ data class FeedingUiState(
     val formHasBothAmounts: Boolean
         get() = formBreastMl.toIntOrNull() != null && formFormulaMl.toIntOrNull() != null
 
-    /** A bottle has amounts to enter; a solid feed does not, and a breastfeed only a formula top-up. */
-    val formTakesAmounts: Boolean get() = formKind == FeedKind.BOTTLE
+    /** A bottle has amounts to enter, and so does a breastfeed (its top-ups); a solid feed does not. */
+    val formTakesAmounts: Boolean get() = formKind != FeedKind.SOLID
 
     /**
      * Roughly how much the next feed should be, for how old the child is *today*. Null while
@@ -190,9 +190,8 @@ data class FeedingUiState(
 internal fun FeedingUiState.enteredBreastMl(): Int? =
     formBreastMl.toIntOrNull().takeIf { formTakesAmounts }
 
-/** A breastfeed can still carry a formula top-up, so this one is kept for it too. */
 internal fun FeedingUiState.enteredFormulaMl(): Int? =
-    formFormulaMl.toIntOrNull().takeIf { formKind != FeedKind.SOLID }
+    formFormulaMl.toIntOrNull().takeIf { formTakesAmounts }
 
 /** The side to save, or null when the feed is not a breastfeed. */
 internal fun FeedingUiState.savedNursingSide(): PumpSide? = formNursingSide.takeIf { formKind == FeedKind.NURSING }
