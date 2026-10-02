@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Plus, Heart } from 'lucide-react'
+import { CalendarHeart, Heart, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { PageContainer } from '@/components/layout/page-container'
+import { PageHeader } from '@/components/layout/page-header'
+import { EmptyState } from '@/components/shared/empty-state'
 import { useAppStore } from '@/stores/appStore'
 import { DateForm } from '@/features/dates/date-form'
 import { formatHebrewDate, isPastDate } from '@/lib/pregnancy'
@@ -29,20 +32,24 @@ export default function DatesPage() {
     setFormOpen(true)
   }
 
+  const newDateButton = (
+    <Button onClick={openNew} size="sm">
+      <Plus className="size-4" />
+      תאריך חדש
+    </Button>
+  )
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl text-foreground">תאריכים ומשאלות</h1>
-        <Button onClick={openNew} size="sm">
-          <Plus className="size-4" />
-          תאריך חדש
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader title="תאריכים ומשאלות" action={<div className="hidden sm:block">{newDateButton}</div>} />
 
       {sorted.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          עוד לא הוספתם תאריכים חשובים. אפשר להוסיף את התאריך המשוער, מסיבת קבלת פנים, ועוד.
-        </p>
+        <EmptyState
+          icon={CalendarHeart}
+          title="עוד לא הוספתם תאריכים חשובים"
+          description="אפשר להוסיף את התאריך המשוער, מסיבת קבלת פנים, ועוד."
+          action={<div className="sm:hidden">{newDateButton}</div>}
+        />
       ) : (
         <div className="space-y-2">
           {sorted.map((d) => {
@@ -71,15 +78,17 @@ export default function DatesPage() {
         </div>
       )}
 
-      <Button
-        onClick={openNew}
-        size="icon"
-        className="fixed end-4 z-40 size-14 rounded-full shadow-lg"
-        style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
-        aria-label="הוספת תאריך"
-      >
-        <Plus className="size-6" />
-      </Button>
+      {sorted.length > 0 && (
+        <Button
+          onClick={openNew}
+          size="icon"
+          className="fixed end-4 z-40 size-14 rounded-full shadow-lg sm:hidden"
+          style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+          aria-label="הוספת תאריך"
+        >
+          <Plus className="size-6" />
+        </Button>
+      )}
 
       <DateForm
         open={formOpen}
@@ -101,6 +110,6 @@ export default function DatesPage() {
             : undefined
         }
       />
-    </div>
+    </PageContainer>
   )
 }
