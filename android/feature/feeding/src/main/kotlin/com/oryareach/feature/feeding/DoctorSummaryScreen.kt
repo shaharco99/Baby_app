@@ -106,20 +106,38 @@ internal fun DoctorSummaryScreen(
 
 @Composable
 private fun BabyLine(baby: Baby) {
+    // Spaces inside each part are non-breaking, so a long line wraps only at a separator and
+    // "3246 g at birth" never splits across two lines.
     val parts = listOfNotNull(
         baby.name?.takeIf { it.isNotBlank() },
         baby.birthDate?.let { stringResource(R.string.feeding_summary_born, dateLabel(it)) },
         baby.birthWeightGrams?.let { stringResource(R.string.feeding_summary_birth_weight, it) },
-        // Asked at every reception desk; isolated so the digits keep their order in Hebrew.
-        baby.idNumber?.let { stringResource(R.string.feeding_summary_id_number, it.asLtrIsolate()) },
-    )
-    if (parts.isEmpty()) return
-    Text(
-        text = parts.joinToString(SEPARATOR),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    ).map { it.replace(' ', NO_BREAK_SPACE) }
+    // Its own line: asked at every reception desk, and as the last part of the line above it
+    // wrapped to a line that began with the separator. Isolated so the digits keep their order
+    // in Hebrew.
+    val id = baby.idNumber?.let { stringResource(R.string.feeding_summary_id_number, it.asLtrIsolate()) }
+    if (parts.isEmpty() && id == null) return
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (parts.isNotEmpty()) {
+            Text(
+                text = parts.joinToString(SEPARATOR),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        id?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
+
+private const val NO_BREAK_SPACE = '\u00A0'
 
 @Composable
 private fun StretchCard(title: String, stretch: FeedingStretch) {
