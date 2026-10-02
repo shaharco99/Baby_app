@@ -66,6 +66,20 @@ interface BabyDao {
         status: SyncStatus = SyncStatus.PENDING_DELETE,
     )
 
+    /**
+     * Everything logged against this child — feeds, diaper changes, vitamin doses. Pumping is
+     * workspace-scoped and never belongs to a child, so it is not counted.
+     */
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM feeding_entries WHERE baby_id = :babyId AND deleted_at IS NULL)
+            + (SELECT COUNT(*) FROM diaper_changes WHERE baby_id = :babyId AND deleted_at IS NULL)
+            + (SELECT COUNT(*) FROM vitamin_doses WHERE baby_id = :babyId AND deleted_at IS NULL)
+        """,
+    )
+    suspend fun countLoggedRecords(babyId: String): Int
+
     @Query("DELETE FROM babies WHERE id = :id")
     suspend fun purge(id: String)
 

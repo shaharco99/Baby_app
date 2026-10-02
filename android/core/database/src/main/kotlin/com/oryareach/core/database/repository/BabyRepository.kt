@@ -131,6 +131,27 @@ class BabyRepository(
         syncTrigger.syncNow()
     }
 
+    /**
+     * Removes a child record — meant for one added by mistake. Refuses rather than orphaning
+     * anything: never the active child (everything points at it), and never one with feeds,
+     * diaper changes or vitamin doses logged against it, which would vanish from every screen.
+     * Soft-deleted like every other row, so it syncs as a tombstone to the partner's phone.
+     */
+    suspend fun delete(workspaceId: String, id: String): ChildDeleteResult {
+        val existing = babies.findById(id) ?: return ChildDeleteResult.Deleted
+        if (settings.find(workspaceId)?.activeBabyId == id) return ChildDeleteResult.IsActive
+        val logged = babies.countLoggedRecords(id)
+        if (logged > 0) return ChildDeleteResult.HasRecords(logged)
+
+        val timestamp = now()
+        database.withTransaction {
+            babies.softDelete(existing.id, timestamp)
+            enqueue(existing.id, SyncOperationType.DELETE, newId(), timestamp)
+        }
+        syncTrigger.syncNow()
+        return ChildDeleteResult.Deleted
+    }
+
     suspend fun setActive(workspaceId: String, babyId: String) {
         val timestamp = now()
         database.withTransaction { writeActive(workspaceId, babyId, timestamp) }
@@ -205,4 +226,11 @@ class BabyRepository(
         )
         operations.removeSuperseded(recordId, opId)
     }
+}
+
+/** What [BabyRepository.delete] did. */
+sealed interface ChildDeleteResult {
+    data object Deleted : ChildDeleteResult
+    data object IsActive : ChildDeleteResult
+    data class HasRecords(val count: Int) : ChildDeleteResult
 }

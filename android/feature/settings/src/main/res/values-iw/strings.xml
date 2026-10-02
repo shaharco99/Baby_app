@@ -83,4 +83,13 @@
     <string name="settings_id_number_check_failed">ספרת הביקורת לא מתאימה — כדאי לבדוק שוב.</string>
     <string name="default_partner_one_name">טופז</string>
     <string name="default_partner_two_name">שחר</string>
+    <string name="settings_child_delete">מחיקת ילד/ה</string>
+    <string name="settings_child_delete_title">למחוק את %1$s?</string>
+    <string name="settings_child_delete_body">הרשומה תימחק משני הטלפונים. אפשרי רק כשלא נרשם עבורו/ה דבר.</string>
+    <string name="settings_child_delete_active">זה/זו הילד/ה הפעיל/ה. יש להפוך ילד/ה אחר/ת לפעיל/ה קודם, ואז למחוק.</string>
+    <plurals name="settings_child_delete_has_records">
+        <item quantity="one">לא נמחק: נרשמה עבורו/ה רשומה אחת (האכלה, חיתול או ויטמין).</item>
+        <item quantity="two">לא נמחק: נרשמו עבורו/ה %d רשומות (האכלות, חיתולים או ויטמין).</item>
+        <item quantity="other">לא נמחק: נרשמו עבורו/ה %d רשומות (האכלות, חיתולים או ויטמין).</item>
+    </plurals>
 </resources>

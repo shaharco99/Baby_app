@@ -83,4 +83,12 @@
     <string name="settings_id_number_check_failed">The check digit doesn\'t match — worth a second look.</string>
     <string name="default_partner_one_name">Topaz</string>
     <string name="default_partner_two_name">Shahar</string>
+    <string name="settings_child_delete">Delete child</string>
+    <string name="settings_child_delete_title">Delete %1$s?</string>
+    <string name="settings_child_delete_body">Removes this child from both phones. Only possible when nothing has been logged for them.</string>
+    <string name="settings_child_delete_active">This is the active child. Make another child active first, then delete this one.</string>
+    <plurals name="settings_child_delete_has_records">
+        <item quantity="one">Not deleted: there is %d feed, diaper change or vitamin dose logged for this child.</item>
+        <item quantity="other">Not deleted: there are %d feeds, diaper changes and vitamin doses logged for this child.</item>
+    </plurals>
 </resources>

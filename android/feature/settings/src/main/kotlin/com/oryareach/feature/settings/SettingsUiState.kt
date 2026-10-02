@@ -4,6 +4,7 @@ import android.content.IntentSender
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.oryareach.core.database.importer.WebImportOutcome
+import com.oryareach.core.database.repository.ChildDeleteResult
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 
@@ -43,6 +44,10 @@ data class SettingsUiState(
     /** The child whose birth details are open for editing, if any. */
     val editingChild: Baby? = null,
     val addChildVisible: Boolean = false,
+    /** The child whose Delete was tapped, while the are-you-sure dialog is up. */
+    val deleteChildConfirm: Baby? = null,
+    /** Why a delete was refused, while that explanation is up. */
+    val childDeleteRefusal: ChildDeleteResult? = null,
 
     // ID numbers: the partners' live on the shared settings row, each child's on its own record.
     val partnerOneName: String? = null,

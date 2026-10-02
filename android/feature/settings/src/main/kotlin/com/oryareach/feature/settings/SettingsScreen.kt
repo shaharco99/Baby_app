@@ -67,6 +67,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.oryareach.core.model.Baby
+import com.oryareach.core.database.repository.ChildDeleteResult
+import androidx.compose.ui.res.pluralStringResource
 import com.oryareach.core.domain.identity.ID_NUMBER_LENGTH
 import com.oryareach.core.domain.identity.idNumberInput
 import com.oryareach.core.domain.identity.isValidIsraeliId
@@ -198,9 +200,46 @@ fun SettingsScreen(
     uiState.editingChild?.let { child ->
         ChildFormDialog(
             baby = child,
+            // Never the active child: everything points at it. Switch first, then delete.
+            onDelete = { actions.onDeleteChildClick(child) }.takeIf { child.id != uiState.activeBabyId },
             onDismiss = actions::onDismissEditChild,
             onSubmit = { name, dueDate, birthDate, birthTime, weight, place, _ ->
                 actions.onUpdateChildBirthDetails(child.id, name, dueDate, birthDate, birthTime, weight, place)
+            },
+        )
+    }
+
+    uiState.deleteChildConfirm?.let { child ->
+        val name = child.name ?: stringResource(R.string.settings_child_unnamed)
+        AlertDialog(
+            onDismissRequest = actions::onDismissDeleteChild,
+            title = { Text(stringResource(R.string.settings_child_delete_title, name)) },
+            text = { Text(stringResource(R.string.settings_child_delete_body)) },
+            confirmButton = {
+                TextButton(onClick = actions::onConfirmDeleteChild) {
+                    Text(stringResource(R.string.settings_child_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissDeleteChild) { Text(stringResource(R.string.settings_cancel)) }
+            },
+        )
+    }
+
+    uiState.childDeleteRefusal?.let { refusal ->
+        AlertDialog(
+            onDismissRequest = actions::onDismissChildDeleteRefusal,
+            text = {
+                Text(
+                    when (refusal) {
+                        is ChildDeleteResult.HasRecords ->
+                            pluralStringResource(R.plurals.settings_child_delete_has_records, refusal.count, refusal.count)
+                        else -> stringResource(R.string.settings_child_delete_active)
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = actions::onDismissChildDeleteRefusal) { Text(stringResource(R.string.settings_close)) }
             },
         )
     }
@@ -472,6 +511,8 @@ private fun IntervalRow(
 private fun ChildFormDialog(
     baby: Baby?,
     onDismiss: () -> Unit,
+    /** Null hides Delete: adding a child, or the active one. */
+    onDelete: (() -> Unit)? = null,
     onSubmit: (
         name: String,
         dueDate: LocalDate?,
@@ -536,6 +577,11 @@ private fun ChildFormDialog(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = makeActive, onCheckedChange = { makeActive = it })
                         Text(stringResource(R.string.settings_child_make_active))
+                    }
+                }
+                if (onDelete != null) {
+                    TextButton(onClick = onDelete) {
+                        Text(stringResource(R.string.settings_child_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -966,6 +1012,10 @@ private fun SettingsPreview() {
 }
 
 private object NoopSettingsActions : SettingsActions {
+    override fun onDeleteChildClick(baby: Baby) = Unit
+    override fun onDismissDeleteChild() = Unit
+    override fun onConfirmDeleteChild() = Unit
+    override fun onDismissChildDeleteRefusal() = Unit
     override fun onEditIdNumbersClick() = Unit
     override fun onDismissIdNumbers() = Unit
     override fun onSaveIdNumbers(partnerOne: String, partnerTwo: String, children: Map<String, String>) = Unit

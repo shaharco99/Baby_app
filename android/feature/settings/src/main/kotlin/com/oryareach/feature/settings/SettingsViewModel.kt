@@ -13,6 +13,7 @@ import com.oryareach.core.database.reminder.FeedingReminderRefresher
 import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
+import com.oryareach.core.database.repository.ChildDeleteResult
 import com.oryareach.core.model.Baby
 import com.oryareach.core.domain.identity.idNumberInput
 import com.oryareach.core.network.auth.AuthRepository
@@ -74,6 +75,10 @@ interface SettingsActions {
         birthPlace: String?,
     )
     fun onFeedIntervalChange(minutes: Int)
+    fun onDeleteChildClick(baby: Baby)
+    fun onDismissDeleteChild()
+    fun onConfirmDeleteChild()
+    fun onDismissChildDeleteRefusal()
     fun onEditIdNumbersClick()
     fun onDismissIdNumbers()
 
@@ -464,6 +469,22 @@ class SettingsViewModel(
             pumpReminders.refresh()
         }
     }
+
+    override fun onDeleteChildClick(baby: Baby) = set { it.copy(editingChild = null, deleteChildConfirm = baby) }
+
+    override fun onDismissDeleteChild() = set { it.copy(deleteChildConfirm = null) }
+
+    override fun onConfirmDeleteChild() {
+        val workspace = workspaceId() ?: return
+        val child = _uiState.value.deleteChildConfirm ?: return
+        set { it.copy(deleteChildConfirm = null) }
+        viewModelScope.launch {
+            val result = babies.delete(workspace, child.id)
+            if (result != ChildDeleteResult.Deleted) set { it.copy(childDeleteRefusal = result) }
+        }
+    }
+
+    override fun onDismissChildDeleteRefusal() = set { it.copy(childDeleteRefusal = null) }
 
     override fun onEditIdNumbersClick() = set { it.copy(idNumbersEditorVisible = true) }
 
