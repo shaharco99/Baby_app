@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -609,8 +611,13 @@ private fun AttachmentsSection(uiState: CycleUiState, actions: CycleActions) {
 private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick: () -> Unit) {
     val date = uiState.selectedDate ?: return
 
+    // Scrolls inside the sheet so Save stays reachable with the keyboard up, as every other form does.
     Column(
-        modifier = Modifier.fillMaxWidth().imePadding().padding(24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
+            .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(

@@ -288,10 +288,24 @@ fun FeedingScreen(
         AlertDialog(
             onDismissRequest = actions::onDismissDeleteFeed,
             text = {
+                // A breastfeed is named as one, with its length: "the 09:30 feed, 30 ml" also
+                // described the separate bottle logged at the same minute, so the dialog could not
+                // say which of the two rows was going.
                 Text(
-                    feed.totalMl
-                        ?.let { stringResource(R.string.feeding_delete_confirm_amount, clock, it) }
-                        ?: stringResource(R.string.feeding_delete_confirm, clock),
+                    when {
+                        feed.isNursing -> feed.nursingMinutes
+                            ?.let {
+                                stringResource(
+                                    R.string.feeding_delete_confirm_nursing_minutes,
+                                    clock,
+                                    stringResource(R.string.feeding_nursing_minutes, it),
+                                )
+                            }
+                            ?: stringResource(R.string.feeding_delete_confirm_nursing, clock)
+                        else -> feed.totalMl
+                            ?.let { stringResource(R.string.feeding_delete_confirm_amount, clock, it) }
+                            ?: stringResource(R.string.feeding_delete_confirm, clock)
+                    },
                 )
             },
             confirmButton = {
@@ -1258,8 +1272,14 @@ private fun TableCell(text: String, header: Boolean = false, modifier: Modifier 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
+    // Scrolls inside the sheet, as the pumping form does: with the keyboard up, the breastfeed
+    // form's Save sat under it with no way to reach it but closing the keyboard first.
     Column(
-        modifier = Modifier.fillMaxWidth().imePadding().padding(24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
+            .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(

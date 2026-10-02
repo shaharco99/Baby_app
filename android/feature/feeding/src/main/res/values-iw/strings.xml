@@ -125,6 +125,8 @@
     <string name="feeding_day_nursing">%1$d דק׳ הנקה</string>
     <string name="feeding_summary_id_number">ת״ז %1$s</string>
     <string name="feeding_nursing_start_short">הנקה</string>
-    <string name="feeding_amount_pumped_field">חלב שאוב</string>
+    <string name="feeding_amount_pumped_field">שאוב</string>
     <string name="feeding_unit_min">דק׳</string>
+    <string name="feeding_delete_confirm_nursing">למחוק את ההנקה של %1$s?</string>
+    <string name="feeding_delete_confirm_nursing_minutes">למחוק את ההנקה של %1$s, %2$s?</string>
 </resources>

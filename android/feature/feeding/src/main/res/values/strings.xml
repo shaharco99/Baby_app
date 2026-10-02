@@ -126,4 +126,6 @@
     <string name="feeding_nursing_start_short">Breastfeed</string>
     <string name="feeding_amount_pumped_field">Pumped</string>
     <string name="feeding_unit_min">min</string>
+    <string name="feeding_delete_confirm_nursing">Delete the %1$s breastfeed?</string>
+    <string name="feeding_delete_confirm_nursing_minutes">Delete the %1$s breastfeed, %2$s?</string>
 </resources>
