@@ -79,7 +79,9 @@ automatically. Your job is not to fight it, and to catch the places it can't kno
 **Checking RTL**
 - Every screen you touch is seen in Hebrew *and* English before done. Look for: swapped
   arrows, trailing icons on the wrong side, clipped/wrapped pills (Hebrew is often longer),
-  numbers reordered, progress bars filling from the wrong edge.
+  numbers reordered, progress bars filling from the wrong edge. Half-width labels (two-up
+  `weight(1f)` fields/buttons, segmented buttons) must fit one line in *both* languages —
+  `maxLines = 1` on them silently cuts ("Start breastfeeding" showed as "Start").
 
 ## Strings and language
 
@@ -161,8 +163,9 @@ automatically. Your job is not to fight it, and to catch the places it can't kno
   `BackHandler` to close it; back closes sheets/dialogs before leaving the screen.
 - **Config changes / process death**: UI state that must survive rotation or theme switch is in
   the ViewModel or `rememberSaveable`, not `remember`.
-- **Bottom sheets**: `ModalBottomSheet` for add/edit forms; the sheet scrolls, the confirm button
-  stays reachable with the keyboard open.
+- **Bottom sheets**: `ModalBottomSheet` for add/edit forms; form `Column` gets
+  `.verticalScroll(rememberScrollState()).imePadding()` so Save stays reachable with the keyboard
+  open (feed + cycle sheets lacked the scroll until v1.17.5).
 - **Permissions**: ask in context, at the moment the feature needs it (notifications when
   enabling a reminder, camera on Scan), with a rationale line; handle "denied" with a way to
   Settings, never a dead button.
