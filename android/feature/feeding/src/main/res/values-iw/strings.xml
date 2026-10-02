@@ -118,11 +118,11 @@
     <string name="feeding_nursing_stop">עצירה</string>
     <string name="feeding_nursing_minutes_field">דקות</string>
     <string name="feeding_nursing_minutes_required">כמה זמן נמשכה ההנקה — שדה חובה.</string>
-    <string name="feeding_nursing_topup_field">תוספת תמ״ל</string>
     <string name="feeding_nursing_discard">ביטול ההנקה</string>
     <string name="feeding_nursing_minutes">%1$d דק׳</string>
     <string name="feeding_nursing_in_progress">בתהליך</string>
     <string name="feeding_nursing_row">הנקה, %1$s</string>
     <string name="feeding_day_nursing">%1$d דק׳ הנקה</string>
     <string name="feeding_summary_id_number">ת״ז %1$s</string>
+    <string name="feeding_nursing_start_short">הנקה</string>
 </resources>

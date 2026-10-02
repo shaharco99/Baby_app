@@ -263,7 +263,8 @@ class FeedingViewModel(
                 else -> FeedKind.BOTTLE
             },
             formNursingSide = feed.nursingSide ?: it.pendingNursingSide,
-            formNursingMinutes = feed.nursingMinutes?.toString().orEmpty(),
+            // A sub-minute Start-and-Stop reads as empty rather than "0", which Save would reject.
+            formNursingMinutes = feed.nursingMinutes?.takeIf { it > 0 }?.toString().orEmpty(),
             nursingMinutesTouched = false,
             // A feed written before the split has only the legacy amount; it belongs in
             // whichever field its type says it came from, so editing it does not lose it.
