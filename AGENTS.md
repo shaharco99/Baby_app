@@ -13,3 +13,13 @@ Stop: "stop caveman" or "normal mode"
 Auto-Clarity: drop caveman for security warnings, irreversible actions, user confused. Resume after.
 
 Boundaries: code/commits/PRs written normal.
+
+## Base44 dev environment
+
+- Vite + React 19 + TS client-side app. No backend, no env vars, no secrets.
+- `vite.config.ts` hardcodes `base: '/Baby_app/'` for GitHub Pages. Dev command overrides with `--base=/` so preview serves at root.
+- Hash routing (`createHashRouter`) — no server route config needed.
+- Package manager: npm (`package-lock.json`). Node 22.
+- Start: `docker compose -f docker-compose.base44.yml up -d`. Preview on port 3000.
+- Verify: `curl -s http://localhost:3000/` returns HTML with `@vite/client` script tag (dev server, not prebuilt).
+- Android app under `android/` is separate — not part of web preview.
