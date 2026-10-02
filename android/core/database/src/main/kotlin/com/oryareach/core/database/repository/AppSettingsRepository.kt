@@ -135,4 +135,39 @@ class AppSettingsRepository(
         }
         syncTrigger.syncNow()
     }
+
+    /**
+     * The partners' ID numbers; null clears one. Separate from [save] for the same reason as
+     * [setVitaminMinuteOfDay]: the caller has nothing else of the row to hand back.
+     */
+    suspend fun setPartnerIdNumbers(workspaceId: String, partnerOne: String?, partnerTwo: String?) {
+        val existing = settings.find(workspaceId) ?: return
+        if (existing.partnerOneIdNumber == partnerOne && existing.partnerTwoIdNumber == partnerTwo) return
+
+        val timestamp = now()
+        val entity = existing.copy(
+            partnerOneIdNumber = partnerOne,
+            partnerTwoIdNumber = partnerTwo,
+            sync = existing.sync.copy(
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                clientMutationId = newId(),
+            ),
+        )
+
+        database.withTransaction {
+            settings.upsert(entity)
+            val opId = operations.enqueue(
+                SyncOperationEntity(
+                    recordId = entity.id,
+                    entityType = EntityType.SETTINGS,
+                    operation = SyncOperationType.UPDATE,
+                    clientMutationId = entity.sync.clientMutationId ?: newId(),
+                    createdAt = timestamp,
+                ),
+            )
+            operations.removeSuperseded(entity.id, opId)
+        }
+        syncTrigger.syncNow()
+    }
 }

@@ -31,6 +31,16 @@ Branch `feature/android-app`, pushed. Latest release **v1.16.2** (2026-09-25); b
 
 ---
 
+## 2026-10-02 — breastfeeding timer, ID numbers (v1.17.0)
+
+- **Breastfeed = a feed with a side and a timer**, not a new entity. `FeedingEntry.nursingSide` (non-null marks one; `PumpSide` reused, doc now says "which breast") + `nursingEndedAtEpochMillis`/`nursingPausedMillis`/`nursingPausedAtEpochMillis`; running while the end is null, same as a pump session — survives force-stop, shows on the partner's phone. `fedAt` = start, so countdown, reminder, widget, diaper marks, summary count it unchanged. Reminder moves at Start (pump moves at Stop) so the alarm matches the on-screen countdown.
+- Feeding page: Left/Right/Both picker + "Start breastfeeding" beside "Log a feed" (one row more than before); running → card with clock, side, start time, Pause/Resume, Stop. Stop writes the end, then opens the feed's sheet (discardable, like pump). Tapping a running row stops it. Sheet: Breastfeed | Bottle | Solid; breastfeed = side + minutes (required) + optional formula top-up. Rows/table show "15 min", side in the marks line; day line adds "N min breastfeeding". Bottle's breast field renamed "Breast milk" / "חלב אם" (was "הנקה").
+- **ID numbers**: `AppSettings.partnerOneIdNumber`/`partnerTwoIdNumber`, `Baby.idNumber`. Settings → new collapsible "ID numbers" section, copy button per number (sensitive clip), one edit dialog; Israeli check digit (`:core:domain` `identity/IdNumber.kt`, tested) warns, never blocks. Child's ID shown on the doctor summary header.
+- Room 23→24 (seven nullable/defaulted columns); no Supabase change, all inside ciphertext. A partner on ≤1.16.2 editing a breastfeed or an ID-bearing row drops those fields — update both phones together.
+- Build + test + lint green. **Nothing seen on a phone yet.** To check (release, both languages): idle row fits Hebrew ("התחלת הנקה" / "רישום האכלה"), running card, pause/resume, stop→sheet, discard, partner sees running feed, sheet's three-way picker, ID section copy + check-digit warning, no band at top.
+
+---
+
 ## 2026-09-24 (night) — wasted space, sheets, units (v1.14.1)
 
 - **Empty band above every page title** (user: "never want to see things like this"). Host `Scaffold` in `TakesTwoApp` padded for the top bar (which already covers the status bar), and each tab screen's `safeDrawingPadding()` added the status bar again. Host now passes `padding(padding).consumeWindowInsets(padding)` to every tab — one fix for all eleven. Screens outside the host (auth, pairing) own their insets and are unchanged.

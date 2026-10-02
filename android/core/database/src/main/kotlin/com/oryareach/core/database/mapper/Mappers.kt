@@ -76,6 +76,8 @@ fun AppSettingsEntity.toAppSettings() = AppSettings(
     babyName = babyName,
     partnerOneName = partnerOneName,
     partnerTwoName = partnerTwoName,
+    partnerOneIdNumber = partnerOneIdNumber,
+    partnerTwoIdNumber = partnerTwoIdNumber,
     activeBabyId = activeBabyId,
     feedIntervalMinutes = feedIntervalMinutes,
     pumpIntervalMinutes = pumpIntervalMinutes,
@@ -90,6 +92,7 @@ fun BabyEntity.toBaby() = Baby(
     birthTime = birthTime?.let(LocalTime::parse),
     birthWeightGrams = birthWeightGrams,
     birthPlace = birthPlace,
+    idNumber = idNumber,
 )
 
 fun FeedingEntryEntity.toFeedingEntry() = FeedingEntry(
@@ -104,6 +107,10 @@ fun FeedingEntryEntity.toFeedingEntry() = FeedingEntry(
     hadStool = hadStool,
     diaperChanged = diaperChanged,
     note = note,
+    nursingSide = nursingSide,
+    nursingEndedAtEpochMillis = nursingEndedAt,
+    nursingPausedMillis = nursingPausedMillis,
+    nursingPausedAtEpochMillis = nursingPausedAt,
 )
 
 fun PumpSessionEntity.toPumpSession() = PumpSession(
@@ -214,6 +221,8 @@ fun AppSettings.toEntity(workspaceId: String, record: RemoteRecord, now: Long) =
     babyName = babyName,
     partnerOneName = partnerOneName,
     partnerTwoName = partnerTwoName,
+    partnerOneIdNumber = partnerOneIdNumber,
+    partnerTwoIdNumber = partnerTwoIdNumber,
     activeBabyId = activeBabyId,
     feedIntervalMinutes = feedIntervalMinutes,
     pumpIntervalMinutes = pumpIntervalMinutes,
@@ -229,6 +238,7 @@ fun Baby.toEntity(workspaceId: String, record: RemoteRecord, now: Long) = BabyEn
     birthTime = birthTime?.toString(),
     birthWeightGrams = birthWeightGrams,
     birthPlace = birthPlace,
+    idNumber = idNumber,
     sync = record.toSyncMeta(workspaceId, now),
 )
 
@@ -246,6 +256,10 @@ fun FeedingEntry.toEntity(workspaceId: String, record: RemoteRecord, now: Long) 
     hadStool = hadStool,
     diaperChanged = diaperChanged,
     note = note,
+    nursingSide = nursingSide,
+    nursingEndedAt = nursingEndedAtEpochMillis,
+    nursingPausedMillis = nursingPausedMillis,
+    nursingPausedAt = nursingPausedAtEpochMillis,
     sync = record.toSyncMeta(workspaceId, now),
 )
 

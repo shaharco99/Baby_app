@@ -11,6 +11,7 @@ import com.oryareach.core.database.mapper.toFeedingEntry
 import com.oryareach.core.model.EntityType
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.model.PumpSide
 import com.oryareach.core.model.SyncOperationType
 import com.oryareach.core.model.SyncStatus
 import com.oryareach.core.settings.FeedingReminderScheduler
@@ -46,6 +47,11 @@ class FeedingEntryRepository(
     fun observeLatest(workspaceId: String, babyId: String): Flow<FeedingEntry?> =
         entries.observeLatest(workspaceId, babyId).map { it?.toFeedingEntry() }
 
+    fun observeRunningNursing(workspaceId: String, babyId: String): Flow<FeedingEntry?> =
+        entries.observeRunningNursing(workspaceId, babyId).map { it?.toFeedingEntry() }
+
+    suspend fun findById(id: String): FeedingEntry? = entries.findById(id)?.toFeedingEntry()
+
     suspend fun findLatest(workspaceId: String, babyId: String): FeedingEntry? =
         entries.findLatest(workspaceId, babyId)?.toFeedingEntry()
 
@@ -66,6 +72,9 @@ class FeedingEntryRepository(
         note: String?,
         intervalMinutes: Int,
         fedAt: Long = now(),
+        /** Non-null logs a breastfeed typed in after the fact, [nursingMinutes] long. */
+        nursingSide: PumpSide? = null,
+        nursingMinutes: Int? = null,
     ): String {
         val timestamp = now()
         val entity = FeedingEntryEntity(
@@ -80,6 +89,8 @@ class FeedingEntryRepository(
             hadStool = hadStool,
             diaperChanged = diaperChanged,
             note = note,
+            nursingSide = nursingSide,
+            nursingEndedAt = nursingSide?.let { fedAt + (nursingMinutes ?: 0) * MILLIS_PER_MINUTE },
             sync = SyncMetaEntity(
                 workspaceId = workspaceId,
                 createdBy = userId,
@@ -116,6 +127,13 @@ class FeedingEntryRepository(
         note: String?,
         fedAt: Long,
         intervalMinutes: Int,
+        /**
+         * Null turns the feed into (or keeps it) a feed that is not a breastfeed. On a breastfeed,
+         * [nursingMinutes] moves the end, with the paused time added back so the minutes typed in
+         * are the minutes it reads as — the same rule a pump session's edit follows.
+         */
+        nursingSide: PumpSide? = null,
+        nursingMinutes: Int? = null,
     ) {
         val existing = entries.findById(id) ?: return
         val timestamp = now()
@@ -129,6 +147,12 @@ class FeedingEntryRepository(
             hadStool = hadStool,
             diaperChanged = diaperChanged,
             note = note,
+            nursingSide = nursingSide,
+            nursingEndedAt = nursingSide?.let {
+                fedAt + (nursingMinutes ?: 0) * MILLIS_PER_MINUTE + existing.nursingPausedMillis
+            },
+            nursingPausedMillis = if (nursingSide == null) 0 else existing.nursingPausedMillis,
+            nursingPausedAt = null,
             sync = existing.sync.copy(
                 updatedAt = timestamp,
                 syncStatus = SyncStatus.PENDING_UPDATE,
@@ -136,6 +160,111 @@ class FeedingEntryRepository(
             ),
         )
 
+        write(entity, SyncOperationType.UPDATE, timestamp)
+        rescheduleFromLatest(entity.sync.workspaceId, entity.babyId, intervalMinutes)
+        syncTrigger.syncNow()
+    }
+
+    /**
+     * Starts a breastfeed's timer: a feed row with a side and no end. Returns the running one's id
+     * instead if this child already has one going — two at once would make "how long" meaningless,
+     * and the partner's phone can press Start too.
+     *
+     * The reminder moves now, not at the end: the countdown on screen runs from the latest feed's
+     * start, and the alarm has to agree with it.
+     */
+    suspend fun startNursing(
+        workspaceId: String,
+        babyId: String,
+        userId: String,
+        side: PumpSide,
+        intervalMinutes: Int,
+        startedAt: Long = now(),
+    ): String {
+        entries.findRunningNursing(workspaceId, babyId)?.let { return it.id }
+
+        val timestamp = now()
+        val entity = FeedingEntryEntity(
+            id = newId(),
+            babyId = babyId,
+            fedAt = startedAt,
+            feedType = FeedType.BREAST_MILK,
+            breastMl = null,
+            formulaMl = null,
+            amountMl = null,
+            hadUrine = false,
+            hadStool = false,
+            note = null,
+            nursingSide = side,
+            sync = SyncMetaEntity(
+                workspaceId = workspaceId,
+                createdBy = userId,
+                createdAt = timestamp,
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPLOAD,
+                clientMutationId = newId(),
+            ),
+        )
+        write(entity, SyncOperationType.CREATE, timestamp)
+        rescheduleFromLatest(workspaceId, babyId, intervalMinutes)
+        syncTrigger.syncNow()
+        return entity.id
+    }
+
+    /** Same as a pump session's pause: the open pause is only remembered as when it began. */
+    suspend fun pauseNursing(id: String, at: Long = now()) {
+        val existing = entries.findById(id) ?: return
+        if (existing.nursingSide == null || existing.nursingEndedAt != null || existing.nursingPausedAt != null) return
+        writeNursing(existing, pausedAt = at)
+    }
+
+    suspend fun resumeNursing(id: String, at: Long = now()) {
+        val existing = entries.findById(id) ?: return
+        val pausedAt = existing.nursingPausedAt ?: return
+        if (existing.nursingEndedAt != null) return
+        writeNursing(
+            existing,
+            pausedMillis = existing.nursingPausedMillis + (at - pausedAt).coerceAtLeast(0),
+            pausedAt = null,
+        )
+    }
+
+    /**
+     * Ends the timer. Everything else about the feed (side, marks, a top-up) is filled in by the
+     * edit sheet that opens next, through [update]. A pause still open is closed first, so the
+     * stretch between Pause and Stop counts as paused.
+     */
+    suspend fun stopNursing(id: String, endedAt: Long = now()) {
+        val existing = entries.findById(id) ?: return
+        if (existing.nursingSide == null || existing.nursingEndedAt != null) return
+        val paused = existing.nursingPausedAt
+            ?.let { existing.nursingPausedMillis + (endedAt - it).coerceAtLeast(0) }
+            ?: existing.nursingPausedMillis
+        writeNursing(existing, endedAt = endedAt, pausedMillis = paused, pausedAt = null)
+    }
+
+    private suspend fun writeNursing(
+        existing: FeedingEntryEntity,
+        endedAt: Long? = existing.nursingEndedAt,
+        pausedMillis: Long = existing.nursingPausedMillis,
+        pausedAt: Long? = existing.nursingPausedAt,
+    ) {
+        val timestamp = now()
+        val entity = existing.copy(
+            nursingEndedAt = endedAt,
+            nursingPausedMillis = pausedMillis,
+            nursingPausedAt = pausedAt,
+            sync = existing.sync.copy(
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                clientMutationId = newId(),
+            ),
+        )
+        write(entity, SyncOperationType.UPDATE, timestamp)
+        syncTrigger.syncNow()
+    }
+
+    private suspend fun write(entity: FeedingEntryEntity, operation: SyncOperationType, timestamp: Long) {
         database.withTransaction {
             entries.upsert(entity)
             search.index(
@@ -145,10 +274,8 @@ class FeedingEntryRepository(
                 "",
                 entity.note.orEmpty(),
             )
-            enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
+            enqueue(entity.id, operation, entity.sync.clientMutationId, timestamp)
         }
-        rescheduleFromLatest(entity.sync.workspaceId, entity.babyId, intervalMinutes)
-        syncTrigger.syncNow()
     }
 
     /**
@@ -237,5 +364,9 @@ class FeedingEntryRepository(
             ),
         )
         operations.removeSuperseded(recordId, opId)
+    }
+
+    private companion object {
+        const val MILLIS_PER_MINUTE = 60_000L
     }
 }

@@ -17,6 +17,12 @@ data class AppSettings(
     val partnerOneName: String? = null,
     val partnerTwoName: String? = null,
     /**
+     * The partners' national ID numbers, digits only. Shared on purpose: forms at the clinic and
+     * the hospital ask either parent for both. Inside the ciphertext like everything else here.
+     */
+    val partnerOneIdNumber: String? = null,
+    val partnerTwoIdNumber: String? = null,
+    /**
      * Which [Baby] the home page, feeding log and reminders currently point at. Shared between
      * the partners on purpose: both should be looking at the same child. Null until the
      * one-time seed runs on first launch after this version.

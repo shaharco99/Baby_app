@@ -44,6 +44,13 @@ data class SettingsUiState(
     val editingChild: Baby? = null,
     val addChildVisible: Boolean = false,
 
+    // ID numbers: the partners' live on the shared settings row, each child's on its own record.
+    val partnerOneName: String? = null,
+    val partnerTwoName: String? = null,
+    val partnerOneIdNumber: String? = null,
+    val partnerTwoIdNumber: String? = null,
+    val idNumbersEditorVisible: Boolean = false,
+
     // Bringing in a JSON export from the retired web app.
     val importing: Boolean = false,
     val importResult: WebImportOutcome? = null,

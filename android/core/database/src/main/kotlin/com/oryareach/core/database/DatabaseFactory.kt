@@ -54,6 +54,7 @@ object DatabaseFactory {
                 MIGRATION_20_21,
                 MIGRATION_21_22,
                 MIGRATION_22_23,
+                MIGRATION_23_24,
             )
             .build()
     }

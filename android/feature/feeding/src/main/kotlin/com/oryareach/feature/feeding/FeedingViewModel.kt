@@ -21,6 +21,7 @@ import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.ui.component.DropBurst
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.model.PumpSide
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.sync.SyncEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,7 +56,15 @@ interface FeedingActions {
     fun onLogFeedClick()
     fun onEditFeedClick(feed: FeedingEntry)
     fun onDismissSheet()
-    fun onFeedTypeChange(value: FeedType)
+    fun onFeedKindChange(value: FeedKind)
+    fun onNursingSideChange(value: PumpSide)
+    fun onNursingMinutesChange(value: String)
+    fun onPendingNursingSideChange(value: PumpSide)
+    fun onStartNursingClick()
+    fun onPauseNursingClick()
+    fun onResumeNursingClick()
+    fun onStopNursingClick()
+    fun onDiscardNursing()
     fun onBreastMlChange(value: String)
     fun onFormulaMlChange(value: String)
     fun onToggleUrine()
@@ -187,6 +196,24 @@ class FeedingViewModel(
                         }
                     }
             }
+
+            // The breastfeed timer: a row with no end, read live so the partner's Start shows
+            // here too, with the elapsed time worked out on the same tick as the countdown.
+            viewModelScope.launch {
+                babyRepository.observeActive(id)
+                    .flatMapLatest { baby ->
+                        if (baby == null) flowOf(null) else repository.observeRunningNursing(id, baby.id)
+                    }
+                    .let { running -> combine(running, ticker()) { feed, _ -> feed } }
+                    .collect { feed ->
+                        set {
+                            it.copy(
+                                nursing = feed,
+                                nursingElapsedMillis = feed?.nursingElapsedMillisAt(now()) ?: 0,
+                            )
+                        }
+                    }
+            }
         }
     }
 
@@ -195,6 +222,11 @@ class FeedingViewModel(
             sheetVisible = true,
             editingFeedId = null,
             formFeedType = FeedType.BREAST_MILK,
+            formKind = FeedKind.BOTTLE,
+            formNursingSide = it.pendingNursingSide,
+            formNursingMinutes = "",
+            nursingMinutesTouched = false,
+            discardable = false,
             formBreastMl = "",
             formFormulaMl = "",
             formHadUrine = false,
@@ -207,11 +239,32 @@ class FeedingViewModel(
         )
     }
 
-    override fun onEditFeedClick(feed: FeedingEntry) = set {
+    /**
+     * A breastfeed still running has no length for the sheet to correct, so tapping its row stops
+     * it — which is what tapping a row that says "in progress" is for, as on the pumping log.
+     */
+    override fun onEditFeedClick(feed: FeedingEntry) {
+        if (feed.isNursingRunning) {
+            stopNursing(feed)
+            return
+        }
+        setEditing(feed, discardable = false)
+    }
+
+    private fun setEditing(feed: FeedingEntry, discardable: Boolean) = set {
         it.copy(
             sheetVisible = true,
             editingFeedId = feed.id,
+            discardable = discardable,
             formFeedType = feed.feedType,
+            formKind = when {
+                feed.isNursing -> FeedKind.NURSING
+                feed.feedType == FeedType.SOLID -> FeedKind.SOLID
+                else -> FeedKind.BOTTLE
+            },
+            formNursingSide = feed.nursingSide ?: it.pendingNursingSide,
+            formNursingMinutes = feed.nursingMinutes?.toString().orEmpty(),
+            nursingMinutesTouched = false,
             // A feed written before the split has only the legacy amount; it belongs in
             // whichever field its type says it came from, so editing it does not lose it.
             formBreastMl = feed.breastMl?.toString()
@@ -231,7 +284,70 @@ class FeedingViewModel(
     override fun onDismissSheet() = set {
         it.copy(sheetVisible = false, datePickerVisible = false, timePickerVisible = false)
     }
-    override fun onFeedTypeChange(value: FeedType) = set { it.copy(formFeedType = value) }
+    override fun onFeedKindChange(value: FeedKind) = set { it.copy(formKind = value) }
+    override fun onNursingSideChange(value: PumpSide) = set { it.copy(formNursingSide = value) }
+
+    override fun onNursingMinutesChange(value: String) = set {
+        it.copy(formNursingMinutes = value.filter(Char::isDigit).take(MAX_MINUTES_DIGITS), nursingMinutesTouched = true)
+    }
+
+    override fun onPendingNursingSideChange(value: PumpSide) = set { it.copy(pendingNursingSide = value) }
+
+    override fun onStartNursingClick() {
+        val workspace = workspaceId() ?: return
+        val state = _uiState.value
+        val baby = state.baby ?: return
+        if (state.isNursing) return
+
+        viewModelScope.launch {
+            repository.startNursing(
+                workspaceId = workspace,
+                babyId = baby.id,
+                userId = auth.currentUserId().orEmpty(),
+                side = state.pendingNursingSide,
+                intervalMinutes = state.intervalMinutes,
+            )
+        }
+    }
+
+    /** Writes to the row, not screen state — the same reasoning as a pump session's pause. */
+    override fun onPauseNursingClick() {
+        val running = _uiState.value.nursing ?: return
+        if (running.isNursingPaused) return
+        viewModelScope.launch { repository.pauseNursing(running.id) }
+    }
+
+    override fun onResumeNursingClick() {
+        val running = _uiState.value.nursing ?: return
+        if (!running.isNursingPaused) return
+        viewModelScope.launch { repository.resumeNursing(running.id) }
+    }
+
+    override fun onStopNursingClick() {
+        stopNursing(_uiState.value.nursing ?: return)
+    }
+
+    /**
+     * Stops the clock first and asks second: the end is written straight away, so a dismissed
+     * sheet still leaves a finished feed behind rather than one that keeps running. The sheet that
+     * opens is the edit sheet over that feed, for the side, the marks and a top-up.
+     */
+    private fun stopNursing(running: FeedingEntry) {
+        viewModelScope.launch {
+            repository.stopNursing(running.id)
+            val stopped = repository.findById(running.id) ?: return@launch
+            setEditing(stopped, discardable = true)
+        }
+    }
+
+    /** For a breastfeed started by mistake: the row goes, rather than staying at 0 minutes. */
+    override fun onDiscardNursing() {
+        val id = _uiState.value.editingFeedId ?: return
+        viewModelScope.launch {
+            repository.delete(id, _uiState.value.intervalMinutes)
+            set { it.copy(sheetVisible = false, editingFeedId = null, discardable = false) }
+        }
+    }
 
     /** Digits only: the field feeds an Int, and a stray character would silently drop the amount. */
     override fun onBreastMlChange(value: String) = set { it.copy(formBreastMl = value.asAmount()) }
@@ -282,6 +398,10 @@ class FeedingViewModel(
         val workspace = workspaceId() ?: return
         val state = _uiState.value
         val baby = state.baby ?: return
+        if (!state.canSaveFeed) {
+            set { it.copy(nursingMinutesTouched = true) }
+            return
+        }
         if (state.busy) return
         set { it.copy(busy = true) }
 
@@ -301,6 +421,8 @@ class FeedingViewModel(
                     note = state.formNote.ifBlank { null },
                     intervalMinutes = state.intervalMinutes,
                     fedAt = state.formFedAtEpochMillis,
+                    nursingSide = state.savedNursingSide(),
+                    nursingMinutes = state.formNursingMinutes.toIntOrNull(),
                 )
             } else {
                 // `fedAt` goes back unchanged: the sheet shows it read-only while editing, and
@@ -316,18 +438,23 @@ class FeedingViewModel(
                     note = state.formNote.ifBlank { null },
                     fedAt = state.formFedAtEpochMillis,
                     intervalMinutes = state.intervalMinutes,
+                    nursingSide = state.savedNursingSide(),
+                    nursingMinutes = state.formNursingMinutes.toIntOrNull(),
                 )
             }
             // Only a brand-new feed can land on a milestone; an edit changes no count. The
             // count comes from the whole log, so the hundredth feed is the hundredth feed and
             // not the hundredth of the last fortnight.
-            val milestone = if (editingId == null) crossedMilestone(workspace, baby.id) else null
+            // A breastfeed just stopped is a new feed too, saved through the edit path.
+            val isNewFeed = editingId == null || state.discardable
+            val milestone = if (isNewFeed) crossedMilestone(workspace, baby.id) else null
 
             set {
                 it.copy(
                     busy = false,
                     sheetVisible = false,
                     editingFeedId = null,
+                    discardable = false,
                     milestoneBurst = milestone?.let { count -> DropBurst(id = now(), count = DROPS_PER_BURST) },
                     milestoneReached = milestone,
                 )
@@ -531,6 +658,7 @@ class FeedingViewModel(
 
     private companion object {
         const val MAX_AMOUNT_DIGITS = 4
+        const val MAX_MINUTES_DIGITS = 3
 
         /** Enough to read as a handful thrown in the air, few enough to be gone in a moment. */
         const val DROPS_PER_BURST = 14

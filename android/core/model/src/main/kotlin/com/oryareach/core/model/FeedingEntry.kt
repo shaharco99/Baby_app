@@ -46,7 +46,44 @@ data class FeedingEntry(
      */
     val diaperChanged: Boolean = true,
     val note: String? = null,
+    /**
+     * Set on a breastfeed — the baby at the breast, timed rather than measured. Null on every
+     * other feed. Such a feed is a [FeedType.BREAST_MILK] feed with no [breastMl]: there is no
+     * amount to give, only how long and which side, the same two things a pump session records.
+     *
+     * Like a [PumpSession], the timer is the row: [fedAtEpochMillis] is when it started, and it is
+     * *running* while [nursingEndedAtEpochMillis] is null. That keeps a breastfeed in progress
+     * alive across leaving the screen, a force-stop and a reboot, and shows it on the partner's
+     * phone. A breastfeed is still a feed, so the countdown, the reminder, the diaper marks and the
+     * summary all count it with no special case.
+     */
+    val nursingSide: PumpSide? = null,
+    /** Null while a breastfeed is still running (and on any feed that is not one). */
+    val nursingEndedAtEpochMillis: Long? = null,
+    /** Paused time already closed, as on [PumpSession.pausedMillis]. */
+    val nursingPausedMillis: Long = 0,
+    /** When the current pause began; null unless a running breastfeed is paused right now. */
+    val nursingPausedAtEpochMillis: Long? = null,
 ) {
+    val isNursing: Boolean get() = nursingSide != null
+
+    /** A breastfeed whose timer is still going. */
+    val isNursingRunning: Boolean get() = isNursing && nursingEndedAtEpochMillis == null
+
+    val isNursingPaused: Boolean get() = isNursingRunning && nursingPausedAtEpochMillis != null
+
+    /** Time at the breast so far, pauses taken out — the same arithmetic as [PumpSession.elapsedMillisAt]. */
+    fun nursingElapsedMillisAt(nowEpochMillis: Long): Long {
+        val until = nursingPausedAtEpochMillis ?: nursingEndedAtEpochMillis ?: nowEpochMillis
+        return (until - fedAtEpochMillis - nursingPausedMillis).coerceAtLeast(0)
+    }
+
+    /** Null on anything but a finished breastfeed. Rounded down, like a pump session. */
+    val nursingMinutes: Int?
+        get() = nursingEndedAtEpochMillis
+            ?.takeIf { isNursing }
+            ?.let { (nursingElapsedMillisAt(it) / MILLIS_PER_MINUTE).toInt() }
+
     /**
      * What this feed came to in all — the one number the history rows show, in the same place
      * they have always shown an amount. A feed that was breast and formula together is its
@@ -73,4 +110,8 @@ data class FeedingEntry(
 
     val formulaAmountMl: Int?
         get() = formulaMl ?: amountMl.takeIf { breastMl == null && feedType == FeedType.FORMULA }
+
+    private companion object {
+        const val MILLIS_PER_MINUTE = 60_000L
+    }
 }

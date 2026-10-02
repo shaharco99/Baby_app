@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.oryareach.core.domain.feeding.DoctorSummary
 import com.oryareach.core.domain.feeding.FeedingStretch
 import com.oryareach.core.model.Baby
+import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.text.dayLabel
 import kotlinx.datetime.LocalDate
@@ -109,6 +110,8 @@ private fun BabyLine(baby: Baby) {
         baby.name?.takeIf { it.isNotBlank() },
         baby.birthDate?.let { stringResource(R.string.feeding_summary_born, dateLabel(it)) },
         baby.birthWeightGrams?.let { stringResource(R.string.feeding_summary_birth_weight, it) },
+        // Asked at every reception desk; isolated so the digits keep their order in Hebrew.
+        baby.idNumber?.let { stringResource(R.string.feeding_summary_id_number, it.asLtrIsolate()) },
     )
     if (parts.isEmpty()) return
     Text(

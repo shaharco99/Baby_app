@@ -67,6 +67,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.oryareach.core.model.Baby
+import com.oryareach.core.domain.identity.ID_NUMBER_LENGTH
+import com.oryareach.core.domain.identity.idNumberInput
+import com.oryareach.core.domain.identity.isValidIsraeliId
+import com.oryareach.core.ui.text.asLtrIsolate
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
@@ -123,6 +133,7 @@ fun SettingsScreen(
             item { AccountSection(uiState = uiState, actions = actions) }
             item { SecuritySection(uiState = uiState, actions = actions) }
             item { ChildrenSection(uiState = uiState, actions = actions) }
+            item { IdNumbersSection(uiState = uiState, actions = actions) }
             item { NotificationsSection(uiState = uiState, actions = actions) }
             item { RecoverySection(actions = actions) }
             item { DevicesSection(actions = actions) }
@@ -194,6 +205,10 @@ fun SettingsScreen(
         )
     }
 
+    if (uiState.idNumbersEditorVisible) {
+        IdNumbersDialog(uiState = uiState, actions = actions)
+    }
+
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
@@ -253,6 +268,133 @@ private fun ChildrenSection(uiState: SettingsUiState, actions: SettingsActions) 
             onChange = actions::onPumpIntervalChange,
         )
     }
+}
+
+/**
+ * The family's ID numbers, the thing every clinic and hospital form asks for. Folded shut by
+ * default — it is looked up, not changed — and each number has its own copy button, because the
+ * usual use is pasting one into a form on the same phone.
+ */
+@Composable
+private fun IdNumbersSection(uiState: SettingsUiState, actions: SettingsActions) {
+    SectionCard(title = stringResource(R.string.settings_id_numbers_title), collapsible = true) {
+        IdNumberRow(
+            name = uiState.partnerOneName?.ifBlank { null } ?: stringResource(R.string.default_partner_one_name),
+            number = uiState.partnerOneIdNumber,
+        )
+        IdNumberRow(
+            name = uiState.partnerTwoName?.ifBlank { null } ?: stringResource(R.string.default_partner_two_name),
+            number = uiState.partnerTwoIdNumber,
+        )
+        uiState.children.forEach { child ->
+            IdNumberRow(
+                name = child.name ?: stringResource(R.string.settings_child_unnamed),
+                number = child.idNumber,
+            )
+        }
+        OutlinedButton(onClick = actions::onEditIdNumbersClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.settings_id_numbers_edit))
+        }
+    }
+}
+
+@Composable
+private fun IdNumberRow(name: String, number: String?) {
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                // Isolated left-to-right so the digits never reorder inside a Hebrew line.
+                text = number?.asLtrIsolate() ?: stringResource(R.string.settings_id_number_missing),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (number != null) {
+            IconButton(onClick = {
+                scope.launch {
+                    clipboard.setClipEntry(sensitiveClipEntry("id-number", number))
+                    context.confirmCopied()
+                }
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.ContentCopy,
+                    contentDescription = stringResource(R.string.settings_id_number_copy, name),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One dialog for every number. A wrong check digit is a warning under the field, not a block on
+ * saving: it catches a slipped digit, and a non-Israeli number has to be storable too.
+ */
+@Composable
+private fun IdNumbersDialog(uiState: SettingsUiState, actions: SettingsActions) {
+    var partnerOne by remember { mutableStateOf(uiState.partnerOneIdNumber.orEmpty()) }
+    var partnerTwo by remember { mutableStateOf(uiState.partnerTwoIdNumber.orEmpty()) }
+    var children by remember { mutableStateOf(uiState.children.associate { it.id to it.idNumber.orEmpty() }) }
+
+    AlertDialog(
+        onDismissRequest = actions::onDismissIdNumbers,
+        title = { Text(stringResource(R.string.settings_id_numbers_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                IdNumberField(
+                    label = uiState.partnerOneName?.ifBlank { null } ?: stringResource(R.string.default_partner_one_name),
+                    value = partnerOne,
+                    onValueChange = { partnerOne = idNumberInput(it) },
+                )
+                IdNumberField(
+                    label = uiState.partnerTwoName?.ifBlank { null } ?: stringResource(R.string.default_partner_two_name),
+                    value = partnerTwo,
+                    onValueChange = { partnerTwo = idNumberInput(it) },
+                )
+                uiState.children.forEach { child ->
+                    IdNumberField(
+                        label = child.name ?: stringResource(R.string.settings_child_unnamed),
+                        value = children[child.id].orEmpty(),
+                        onValueChange = { children = children + (child.id to idNumberInput(it)) },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { actions.onSaveIdNumbers(partnerOne, partnerTwo, children) }) {
+                Text(stringResource(R.string.settings_child_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = actions::onDismissIdNumbers) { Text(stringResource(R.string.settings_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun IdNumberField(label: String, value: String, onValueChange: (String) -> Unit) {
+    val suspicious = value.length == ID_NUMBER_LENGTH && !isValidIsraeliId(value)
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        isError = suspicious,
+        supportingText = if (suspicious) {
+            { Text(stringResource(R.string.settings_id_number_check_failed)) }
+        } else {
+            null
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
@@ -824,6 +966,9 @@ private fun SettingsPreview() {
 }
 
 private object NoopSettingsActions : SettingsActions {
+    override fun onEditIdNumbersClick() = Unit
+    override fun onDismissIdNumbers() = Unit
+    override fun onSaveIdNumbers(partnerOne: String, partnerTwo: String, children: Map<String, String>) = Unit
     override fun onBiometricToggle(enabled: Boolean) = Unit
     override fun onAutoLockMinutesChange(minutes: Int) = Unit
     override fun onScreenshotsToggle(blocked: Boolean) = Unit

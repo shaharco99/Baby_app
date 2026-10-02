@@ -2,7 +2,10 @@ package com.oryareach.core.model
 
 import kotlinx.serialization.Serializable
 
-/** Which breast was pumped. [BOTH] covers a double pump, the common case with an electric pump. */
+/**
+ * Which breast. [BOTH] covers a double pump, the common case with an electric pump — and, on a
+ * breastfeed ([FeedingEntry.nursingSide]), a feed that switched sides.
+ */
 enum class PumpSide {
     LEFT,
     RIGHT,

@@ -76,4 +76,11 @@
     <string name="settings_import_summary">Added %1$d tasks, %2$d shopping items and %3$d dates. Anything already there was skipped.</string>
     <string name="settings_import_failed">Couldn\'t read the file</string>
     <string name="settings_import_failed_body">Make sure it\'s a JSON file exported from the אור ירח website.</string>
+    <string name="settings_id_numbers_title">ID numbers</string>
+    <string name="settings_id_numbers_edit">Edit ID numbers</string>
+    <string name="settings_id_number_missing">Not entered</string>
+    <string name="settings_id_number_copy">Copy %1$s\'s ID number</string>
+    <string name="settings_id_number_check_failed">The check digit doesn\'t match — worth a second look.</string>
+    <string name="default_partner_one_name">Topaz</string>
+    <string name="default_partner_two_name">Shahar</string>
 </resources>

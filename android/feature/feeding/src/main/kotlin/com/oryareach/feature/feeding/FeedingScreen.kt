@@ -107,10 +107,12 @@ import com.oryareach.core.domain.log.splitLogDays
 import com.oryareach.core.domain.feeding.FeedingTally
 import com.oryareach.core.domain.feeding.feedGuidance
 import com.oryareach.core.domain.feeding.formatCountdown
+import androidx.compose.ui.text.input.ImeAction
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.VitaminDose
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.model.PumpSide
 import com.oryareach.core.ui.text.dateLabel
 import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.component.DropFall
@@ -239,9 +241,7 @@ fun FeedingScreen(
                     actions = actions,
                 )
 
-                Button(onClick = actions::onLogFeedClick, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.feeding_log_feed))
-                }
+                NursingControls(uiState = uiState, actions = actions)
 
                 VitaminRow(uiState = uiState, actions = actions)
 
@@ -387,6 +387,97 @@ fun FeedingScreen(
             },
             text = { TimePicker(state = timeState) },
         )
+    }
+}
+
+/**
+ * The breastfeed timer and "Log a feed", in the space the one button used to take plus one row.
+ *
+ * Idle: which side, then Start beside Log a feed — the same pick-then-start shape as the pumping
+ * card, so neither screen has to be learned twice. Running: the elapsed clock, the side and when
+ * it began, and Pause/Stop. Stop opens the feed's sheet for the marks and a top-up.
+ */
+@Composable
+private fun NursingControls(uiState: FeedingUiState, actions: FeedingActions) {
+    val running = uiState.nursing
+    if (running == null) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SideRow(selected = uiState.pendingNursingSide, onChange = actions::onPendingNursingSideChange)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = actions::onStartNursingClick, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.feeding_nursing_start), maxLines = 1)
+                }
+                Button(onClick = actions::onLogFeedClick, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.feeding_log_feed), maxLines = 1)
+                }
+            }
+        }
+        return
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = stringResource(
+                    if (uiState.isNursingPaused) R.string.feeding_nursing_paused else R.string.feeding_nursing_running,
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = formatCountdown(uiState.nursingElapsedMillis),
+                style = MaterialTheme.typography.displaySmall,
+                // Dimmed while paused, so a clock that has stopped looks stopped, not broken.
+                color = if (uiState.isNursingPaused) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+            )
+            Text(
+                text = stringResource(
+                    R.string.feeding_nursing_detail,
+                    stringResource((running.nursingSide ?: PumpSide.BOTH).labelRes()),
+                    formatClock(running.fedAtEpochMillis),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (uiState.isNursingPaused) {
+                    Button(onClick = actions::onResumeNursingClick, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.feeding_nursing_resume))
+                    }
+                } else {
+                    OutlinedButton(onClick = actions::onPauseNursingClick, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.feeding_nursing_pause))
+                    }
+                }
+                Button(onClick = actions::onStopNursingClick, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.feeding_nursing_stop))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SideRow(selected: PumpSide, onChange: (PumpSide) -> Unit) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        PumpSide.entries.forEachIndexed { index, side ->
+            SegmentedButton(
+                selected = side == selected,
+                onClick = { onChange(side) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = PumpSide.entries.size),
+            ) {
+                Text(stringResource(side.labelRes()))
+            }
+        }
     }
 }
 
@@ -838,14 +929,28 @@ private fun FeedRow(feed: FeedingEntry, onEdit: () -> Unit, onDelete: () -> Unit
             // One number, in the place a feed's amount has always been drawn: a feed that was
             // breast and formula together shows their sum rather than two figures fighting for
             // the same slot. The per-source split lives on the day line above.
-            feed.totalMl?.let {
-                Text(stringResource(R.string.feeding_amount_ml, it), style = MaterialTheme.typography.bodyMedium)
+            feedAmountLabel(feed)?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium)
             }
             IconButton(onClick = onDelete) {
                 Icon(imageVector = Icons.Outlined.Delete, contentDescription = deleteLabel)
             }
         }
     }
+}
+
+/**
+ * What goes in the amount slot: the millilitres, or for a breastfeed how long it lasted (with a
+ * top-up's millilitres after it), or "in progress" while its timer still runs.
+ */
+@Composable
+private fun feedAmountLabel(feed: FeedingEntry): String? {
+    val ml = feed.totalMl?.let { stringResource(R.string.feeding_amount_ml, it) }
+    if (!feed.isNursing) return ml
+    val time = feed.nursingMinutes
+        ?.let { stringResource(R.string.feeding_nursing_minutes, it) }
+        ?: stringResource(R.string.feeding_nursing_in_progress)
+    return listOfNotNull(time, ml).joinToString(SEPARATOR)
 }
 
 /**
@@ -901,11 +1006,15 @@ private fun FeedTypeMarks(feed: FeedingEntry) {
  */
 @Composable
 private fun feedDescription(feed: FeedingEntry): String {
-    val amount = feed.totalMl?.let { stringResource(R.string.feeding_amount_ml, it) }
+    val amount = feedAmountLabel(feed)
     val marks = feedMarks(feed).takeIf { it.isNotEmpty() }
     return listOfNotNull(
         formatClock(feed.fedAtEpochMillis),
-        stringResource(feed.feedType.labelRes()),
+        if (feed.isNursing) {
+            stringResource(R.string.feeding_kind_nursing)
+        } else {
+            stringResource(feed.feedType.labelRes())
+        },
         amount,
         marks,
     ).joinToString(", ")
@@ -935,6 +1044,7 @@ private fun EmptyHistory() {
 
 @Composable
 private fun feedMarks(feed: FeedingEntry): String = listOfNotNull(
+    feed.nursingSide?.let { stringResource(it.labelRes()) },
     stringResource(R.string.feeding_urine_short).takeIf { feed.hadUrine },
     stringResource(R.string.feeding_stool_short).takeIf { feed.hadStool },
 ).joinToString(" · ")
@@ -1081,7 +1191,11 @@ private fun FeedCellsRow(feed: FeedingEntry, onEdit: () -> Unit) {
         // views say the same thing the same way.
         TableCellBox(modifier = Modifier.weight(ColumnWeights[1])) { FeedTypeMarks(feed) }
         VerticalDivider()
-        TableCell(text = feed.totalMl?.toString().orEmpty(), modifier = Modifier.weight(ColumnWeights[2]))
+        // A breastfeed has minutes, not millilitres; the unit says which the cell holds.
+        TableCell(
+            text = if (feed.isNursing) feedAmountLabel(feed).orEmpty() else feed.totalMl?.toString().orEmpty(),
+            modifier = Modifier.weight(ColumnWeights[2]),
+        )
         VerticalDivider()
         TableCell(text = if (feed.hadUrine) MARK else "", modifier = Modifier.weight(ColumnWeights[3]))
         VerticalDivider()
@@ -1139,22 +1253,51 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
 
         WhenFedRow(uiState = uiState, actions = actions)
 
-        // Milk or solid, and nothing finer.
-        //
-        // This used to offer Breast / Formula / Solid, which contradicted the two amount
-        // fields below it: typing into Formula while the control still showed Breast selected.
-        // The type is already derived from which amounts were filled (see
-        // `FeedingUiState.resolvedFeedType`), so the three-way choice was both decorative and
-        // wrong. Milk vs solid is the only part the amounts cannot answer.
+        // Breastfeed, bottle or solid — never breast-milk vs formula, which the two bottle
+        // amounts already answer (see `FeedingUiState.resolvedFeedType`); a selector for that
+        // once contradicted the fields under it. A breastfeed has a side and a length instead
+        // of amounts, and only a formula top-up as a number.
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            MilkOrSolid.entries.forEachIndexed { index, option ->
+            FeedKind.entries.forEachIndexed { index, kind ->
                 SegmentedButton(
-                    selected = option.matches(uiState.formFeedType),
-                    onClick = { actions.onFeedTypeChange(option.feedType) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = MilkOrSolid.entries.size),
+                    selected = kind == uiState.formKind,
+                    onClick = { actions.onFeedKindChange(kind) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = FeedKind.entries.size),
                 ) {
-                    Text(stringResource(option.labelRes))
+                    Text(stringResource(kind.labelRes()), maxLines = 1)
                 }
+            }
+        }
+
+        if (uiState.formKind == FeedKind.NURSING) {
+            SideRow(selected = uiState.formNursingSide, onChange = actions::onNursingSideChange)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedTextField(
+                    value = uiState.formNursingMinutes,
+                    onValueChange = actions::onNursingMinutesChange,
+                    label = { Text(stringResource(R.string.feeding_nursing_minutes_field)) },
+                    isError = uiState.nursingMinutesError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                AmountField(
+                    value = uiState.formFormulaMl,
+                    onValueChange = actions::onFormulaMlChange,
+                    label = R.string.feeding_nursing_topup_field,
+                    icon = R.drawable.ic_feed_bottle,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (uiState.nursingMinutesError) {
+                Text(
+                    text = stringResource(R.string.feeding_nursing_minutes_required),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
 
@@ -1241,6 +1384,14 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
             )
         }
 
+        // Only for the breastfeed just stopped: a Start pressed by mistake shouldn't have to be
+        // hunted down in the history afterwards.
+        if (uiState.discardable) {
+            TextButton(onClick = actions::onDiscardNursing, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.feeding_nursing_discard))
+            }
+        }
+
         Spacer(Modifier.height(8.dp))
     }
 }
@@ -1299,20 +1450,6 @@ private fun Long.toUtcDateMillis(): Long =
 
 private fun Long.toPickedDate(): LocalDate =
     Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
-
-/**
- * The only type choice the sheet still asks for. Breast and formula are read off the amount
- * fields instead — see the comment where this is used.
- */
-private enum class MilkOrSolid(val feedType: FeedType, @StringRes val labelRes: Int) {
-    MILK(FeedType.BREAST_MILK, R.string.feeding_type_milk),
-    SOLID(FeedType.SOLID, R.string.feeding_type_solid),
-    ;
-
-    /** Either milk type counts as milk; the amounts decide which. */
-    fun matches(current: FeedType): Boolean =
-        if (this == SOLID) current == FeedType.SOLID else current != FeedType.SOLID
-}
 
 /**
  * One of the two amount fields. The icon is the label that gets read at a glance — the words
@@ -1420,6 +1557,7 @@ private fun DayTotalLine(
 
     val marks = day.takeIf { it.urineCount > 0 || it.stoolCount > 0 }
         ?.let { stringResource(R.string.feeding_day_marks, it.urineCount, it.stoolCount) }
+    val nursing = day.nursingMinutes?.let { stringResource(R.string.feeding_day_nursing, it) }
 
     val totals = when {
         breakdown == null -> header
@@ -1431,7 +1569,7 @@ private fun DayTotalLine(
             breakdown.formulaMl ?: 0,
         )
     }
-    val description = listOfNotNull(totals, marks).joinToString(SEPARATOR)
+    val description = listOfNotNull(totals, nursing, marks).joinToString(SEPARATOR)
 
     Column(
         modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
@@ -1459,6 +1597,14 @@ private fun DayTotalLine(
                         guidance.dailyMinMl,
                         guidance.dailyMaxMl,
                     ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            nursing?.let {
+                Text(
+                    text = it,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1598,7 +1744,15 @@ private object NoopFeedingActions : FeedingActions {
     override fun onLogFeedClick() = Unit
     override fun onEditFeedClick(feed: FeedingEntry) = Unit
     override fun onDismissSheet() = Unit
-    override fun onFeedTypeChange(value: FeedType) = Unit
+    override fun onFeedKindChange(value: FeedKind) = Unit
+    override fun onNursingSideChange(value: PumpSide) = Unit
+    override fun onNursingMinutesChange(value: String) = Unit
+    override fun onPendingNursingSideChange(value: PumpSide) = Unit
+    override fun onStartNursingClick() = Unit
+    override fun onPauseNursingClick() = Unit
+    override fun onResumeNursingClick() = Unit
+    override fun onStopNursingClick() = Unit
+    override fun onDiscardNursing() = Unit
     override fun onBreastMlChange(value: String) = Unit
     override fun onFormulaMlChange(value: String) = Unit
     override fun onToggleUrine() = Unit

@@ -3,6 +3,7 @@ package com.oryareach.core.domain.feeding
 import com.oryareach.core.model.DiaperChange
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.model.PumpSide
 import com.oryareach.core.model.VitaminDose
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.LocalDate
@@ -13,6 +14,38 @@ import kotlin.time.Instant
 class FeedingSummaryTest {
 
     private val zone = TimeZone.UTC
+
+    @Test
+    fun `a day adds up its finished breastfeeds, pauses taken out, and skips a running one`() {
+        val start = Instant.parse("2026-09-20T08:00:00Z").toEpochMilliseconds()
+        val minute = 60_000L
+        val day = FeedingDay(
+            date = LocalDate(2026, 9, 20),
+            feeds = listOf(
+                FeedingEntry(
+                    id = "a", babyId = "b", fedAtEpochMillis = start,
+                    nursingSide = PumpSide.LEFT, nursingEndedAtEpochMillis = start + 20 * minute,
+                    nursingPausedMillis = 5 * minute,
+                ),
+                FeedingEntry(
+                    id = "c", babyId = "b", fedAtEpochMillis = start + 180 * minute,
+                    nursingSide = PumpSide.BOTH, nursingEndedAtEpochMillis = start + 205 * minute,
+                ),
+                // Still at the breast: no length yet.
+                FeedingEntry(id = "d", babyId = "b", fedAtEpochMillis = start + 360 * minute, nursingSide = PumpSide.RIGHT),
+                FeedingEntry(id = "e", babyId = "b", fedAtEpochMillis = start + 400 * minute, formulaMl = 60),
+            ),
+        )
+
+        day.nursingCount shouldBe 2
+        day.nursingMinutes shouldBe 15 + 25
+        day.totalMl shouldBe 60
+    }
+
+    @Test
+    fun `a day with no breastfeed has no breastfeed minutes`() {
+        FeedingDay(date = LocalDate(2026, 9, 20), feeds = emptyList()).nursingMinutes shouldBe null
+    }
 
     @Test
     fun `a day counts its urine and stool marks`() {

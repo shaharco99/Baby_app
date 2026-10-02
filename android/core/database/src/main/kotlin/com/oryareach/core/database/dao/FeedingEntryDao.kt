@@ -50,6 +50,29 @@ interface FeedingEntryDao {
     )
     suspend fun findLatest(workspaceId: String, babyId: String): FeedingEntryEntity?
 
+    /** The breastfeed whose timer is still going, if any — at most one per child. */
+    @Query(
+        """
+        SELECT * FROM feeding_entries
+        WHERE workspace_id = :workspaceId AND baby_id = :babyId AND deleted_at IS NULL
+            AND nursing_side IS NOT NULL AND nursing_ended_at IS NULL
+        ORDER BY fed_at DESC
+        LIMIT 1
+        """,
+    )
+    fun observeRunningNursing(workspaceId: String, babyId: String): Flow<FeedingEntryEntity?>
+
+    @Query(
+        """
+        SELECT * FROM feeding_entries
+        WHERE workspace_id = :workspaceId AND baby_id = :babyId AND deleted_at IS NULL
+            AND nursing_side IS NOT NULL AND nursing_ended_at IS NULL
+        ORDER BY fed_at DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun findRunningNursing(workspaceId: String, babyId: String): FeedingEntryEntity?
+
     @Query("SELECT * FROM feeding_entries WHERE id = :id")
     suspend fun findById(id: String): FeedingEntryEntity?
 

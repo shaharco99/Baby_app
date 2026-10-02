@@ -65,6 +65,12 @@ data class FeedingDay(
     val urineCount: Int get() = feeds.count { it.hadUrine }
 
     val stoolCount: Int get() = feeds.count { it.hadStool }
+
+    /** Finished breastfeeds that day. A running one has no length yet and is left out. */
+    val nursingCount: Int get() = feeds.count { it.nursingMinutes != null }
+
+    /** Minutes at the breast that day; null when there was no finished breastfeed. */
+    val nursingMinutes: Int? get() = feeds.mapNotNull { it.nursingMinutes }.takeIf { it.isNotEmpty() }?.sum()
 }
 
 /**

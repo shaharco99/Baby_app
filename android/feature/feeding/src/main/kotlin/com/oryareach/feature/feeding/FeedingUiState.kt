@@ -12,12 +12,19 @@ import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
+import com.oryareach.core.model.PumpSide
 import com.oryareach.core.model.VitaminDose
 import com.oryareach.core.ui.component.DropBurst
 import kotlinx.datetime.LocalDate
 
 /** The history has two shapes; the toggle above it picks which one is drawn. */
 enum class HistoryView { LIST, TABLE }
+
+/**
+ * What the sheet is logging. A breastfeed is timed and has a side; a bottle has amounts (expressed
+ * breast milk, formula, or both); a solid has neither.
+ */
+enum class FeedKind { NURSING, BOTTLE, SOLID }
 
 @Immutable
 data class FeedingUiState(
@@ -27,6 +34,12 @@ data class FeedingUiState(
 
     // Derived from the last feed and the workspace's interval, recomputed on every tick.
     val countdown: FeedCountdown? = null,
+    /** The breastfeed in progress, if any — a feed row with no end, as a pump session is. */
+    val nursing: FeedingEntry? = null,
+    /** How long [nursing] has gone on, pauses taken out. Zero when nothing is running. */
+    val nursingElapsedMillis: Long = 0,
+    /** Which side the next breastfeed starts on. The card's own choice; the sheet never writes it. */
+    val pendingNursingSide: PumpSide = PumpSide.LEFT,
     /** Today, in the viewer's zone: the day headers name today and yesterday rather than dating them. */
     val today: LocalDate? = null,
     /** Shared setting, kept here so logging a feed can schedule the reminder off it. */
@@ -45,6 +58,16 @@ data class FeedingUiState(
     /** The feed whose trash icon was tapped, while the are-you-sure dialog is up. */
     val deleteConfirmFeed: FeedingEntry? = null,
     val formFeedType: FeedType = FeedType.BREAST_MILK,
+    val formKind: FeedKind = FeedKind.BOTTLE,
+    val formNursingSide: PumpSide = PumpSide.LEFT,
+    val formNursingMinutes: String = "",
+    /** Set once a save was tried, so a missing breastfeed length is only flagged after a real attempt. */
+    val nursingMinutesTouched: Boolean = false,
+    /**
+     * True only for the breastfeed that was *just* stopped: the row exists but nobody has confirmed
+     * it yet, so the sheet offers to throw it away — a Start pressed by mistake.
+     */
+    val discardable: Boolean = false,
     /**
      * The two amounts a milk feed can have. Both fillable at once — a breastfeed topped up with
      * a bottle is one feed, not two, and it is entered as one row with two numbers.
@@ -107,6 +130,16 @@ data class FeedingUiState(
      */
     val hasBaby: Boolean get() = baby != null
 
+    val isNursing: Boolean get() = nursing != null
+    val isNursingPaused: Boolean get() = nursing?.isNursingPaused == true
+
+    private val hasNursingMinutes: Boolean get() = formNursingMinutes.toIntOrNull()?.let { it > 0 } == true
+
+    /** A breastfeed needs its length; it is the one thing such a feed records. */
+    val nursingMinutesError: Boolean get() = nursingMinutesTouched && formKind == FeedKind.NURSING && !hasNursingMinutes
+
+    val canSaveFeed: Boolean get() = formKind != FeedKind.NURSING || hasNursingMinutes
+
     /**
      * Editing an existing feed leaves its date and time read-only. The moment a feed happened is
      * what the whole log is arranged by — the countdown, the day grouping, the reminder that was
@@ -134,8 +167,8 @@ data class FeedingUiState(
     val formHasBothAmounts: Boolean
         get() = formBreastMl.toIntOrNull() != null && formFormulaMl.toIntOrNull() != null
 
-    /** Milk has amounts to enter; a solid feed does not, so the two fields are hidden for it. */
-    val formTakesAmounts: Boolean get() = formFeedType != FeedType.SOLID
+    /** A bottle has amounts to enter; a solid feed does not, and a breastfeed only a formula top-up. */
+    val formTakesAmounts: Boolean get() = formKind == FeedKind.BOTTLE
 
     /**
      * Roughly how much the next feed should be, for how old the child is *today*. Null while
@@ -157,8 +190,12 @@ data class FeedingUiState(
 internal fun FeedingUiState.enteredBreastMl(): Int? =
     formBreastMl.toIntOrNull().takeIf { formTakesAmounts }
 
+/** A breastfeed can still carry a formula top-up, so this one is kept for it too. */
 internal fun FeedingUiState.enteredFormulaMl(): Int? =
-    formFormulaMl.toIntOrNull().takeIf { formTakesAmounts }
+    formFormulaMl.toIntOrNull().takeIf { formKind != FeedKind.SOLID }
+
+/** The side to save, or null when the feed is not a breastfeed. */
+internal fun FeedingUiState.savedNursingSide(): PumpSide? = formNursingSide.takeIf { formKind == FeedKind.NURSING }
 
 /**
  * What to record as the feed's type once the amounts are known.
@@ -169,7 +206,8 @@ internal fun FeedingUiState.enteredFormulaMl(): Int? =
  * as a breastfeed with a top-up — the two columns, not this, are what the totals read.
  */
 internal fun FeedingUiState.resolvedFeedType(): FeedType = when {
-    !formTakesAmounts -> formFeedType
+    formKind == FeedKind.SOLID -> FeedType.SOLID
+    formKind == FeedKind.NURSING -> FeedType.BREAST_MILK
     enteredBreastMl() != null -> FeedType.BREAST_MILK
     enteredFormulaMl() != null -> FeedType.FORMULA
     else -> formFeedType

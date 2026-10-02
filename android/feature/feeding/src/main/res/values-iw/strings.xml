@@ -20,7 +20,7 @@
     <string name="feeding_day_header_with_total">%1$s · %2$d מ״ל</string>
     <string name="feeding_amount_ml">%1$d מ״ל</string>
     <string name="feeding_unit_ml">מ״ל</string>
-    <string name="feeding_amount_breast_field">הנקה</string>
+    <string name="feeding_amount_breast_field">חלב אם</string>
     <string name="feeding_amount_formula_field">תמ״ל</string>
     <string name="feeding_amount_total">סה״כ %1$d מ״ל</string>
     <string name="feeding_breakdown_breast">%1$d מ״ל הנקה</string>
@@ -41,7 +41,7 @@
     <string name="feeding_guidance_title">על הכמויות האלו</string>
     <string name="feeding_guidance_close">הבנתי</string>
     <string name="feeding_guidance_source">הטווחים לפי האיגוד האמריקאי לרפואת ילדים ולא לצה ליג. כל תינוק שונה — האחות או הרופא מכירים את שלכם.</string>
-    <string name="feeding_type_breast_milk">הנקה</string>
+    <string name="feeding_type_breast_milk">חלב אם</string>
     <string name="feeding_type_formula">בקבוק</string>
     <string name="feeding_type_solid">מוצק</string>
     <string name="feeding_view_list">רשימה</string>
@@ -104,4 +104,25 @@
     <string name="feeding_summary_diapers">חיתולים</string>
     <string name="feeding_summary_col_feeds">האכלות</string>
     <string name="feeding_summary_footnote">לפי מה שנרשם באפליקציה. החלב כולל רק האכלות שהוזנה בהן כמות; חיתולים, שתן וצואה כמו בדף החיתולים — האכלות שסומן בהן שתן או צואה והחלפות שנרשמו שם.</string>
+    <string name="feeding_kind_nursing">הנקה</string>
+    <string name="feeding_kind_bottle">בקבוק</string>
+    <string name="feeding_side_left">שמאל</string>
+    <string name="feeding_side_right">ימין</string>
+    <string name="feeding_side_both">שתיים</string>
+    <string name="feeding_nursing_start">התחלת הנקה</string>
+    <string name="feeding_nursing_running">מניקה כרגע</string>
+    <string name="feeding_nursing_paused">בהשהיה</string>
+    <string name="feeding_nursing_detail">%1$s · התחילה ב-%2$s</string>
+    <string name="feeding_nursing_pause">השהיה</string>
+    <string name="feeding_nursing_resume">המשך</string>
+    <string name="feeding_nursing_stop">עצירה</string>
+    <string name="feeding_nursing_minutes_field">דקות</string>
+    <string name="feeding_nursing_minutes_required">כמה זמן נמשכה ההנקה — שדה חובה.</string>
+    <string name="feeding_nursing_topup_field">תוספת תמ״ל</string>
+    <string name="feeding_nursing_discard">ביטול ההנקה</string>
+    <string name="feeding_nursing_minutes">%1$d דק׳</string>
+    <string name="feeding_nursing_in_progress">בתהליך</string>
+    <string name="feeding_nursing_row">הנקה, %1$s</string>
+    <string name="feeding_day_nursing">%1$d דק׳ הנקה</string>
+    <string name="feeding_summary_id_number">ת״ז %1$s</string>
 </resources>

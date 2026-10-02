@@ -107,6 +107,30 @@ class BabyRepository(
         syncTrigger.syncNow()
     }
 
+    /**
+     * The child's ID number, or null to clear it. Its own write rather than another argument on
+     * [update], which every caller would then have to carry through untouched.
+     */
+    suspend fun setIdNumber(id: String, idNumber: String?) {
+        val existing = babies.findById(id) ?: return
+        if (existing.idNumber == idNumber) return
+        val timestamp = now()
+        val entity = existing.copy(
+            idNumber = idNumber,
+            sync = existing.sync.copy(
+                updatedAt = timestamp,
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                clientMutationId = newId(),
+            ),
+        )
+
+        database.withTransaction {
+            babies.upsert(entity)
+            enqueue(entity.id, SyncOperationType.UPDATE, entity.sync.clientMutationId, timestamp)
+        }
+        syncTrigger.syncNow()
+    }
+
     suspend fun setActive(workspaceId: String, babyId: String) {
         val timestamp = now()
         database.withTransaction { writeActive(workspaceId, babyId, timestamp) }

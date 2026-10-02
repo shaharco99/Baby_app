@@ -14,6 +14,7 @@ import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.model.Baby
+import com.oryareach.core.domain.identity.idNumberInput
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.security.DeviceIdentity
 import com.oryareach.core.security.GoogleCalendarAuthManager
@@ -73,6 +74,11 @@ interface SettingsActions {
         birthPlace: String?,
     )
     fun onFeedIntervalChange(minutes: Int)
+    fun onEditIdNumbersClick()
+    fun onDismissIdNumbers()
+
+    /** [children] maps each child's id to its number; blank clears it. */
+    fun onSaveIdNumbers(partnerOne: String, partnerTwo: String, children: Map<String, String>)
     fun onPumpIntervalChange(minutes: Int)
 }
 
@@ -144,6 +150,10 @@ class SettingsViewModel(
                                 ?: it.feedIntervalMinutes,
                             pumpIntervalMinutes = settings?.pumpIntervalMinutes
                                 ?: it.pumpIntervalMinutes,
+                            partnerOneName = settings?.partnerOneName,
+                            partnerTwoName = settings?.partnerTwoName,
+                            partnerOneIdNumber = settings?.partnerOneIdNumber,
+                            partnerTwoIdNumber = settings?.partnerTwoIdNumber,
                         )
                     }
                 }
@@ -452,6 +462,23 @@ class SettingsViewModel(
                 pumpIntervalMinutes = minutes,
             )
             pumpReminders.refresh()
+        }
+    }
+
+    override fun onEditIdNumbersClick() = set { it.copy(idNumbersEditorVisible = true) }
+
+    override fun onDismissIdNumbers() = set { it.copy(idNumbersEditorVisible = false) }
+
+    override fun onSaveIdNumbers(partnerOne: String, partnerTwo: String, children: Map<String, String>) {
+        val workspace = workspaceId() ?: return
+        set { it.copy(idNumbersEditorVisible = false) }
+        viewModelScope.launch {
+            appSettings.setPartnerIdNumbers(
+                workspaceId = workspace,
+                partnerOne = idNumberInput(partnerOne).ifEmpty { null },
+                partnerTwo = idNumberInput(partnerTwo).ifEmpty { null },
+            )
+            children.forEach { (id, number) -> babies.setIdNumber(id, idNumberInput(number).ifEmpty { null }) }
         }
     }
 

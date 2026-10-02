@@ -28,5 +28,6 @@ data class BabyEntity(
     @ColumnInfo(name = "birth_time") val birthTime: String?,
     @ColumnInfo(name = "birth_weight_grams") val birthWeightGrams: Int?,
     @ColumnInfo(name = "birth_place") val birthPlace: String?,
+    @ColumnInfo(name = "id_number") val idNumber: String? = null,
     @Embedded val sync: SyncMetaEntity,
 )

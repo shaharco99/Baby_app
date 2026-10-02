@@ -23,6 +23,8 @@ data class AppSettingsEntity(
     val babyName: String?,
     @ColumnInfo(name = "partner_one_name") val partnerOneName: String?,
     @ColumnInfo(name = "partner_two_name") val partnerTwoName: String?,
+    @ColumnInfo(name = "partner_one_id_number") val partnerOneIdNumber: String? = null,
+    @ColumnInfo(name = "partner_two_id_number") val partnerTwoIdNumber: String? = null,
     /** `babies.id` of the child everything currently points at. */
     @ColumnInfo(name = "active_baby_id") val activeBabyId: String? = null,
     @ColumnInfo(name = "feed_interval_minutes") val feedIntervalMinutes: Int =

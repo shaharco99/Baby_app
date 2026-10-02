@@ -716,3 +716,20 @@ val MIGRATION_22_23 = object : Migration(22, 23) {
         db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `diaper_changed` INTEGER NOT NULL DEFAULT 1")
     }
 }
+
+/**
+ * Breastfeeds and ID numbers. A breastfeed is a feed with a side and a timer (the timer's state
+ * is the row, as on `pump_sessions`); every feed already logged has no side, so it stays what it
+ * was. The ID numbers start empty.
+ */
+val MIGRATION_23_24 = object : Migration(23, 24) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `nursing_side` TEXT")
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `nursing_ended_at` INTEGER")
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `nursing_paused_millis` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `feeding_entries` ADD COLUMN `nursing_paused_at` INTEGER")
+        db.execSQL("ALTER TABLE `babies` ADD COLUMN `id_number` TEXT")
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `partner_one_id_number` TEXT")
+        db.execSQL("ALTER TABLE `app_settings` ADD COLUMN `partner_two_id_number` TEXT")
+    }
+}

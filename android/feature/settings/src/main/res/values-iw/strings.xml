@@ -76,4 +76,11 @@
     <string name="settings_import_summary">נוספו %1$d משימות, %2$d פריטי קניות ו-%3$d תאריכים. פריטים שכבר היו קיימים דולגו.</string>
     <string name="settings_import_failed">לא הצלחנו לקרוא את הקובץ</string>
     <string name="settings_import_failed_body">ודאו שזה קובץ JSON שיוצא מאתר אור ירח.</string>
+    <string name="settings_id_numbers_title">תעודות זהות</string>
+    <string name="settings_id_numbers_edit">עריכת מספרי זהות</string>
+    <string name="settings_id_number_missing">לא הוזן</string>
+    <string name="settings_id_number_copy">העתקת מספר הזהות של %1$s</string>
+    <string name="settings_id_number_check_failed">ספרת הביקורת לא מתאימה — כדאי לבדוק שוב.</string>
+    <string name="default_partner_one_name">טופז</string>
+    <string name="default_partner_two_name">שחר</string>
 </resources>

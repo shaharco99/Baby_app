@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.oryareach.core.model.FeedType
+import com.oryareach.core.model.PumpSide
 
 /**
  * One logged feed. [babyId] is a plain column, not an `@ForeignKey`: this schema keeps no
@@ -38,5 +39,10 @@ data class FeedingEntryEntity(
     /** See [com.oryareach.core.model.FeedingEntry.diaperChanged]. */
     @ColumnInfo(name = "diaper_changed", defaultValue = "1") val diaperChanged: Boolean = true,
     val note: String?,
+    /** See [com.oryareach.core.model.FeedingEntry.nursingSide]: non-null marks a breastfeed. */
+    @ColumnInfo(name = "nursing_side") val nursingSide: PumpSide? = null,
+    @ColumnInfo(name = "nursing_ended_at") val nursingEndedAt: Long? = null,
+    @ColumnInfo(name = "nursing_paused_millis", defaultValue = "0") val nursingPausedMillis: Long = 0,
+    @ColumnInfo(name = "nursing_paused_at") val nursingPausedAt: Long? = null,
     @Embedded val sync: SyncMetaEntity,
 )

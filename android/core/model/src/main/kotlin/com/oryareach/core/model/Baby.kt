@@ -21,6 +21,8 @@ data class Baby(
     val birthTime: LocalTime? = null,
     val birthWeightGrams: Int? = null,
     val birthPlace: String? = null,
+    /** The child's national ID number (Israeli teudat zehut), digits only. Null until entered. */
+    val idNumber: String? = null,
 ) {
     val isBorn: Boolean get() = birthDate != null
 }

@@ -8,6 +8,7 @@ android {
 
 dependencies {
     implementation(project(":core:database"))
+    implementation(project(":core:domain"))
     implementation(project(":core:security"))
     implementation(project(":core:settings"))
     implementation(project(":core:network"))
