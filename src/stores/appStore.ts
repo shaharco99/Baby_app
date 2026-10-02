@@ -5,7 +5,9 @@ import type {
   AppSettings,
   AppSnapshot,
   ImportantDate,
+  ShoppingFilter,
   ShoppingItem,
+  TaskFilter,
   TaskItem,
 } from '@/types/models'
 
@@ -27,6 +29,11 @@ interface AppState {
   shoppingItems: ShoppingItem[]
   tasks: TaskItem[]
   importantDates: ImportantDate[]
+
+  taskFilter: TaskFilter
+  shoppingFilter: ShoppingFilter
+  setTaskFilter: (filter: TaskFilter) => void
+  setShoppingFilter: (filter: ShoppingFilter) => void
 
   updateSettings: (patch: Partial<AppSettings>) => void
 
@@ -64,6 +71,11 @@ export const useAppStore = create<AppState>()(
       shoppingItems: [],
       tasks: [],
       importantDates: [],
+
+      taskFilter: 'all',
+      shoppingFilter: 'all',
+      setTaskFilter: (filter) => set({ taskFilter: filter }),
+      setShoppingFilter: (filter) => set({ shoppingFilter: filter }),
 
       updateSettings: (patch) =>
         set((s) => ({ settings: { ...s.settings, ...patch } })),

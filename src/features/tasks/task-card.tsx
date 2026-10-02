@@ -1,6 +1,8 @@
+import { CalendarDays, User } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PriorityBadge } from '@/components/shared/priority-badge'
+import { MetaChip } from '@/components/shared/meta-chip'
 import { formatHebrewDate, isPastDate } from '@/lib/pregnancy'
 import type { TaskItem } from '@/types/models'
 import { cn } from '@/lib/utils'
@@ -26,12 +28,11 @@ export function TaskCard({
       )}
       onClick={onClick}
     >
-      <CardContent className="flex items-start gap-3 py-3">
+      <CardContent className="flex items-center gap-3 py-3">
         <Checkbox
           checked={task.done}
           onCheckedChange={(v) => onToggleDone(v === true)}
           onClick={(e) => e.stopPropagation()}
-          className="mt-1"
           aria-label={`סימון ${task.title} כבוצע`}
         />
         <div className="min-w-0 flex-1">
@@ -39,14 +40,20 @@ export function TaskCard({
             {task.title}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">{task.category}</span>
+            <MetaChip>{task.category}</MetaChip>
             <PriorityBadge priority={task.priority} />
             {task.dueDate && (
-              <span className={cn('text-xs', overdue ? 'text-destructive' : 'text-muted-foreground')}>
-                · {formatHebrewDate(task.dueDate)}
-              </span>
+              <MetaChip className={cn(overdue && 'border-destructive/40 text-destructive')}>
+                <CalendarDays className="size-3" aria-hidden />
+                {formatHebrewDate(task.dueDate)}
+              </MetaChip>
             )}
-            {task.assignee && <span className="text-xs text-muted-foreground">· {task.assignee}</span>}
+            {task.assignee && (
+              <MetaChip>
+                <User className="size-3" aria-hidden />
+                {task.assignee}
+              </MetaChip>
+            )}
           </div>
         </div>
       </CardContent>

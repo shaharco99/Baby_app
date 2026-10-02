@@ -1,22 +1,24 @@
 import { useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageContainer } from '@/components/layout/page-container'
+import { PageHeader } from '@/components/layout/page-header'
+import { EmptyState } from '@/components/shared/empty-state'
 import { useAppStore } from '@/stores/appStore'
 import { ShoppingItemCard } from '@/features/shopping/shopping-item-card'
 import { ShoppingItemForm } from '@/features/shopping/shopping-item-form'
 import { BudgetSummaryCard } from '@/features/shopping/budget-summary-card'
-import type { ShoppingItem, ShoppingStatus } from '@/types/models'
-
-type FilterValue = 'all' | ShoppingStatus
+import type { ShoppingItem } from '@/types/models'
 
 export default function ShoppingPage() {
   const items = useAppStore((s) => s.shoppingItems)
   const addItem = useAppStore((s) => s.addShoppingItem)
   const updateItem = useAppStore((s) => s.updateShoppingItem)
   const removeItem = useAppStore((s) => s.removeShoppingItem)
+  const filter = useAppStore((s) => s.shoppingFilter)
+  const setFilter = useAppStore((s) => s.setShoppingFilter)
 
-  const [filter, setFilter] = useState<FilterValue>('all')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<ShoppingItem | undefined>(undefined)
 
@@ -35,19 +37,20 @@ export default function ShoppingPage() {
     setFormOpen(true)
   }
 
+  const newItemButton = (
+    <Button onClick={openNew} size="sm">
+      <Plus className="size-4" />
+      פריט חדש
+    </Button>
+  )
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl text-foreground">רשימת קניות</h1>
-        <Button onClick={openNew} size="sm">
-          <Plus className="size-4" />
-          פריט חדש
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader title="רשימת קניות" action={<div className="hidden sm:block">{newItemButton}</div>} />
 
       <BudgetSummaryCard items={items} />
 
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterValue)}>
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
         <TabsList className="w-full">
           <TabsTrigger value="all">הכל</TabsTrigger>
           <TabsTrigger value="need">צריך</TabsTrigger>
@@ -56,10 +59,15 @@ export default function ShoppingPage() {
         </TabsList>
       </Tabs>
 
-      {filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          {items.length === 0 ? 'עוד לא הוספתם פריטים. אפשר להתחיל!' : 'אין פריטים בסינון הזה.'}
-        </p>
+      {items.length === 0 ? (
+        <EmptyState
+          icon={ShoppingBag}
+          title="עוד לא הוספתם פריטים"
+          description="אפשר להתחיל להוסיף פריטים לרשימה."
+          action={<div className="sm:hidden">{newItemButton}</div>}
+        />
+      ) : filtered.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">אין פריטים בסינון הזה.</p>
       ) : (
         <div className="space-y-2">
           {filtered.map((item) => (
@@ -73,15 +81,17 @@ export default function ShoppingPage() {
         </div>
       )}
 
-      <Button
-        onClick={openNew}
-        size="icon"
-        className="fixed end-4 z-40 size-14 rounded-full shadow-lg"
-        style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
-        aria-label="הוספת פריט"
-      >
-        <Plus className="size-6" />
-      </Button>
+      {items.length > 0 && (
+        <Button
+          onClick={openNew}
+          size="icon"
+          className="fixed end-4 z-40 size-14 rounded-full shadow-lg sm:hidden"
+          style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+          aria-label="הוספת פריט"
+        >
+          <Plus className="size-6" />
+        </Button>
+      )}
 
       <ShoppingItemForm
         open={formOpen}
@@ -103,6 +113,6 @@ export default function ShoppingPage() {
             : undefined
         }
       />
-    </div>
+    </PageContainer>
   )
 }

@@ -62,6 +62,9 @@ export const TASK_CATEGORIES = [
 
 export type TaskCategory = (typeof TASK_CATEGORIES)[number]
 
+export type TaskFilter = 'all' | TaskCategory
+export type ShoppingFilter = 'all' | ShoppingStatus
+
 export interface TaskItem {
   id: string
   title: string

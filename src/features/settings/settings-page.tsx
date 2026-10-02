@@ -19,6 +19,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { PageContainer } from '@/components/layout/page-container'
+import { PageHeader } from '@/components/layout/page-header'
 import { useAppStore } from '@/stores/appStore'
 import { isValidAppSnapshot } from '@/lib/snapshot-validation'
 import type { ThemeMode } from '@/types/models'
@@ -69,8 +71,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-heading text-2xl text-foreground">הגדרות</h1>
+    <PageContainer>
+      <PageHeader title="הגדרות" />
 
       <Card>
         <CardHeader>
@@ -207,6 +209,6 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   )
 }
