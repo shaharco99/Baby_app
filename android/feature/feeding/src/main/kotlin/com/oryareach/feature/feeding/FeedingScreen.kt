@@ -404,8 +404,20 @@ private fun NursingControls(uiState: FeedingUiState, actions: FeedingActions) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SideRow(selected = uiState.pendingNursingSide, onChange = actions::onPendingNursingSideChange)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = actions::onStartNursingClick, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.feeding_nursing_start), maxLines = 1)
+                // Icon and one word: "Start breastfeeding" does not fit half the width and was cut
+                // to "Start". The full phrase is still what a screen reader announces.
+                val startLabel = stringResource(R.string.feeding_nursing_start)
+                FilledTonalButton(
+                    onClick = actions::onStartNursingClick,
+                    modifier = Modifier.weight(1f).semantics { contentDescription = startLabel },
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_feed_breast),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.feeding_nursing_start_short), maxLines = 1)
                 }
                 Button(onClick = actions::onLogFeedClick, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.feeding_log_feed), maxLines = 1)
@@ -1287,7 +1299,8 @@ private fun LogFeedForm(uiState: FeedingUiState, actions: FeedingActions) {
                 AmountField(
                     value = uiState.formFormulaMl,
                     onValueChange = actions::onFormulaMlChange,
-                    label = R.string.feeding_nursing_topup_field,
+                    // "Formula", not "Formula top-up": the longer label wrapped at half width.
+                    label = R.string.feeding_amount_formula_field,
                     icon = R.drawable.ic_feed_bottle,
                     modifier = Modifier.weight(1f),
                 )
