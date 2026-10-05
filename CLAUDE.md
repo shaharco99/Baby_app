@@ -8,7 +8,7 @@ Guidance for Claude Code (claude.ai/code) in this repo.
 
 **Active product: Android app, `android/`.** End-to-end encrypted. Both partners share one workspace + one encryption key; Supabase (backend) only sees ciphertext. Full decision record: `docs/architecture/`. Open work + condensed history of done work (don't redo): `docs/TASK-HISTORY.md`. Built vs. planned: `git log` + code = source of truth. No separate progress doc.
 
-`src/` = original web PWA (React 19 + Vite, `localStorage`-only, no backend). **Retired**, kept for reference only. Its export/import JSON format still = migration path into Android app (`:core:domain`'s `WebSnapshot`/`toImportedSnapshot`). "Web app (legacy)" section below still accurate for that subtree. Skip to "Android app" unless touching `src/`.
+`src/` = original web PWA (React 19 + Vite, `localStorage`-only, no backend). **Retired**, kept for reference only. Its export/import JSON format still = migration path into Android app (`:core:domain`'s `WebSnapshot`/`toImportedSnapshot`). Its guidance lives in `src/CLAUDE.md` (loads only when working under `src/`).
 
 ## Android app
 
@@ -48,7 +48,7 @@ Read `docs/architecture/001-android-architecture.md` first. Short. Covers module
 
 **Home-screen widget** (`:app`'s `widget/FeedWidget.kt`, RemoteViews + `Chronometer`, no Glance) never reads the database — it works while the app is locked from two timestamps in plain prefs (`feed-widget`), written only by `AlarmFeedingReminderScheduler`. Anything that moves the feed reminder moves the widget; keep it that way. Re-drawn on reminder fire and `rearmAll`.
 
-**Watch app (`:wear`, Wear OS) is a read-only mirror.** Phone's `:app` `watch/WatchTimerPublisher` puts feed/pump clocks on the Wearable Data Layer (`/timers`, keys in `:core:watch`'s `WatchTimers`) — timestamps only, never record content, same rule as the widget. Follows Room while a workspace is open; `SyncWorker` publishes once after a pull. Watch holds no key/DB, ticks locally. Data Layer only links same applicationId **and same signing key**: `:wear` is `com.oryareach.app` too, signed by CI from the tag (`or-yareach-wear-*.apk` release asset, sideloaded via adb, not in the updater manifest). A debug-signed watch build never receives from the release phone app.
+**Watch app (`:wear`, Wear OS) is a read-only mirror.** Phone's `:app` `watch/WatchTimerPublisher` puts feed/pump clocks on the Wearable Data Layer (`/timers`, keys in `:core:watch`'s `WatchTimers`) — timestamps only, never record content, same rule as the widget. Follows Room while a workspace is open; `SyncWorker` publishes once after a pull. Watch holds no key/DB, ticks locally; tile (`TimersTileService`) ticks via ProtoLayout time expressions, timeline flips "next in"→"overdue" at due times (`layoutChangesAfter`), `TimersListenerService` refreshes it on new data. Data Layer only links same applicationId **and same signing key**: `:wear` is `com.oryareach.app` too, signed by CI from the tag (`or-yareach-wear-*.apk` release asset, sideloaded via adb, not in the updater manifest). A debug-signed watch build never receives from the release phone app. Garmin (`garmin/`, Connect IQ, Topaz's vívoactive 6): same `WatchTimers.toLongs()` map sent by `GarminTimersSink` through Garmin Connect; built locally, not CI — see `garmin/README.md`.
 
 **Diaper log is a read, not a copy.** `:feature:diaper` shows feeds with urine/stool marked *plus* `DiaperChange` rows logged there, merged by `:core:domain`'s `diaper/diaperEvents()`/`diaperDays()`. Never copy feed marks into `DiaperChange` rows — editing or deleting the feed must move the diaper row with it. `FeedingEntry.diaperChanged` (default true) = false means "urine/stool seen, diaper left on": marks count, the diaper count (`DiaperEvent.changed`) does not. Home's diaper card and the doctor summary (`doctorSummary(changes = …)`) count through the same functions, so all three always agree. Feed rows are read-only on the diaper page (edit on Feeding).
 
@@ -59,39 +59,3 @@ Read `docs/architecture/001-android-architecture.md` first. Short. Covers module
 **Device tests (both phones are the family's daily phones):** launch the app with `adb shell am start -n com.oryareach.app/.MainActivity` — **never `monkey`**, which turns the user's rotation lock off. Record `settings get system accelerometer_rotation` at session start and restore it at the end. Only tap when `dumpsys window | grep mCurrentFocus` shows the app (not `NotificationShade` / MIUI `control_center` / keyguard). Keep-awake with `svc power stayon true` (Pixel charges as AC, `usb` doesn't hold), set `false` at the end. The user may be using a phone during tests — a feed (or a running pump) that appears mid-test may be theirs — ask before touching. Production DB reads via the Supabase MCP are blocked in auto mode, so verify cleanup on both phones' screens, not server rows.
 
 **Web-app import** lives in `:core:database`'s `importer/WebImporter` and is offered from Settings (not Home).
-
-## Web app (legacy)
-
-### Commands
-
-```bash
-npm run dev       # vite dev server
-npm run build      # tsc -b && vite build (type-check is part of the build, no separate typecheck script)
-npm run lint       # oxlint
-npm run preview    # preview production build
-npm run test       # vitest run
-```
-
-Tests live next to code they cover (`*.test.ts`). Config = `vitest.config.ts` (separate from `vite.config.ts`, since latter not built w/ `vitest/config`'s `defineConfig`). Coverage limited to pure-logic files in `src/lib` and `src/features/shopping/budget.ts`. No component/integration tests.
-
-### Architecture
-
-**Persistence: single storage seam.** `src/stores/appStore.ts` = one zustand store (w/ `persist` middleware) holding all app state: `settings`, `shoppingItems`, `tasks`, `importantDates`. Never touches `localStorage` directly; goes through `src/lib/storage.ts`'s `createAppStorage()` adapter. Move to real backend = only `storage.ts` changes. Keep all persisted state in this store. No parallel stores, no `localStorage` read/write elsewhere.
-
-**Domain types** in `src/types/models.ts`: source of truth for shopping/task/date shapes, categories (`SHOPPING_CATEGORIES`, `TASK_CATEGORIES`), label maps (`PRIORITY_LABEL`, `SHOPPING_STATUS_LABEL`). Categories/enums = Hebrew string literals used directly as data, not just labels. New category = edit `as const` array here.
-
-**Feature-sliced structure**: `src/features/{home,shopping,tasks,dates,settings}` each hold page + form/card components specific to that feature. Cross-feature UI (nav, layout shell) in `src/components/layout`. Moon countdown in `src/components/countdown`. Generic shadcn/radix primitives in `src/components/ui` (standard shadcn setup, see `components.json`).
-
-**Pure logic in `src/lib`**: `pregnancy.ts` (due-date math, weekly info, weekly fruit-size comparison, moon fraction), `messages.ts` (daily message picker), `budget.ts` under `features/shopping` (spend calculations), `hospital-bag-preset.ts` (seed data for hospital-bag task preset). Keep date/domain math here, not inline in components.
-
-**Routing**: `src/app/router.tsx` + `src/app/layout.tsx` (`RootLayout`). Nav items declared once in `src/components/layout/nav-items.ts`, rendered as desktop top pill-nav and mobile bottom tab bar in `RootLayout`.
-
-**Design tokens**: all color/radius/font tokens = CSS custom properties in `src/index.css` under `:root` / `.dark`, mapped into Tailwind v4 via `@theme inline`. Named tokens beyond shadcn defaults: `moss`, `blush`. Headings use `--font-heading` (Assistant Variable), body `--font-sans` (Heebo Variable); both support Hebrew. New colors/fonts go here as CSS vars, not one-off Tailwind arbitrary values. Moon-countdown card (`src/components/countdown/moon-countdown.tsx`) hardcodes own always-dark "night sky" palette, independent of light/dark theme. Keep those hex values synced w/ `.dark`'s tone if dark palette changes.
-
-**Bottom sheets and keyboard**: add/edit forms (`shopping-item-form.tsx`, `task-form.tsx`, `date-form.tsx`) use `Sheet` (`side="bottom"`) w/ max-height clamped to `--visual-vh` CSS var, kept live by `useVisualViewportHeight()` (`src/lib/use-visual-viewport.ts`, mounted once in `RootLayout`). iOS Safari fallback for keyboard covering sheet. On Chromium, `index.html`'s `interactive-widget=resizes-content` viewport meta handles it natively. New bottom sheet w/ form inputs: reuse `max-h-[min(92dvh,calc(var(--visual-vh,100dvh)*0.92))]` pattern, not bare `dvh` value.
-
-**PWA / deploy**: `vite.config.ts` sets `base: '/Baby_app/'` for GitHub Pages. Must match repo name if repo renamed. `VitePWA` config (manifest, workbox caching) also there. Auto-deploys via `.github/workflows/deploy.yml` on push to `main`. GitHub Pages source must be set to "GitHub Actions" once per repo.
-
-**Compiler**: React Compiler enabled via `@rolldown/plugin-babel` + `reactCompilerPreset()` in `vite.config.ts`. Avoid manual `useMemo`/`useCallback` without specific reason; compiler handles most.
-
-**Path alias**: `@/*` → `./src/*` (set in both `tsconfig.app.json` and `vite.config.ts`).
