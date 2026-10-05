@@ -5,6 +5,7 @@ import com.oryareach.app.notifications.AlarmFeedingReminderScheduler
 import com.oryareach.core.database.importer.WebImporter
 import com.oryareach.app.notifications.AlarmPumpReminderScheduler
 import com.oryareach.app.notifications.AlarmVitaminReminderScheduler
+import com.oryareach.app.watch.GarminTimersSink
 import com.oryareach.app.watch.WatchTimerPublisher
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.push.PushRegistrar
@@ -265,6 +266,7 @@ val appModule = module {
             feeds = get(),
             pumps = get(),
             settings = get(),
+            garmin = GarminTimersSink(androidContext()),
             workspaceId = { scope.backgroundWorkspaceId() },
         )
     }

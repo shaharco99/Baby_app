@@ -30,8 +30,11 @@ data class WatchTimers(
 
     fun toDataMap(): DataMap = DataMap().apply { toLongs().forEach { (key, value) -> putLong(key, value) } }
 
-    /** The flat form [toDataMap] writes; split out so the round trip is testable on the JVM. */
-    internal fun toLongs(): Map<String, Long> = buildMap {
+    /**
+     * The flat form [toDataMap] writes, epoch milliseconds under the same keys. Also the Garmin
+     * message as-is: garmin/source/Clocks.mc reads these keys.
+     */
+    fun toLongs(): Map<String, Long> = buildMap {
         lastFedAt?.let { put(KEY_LAST_FED_AT, it) }
         feedDueAt?.let { put(KEY_FEED_DUE_AT, it) }
         nursing?.let { it.putInto(this, KEY_NURSING) }

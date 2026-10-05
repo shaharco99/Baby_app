@@ -32,6 +32,7 @@ mlkitCodeScanner = "16.1.0"
 mlkitDocumentScanner = "16.0.0"
 playServicesAuth = "21.3.0"
 playServicesWearable = "20.0.1"
+connectIqCompanion = "2.4.0"
 wearCompose = "1.7.0"
 wearTiles = "1.6.2"
 wearProtolayout = "1.4.2"
@@ -73,6 +74,8 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 
 # Watch timers (:core:watch, :wear): the phone hands the watch timestamps over the Data Layer.
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearable" }
+# Garmin watch timers: the phone sends the same timestamps through Garmin Connect (garmin/ in repo root).
+connectiq-companion = { module = "com.garmin.connectiq:ciq-companion-app-sdk", version.ref = "connectIqCompanion" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
 wear-compose-material3 = { module = "androidx.wear.compose:compose-material3", version.ref = "wearCompose" }
 wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }

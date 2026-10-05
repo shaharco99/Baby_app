@@ -27,7 +27,8 @@ private const val MILLIS_PER_MINUTE = 60_000L
 private const val TAG = "WatchTimers"
 
 /**
- * Hands the feed and pump clocks to the watch app over the Wearable Data Layer.
+ * Hands the feed and pump clocks to the watch apps: Wear OS over the Wearable Data Layer, Garmin
+ * through Garmin Connect ([GarminTimersSink]).
  *
  * Two ways in, for the same reason the reminders have two: [follow] runs while a workspace is
  * open in this process and catches every Room write — a feed logged here, a pump paused, a row
@@ -43,6 +44,7 @@ class WatchTimerPublisher(
     private val feeds: FeedingEntryRepository,
     private val pumps: PumpSessionRepository,
     private val settings: AppSettingsRepository,
+    private val garmin: GarminTimersSink,
     private val workspaceId: () -> String?,
 ) {
     /** Never returns while [workspace] stays open; cancel the collecting job to stop. */
@@ -103,6 +105,11 @@ class WatchTimerPublisher(
     }
 
     private suspend fun put(timers: WatchTimers) {
+        putOnWear(timers)
+        garmin.put(timers)
+    }
+
+    private suspend fun putOnWear(timers: WatchTimers) {
         val request = PutDataMapRequest.create(WatchTimers.PATH).apply {
             dataMap.putAll(timers.toDataMap())
         }.asPutDataRequest().setUrgent()

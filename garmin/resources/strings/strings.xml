@@ -1,0 +1,29 @@
+<strings>
+    <string id="AppName" scope="glance">Takes Two of Us</string>
+    <string id="Feeding">Feeding</string>
+    <string id="Pumping">Pumping</string>
+    <string id="NursingNow">Breastfeeding</string>
+    <string id="PumpingNow">Running</string>
+    <string id="Paused">Paused</string>
+    <string id="NextIn">Next in</string>
+    <string id="OverdueBy">Overdue by</string>
+    <string id="NothingYet">Nothing logged yet</string>
+    <!-- $1$ is a clock time, e.g. 08:36. -->
+    <string id="LastAt">Last at $1$</string>
+    <!-- "Feeding · Next in". -->
+    <string id="Line">$1$ · $2$</string>
+    <string id="WaitingTitle">Waiting for the phone</string>
+    <string id="WaitingBody">Open the app on the phone once.</string>
+
+    <!-- Glance: one short label per line. -->
+    <string id="GlanceFeedNext" scope="glance">Feed in</string>
+    <string id="GlanceFeedLate" scope="glance">Feed late</string>
+    <string id="GlanceNursing" scope="glance">Breastfeeding</string>
+    <string id="GlanceFeedNone" scope="glance">No feeds yet</string>
+    <string id="GlancePumpNext" scope="glance">Pump in</string>
+    <string id="GlancePumpLate" scope="glance">Pump late</string>
+    <string id="GlancePumping" scope="glance">Pumping</string>
+    <string id="GlancePumpNone" scope="glance">No pumps yet</string>
+    <string id="GlancePaused" scope="glance">Paused</string>
+    <string id="GlanceWaiting" scope="glance">Waiting for phone</string>
+</strings>

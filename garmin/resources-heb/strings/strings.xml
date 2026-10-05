@@ -1,0 +1,26 @@
+<strings>
+    <string id="AppName" scope="glance">שנינו ביחד</string>
+    <string id="Feeding">האכלה</string>
+    <string id="Pumping">שאיבה</string>
+    <string id="NursingNow">הנקה</string>
+    <string id="PumpingNow">פעילה עכשיו</string>
+    <string id="Paused">מושהה</string>
+    <string id="NextIn">הבאה בעוד</string>
+    <string id="OverdueBy">באיחור של</string>
+    <string id="NothingYet">עוד לא נרשם</string>
+    <string id="LastAt">אחרונה ב־$1$</string>
+    <string id="Line">$1$ · $2$</string>
+    <string id="WaitingTitle">ממתין לטלפון</string>
+    <string id="WaitingBody">יש לפתוח את האפליקציה בטלפון פעם אחת.</string>
+
+    <string id="GlanceFeedNext" scope="glance">האכלה בעוד</string>
+    <string id="GlanceFeedLate" scope="glance">האכלה באיחור</string>
+    <string id="GlanceNursing" scope="glance">הנקה</string>
+    <string id="GlanceFeedNone" scope="glance">אין האכלות</string>
+    <string id="GlancePumpNext" scope="glance">שאיבה בעוד</string>
+    <string id="GlancePumpLate" scope="glance">שאיבה באיחור</string>
+    <string id="GlancePumping" scope="glance">שאיבה</string>
+    <string id="GlancePumpNone" scope="glance">אין שאיבות</string>
+    <string id="GlancePaused" scope="glance">מושהה</string>
+    <string id="GlanceWaiting" scope="glance">ממתין לטלפון</string>
+</strings>

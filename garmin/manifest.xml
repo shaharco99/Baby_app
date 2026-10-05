@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  Garmin Connect IQ companion: the feed and pump clocks on a Garmin watch.
+  The id must match GARMIN_APP_ID in android/app (WatchTimerPublisher's Garmin sink): the phone
+  addresses its messages to this app by it.
+-->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application id="f53d782328444403832deafca93e4bdc" type="watch-app" name="@Strings.AppName" entry="TimersApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="4.0.0">
+        <iq:products>
+            <iq:product id="vivoactive6"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Background"/>
+            <iq:uses-permission id="Communications"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+            <iq:language>heb</iq:language>
+        </iq:languages>
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>
