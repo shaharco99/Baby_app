@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themed-icon variant (Android 13+). The system tints this, so it must be a single flat
+  colour: shape alone has to carry the identity.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillType="evenOdd"
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,54 a24,24 0 1,0 48,0 a24,24 0 1,0 -48,0 M37,49 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0" />
+
+    <path
+        android:fillType="evenOdd"
+        android:fillColor="#FFFFFF"
+        android:pathData="M59,66 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 M66.5,62 a11.5,11.5 0 1,0 23,0 a11.5,11.5 0 1,0 -23,0" />
+
+</vector>

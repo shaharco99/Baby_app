@@ -24,6 +24,7 @@ dependencyResolutionManagement {
 rootProject.name = "or-yareach"
 
 include(":app")
+include(":wear")
 
 include(":core:model")
 include(":core:common")
@@ -38,6 +39,7 @@ include(":core:domain")
 include(":core:scanner")
 include(":core:settings")
 include(":core:calendar")
+include(":core:watch")
 
 include(":feature:auth")
 include(":feature:pairing")

@@ -5,6 +5,8 @@ ksp = "2.3.11"
 
 compileSdk = "37"
 minSdk = "26"
+# Wear OS 3 is the floor: every watch the Data Layer pairs with today runs it.
+wearMinSdk = "30"
 targetSdk = "37"
 
 activity = "1.13.0"
@@ -29,6 +31,8 @@ lifecycle = "2.11.0"
 mlkitCodeScanner = "16.1.0"
 mlkitDocumentScanner = "16.0.0"
 playServicesAuth = "21.3.0"
+playServicesWearable = "20.0.1"
+wearCompose = "1.7.0"
 navigation = "2.9.8"
 room = "2.8.4"
 serialization = "1.11.0"
@@ -64,6 +68,12 @@ androidx-credentials = { module = "androidx.credentials:credentials", version.re
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+
+# Watch timers (:core:watch, :wear): the phone hands the watch timestamps over the Data Layer.
+play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearable" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
+wear-compose-material3 = { module = "androidx.wear.compose:compose-material3", version.ref = "wearCompose" }
+wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-material3 = { module = "androidx.compose.material3:material3" }

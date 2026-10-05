@@ -14,6 +14,7 @@ import com.oryareach.core.database.reminder.PumpReminderRefresher
 import com.oryareach.core.database.reminder.VitaminReminderRefresher
 import com.oryareach.app.sync.ForegroundSyncController
 import com.oryareach.app.sync.SyncWorker
+import com.oryareach.app.watch.WatchTimerPublisher
 import com.oryareach.core.network.di.networkModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -24,6 +25,7 @@ import org.koin.core.logger.Level
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
@@ -37,6 +39,7 @@ class TakesTwoApplication : Application(), KoinComponent {
     private val session: SessionState by inject()
     private val pushRegistrar: PushRegistrar by inject()
     private val identity: DeviceIdentity by inject()
+    private val watchTimers: WatchTimerPublisher by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -86,6 +89,15 @@ class TakesTwoApplication : Application(), KoinComponent {
                 // The same moment is when this device becomes wakeable: it now belongs to a
                 // workspace, so the partner's phone has somewhere to send its wake-up.
                 pushRegistrar.onWorkspaceOpened(workspaceId)
+            }
+        }
+
+        // The watch's feed and pump clocks follow the database for as long as a workspace is
+        // open in this process; a different workspace opening restarts the follow on it, and
+        // signing out stops it. The watch keeps the last times it was given either way.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            session.workspaceIdFlow.collectLatest { workspaceId ->
+                if (workspaceId != null) watchTimers.follow(workspaceId)
             }
         }
     }

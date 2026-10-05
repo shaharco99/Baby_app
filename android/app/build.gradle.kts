@@ -93,6 +93,7 @@ dependencies {
     implementation(project(":core:update"))
     implementation(project(":core:settings"))
     implementation(project(":core:calendar"))
+    implementation(project(":core:watch"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:search"))
@@ -121,5 +122,6 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.compose.material.icons.extended)
 }

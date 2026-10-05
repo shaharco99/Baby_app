@@ -5,6 +5,7 @@ import com.oryareach.app.notifications.AlarmFeedingReminderScheduler
 import com.oryareach.core.database.importer.WebImporter
 import com.oryareach.app.notifications.AlarmPumpReminderScheduler
 import com.oryareach.app.notifications.AlarmVitaminReminderScheduler
+import com.oryareach.app.watch.WatchTimerPublisher
 import com.oryareach.app.notifications.WorkManagerReminderScheduler
 import com.oryareach.app.push.PushRegistrar
 import com.oryareach.app.sync.WorkManagerSyncTrigger
@@ -253,6 +254,17 @@ val appModule = module {
             sessions = get(),
             settings = get(),
             scheduler = get(),
+            workspaceId = { scope.backgroundWorkspaceId() },
+        )
+    }
+    single {
+        val scope = this
+        WatchTimerPublisher(
+            context = androidContext(),
+            babies = get(),
+            feeds = get(),
+            pumps = get(),
+            settings = get(),
             workspaceId = { scope.backgroundWorkspaceId() },
         )
     }

@@ -68,7 +68,7 @@ jobs:
           ORG_GRADLE_PROJECT_supabaseAnonKey: ${{ secrets.SUPABASE_ANON_KEY }}
           ORG_GRADLE_PROJECT_googleWebClientId: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           ORG_GRADLE_PROJECT_googleCalendarOauthClientId: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-        run: ./gradlew test lint :app:assembleRelease
+        run: ./gradlew test lint :app:assembleRelease :wear:assembleRelease
 
       - name: Package release assets
         id: package
@@ -81,6 +81,13 @@ jobs:
           APK_NAME="or-yareach-${VERSION}.apk"
           mkdir -p dist
           cp "$APK_SRC" "dist/$APK_NAME"
+
+          # The watch app rides along as a second asset. Sideloaded by hand (adb to the watch),
+          # never offered by the in-app updater, so it stays out of manifest.json — but it must
+          # be signed with the same key as the phone APK or the Data Layer delivers nothing.
+          WEAR_SRC=$(find android/wear/build/outputs/apk/release -name '*.apk' | head -1)
+          WEAR_NAME="or-yareach-wear-${VERSION}.apk"
+          cp "$WEAR_SRC" "dist/$WEAR_NAME"
 
           SHA=$(sha256sum "dist/$APK_NAME" | cut -d' ' -f1)
           SIZE=$(stat -c%s "dist/$APK_NAME")
@@ -118,6 +125,7 @@ jobs:
             }' > dist/manifest.json
 
           echo "$SHA  $APK_NAME" > dist/SHA256SUMS.txt
+          (cd dist && sha256sum "$WEAR_NAME") >> dist/SHA256SUMS.txt
           cat dist/manifest.json
 
       - uses: actions/upload-artifact@v7

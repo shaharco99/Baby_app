@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">שנינו ביחד</string>
+    <string name="feeding">האכלה</string>
+    <string name="pumping">שאיבה</string>
+    <string name="nursing_now">הנקה</string>
+    <string name="pumping_now">פעילה עכשיו</string>
+    <string name="paused">מושהה</string>
+    <string name="next_in">הבאה בעוד</string>
+    <string name="overdue_by">באיחור של</string>
+    <string name="last_at">אחרונה ב־%1$s</string>
+    <string name="nothing_yet">עוד לא נרשם</string>
+    <string name="waiting_title">ממתין לטלפון</string>
+    <string name="waiting_body">יש לפתוח את האפליקציה בטלפון פעם אחת.</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Takes Two of Us</string>
+    <string name="feeding">Feeding</string>
+    <string name="pumping">Pumping</string>
+    <string name="nursing_now">Breastfeeding</string>
+    <string name="pumping_now">Running</string>
+    <string name="paused">Paused</string>
+    <string name="next_in">Next in</string>
+    <string name="overdue_by">Overdue by</string>
+    <string name="last_at">Last at %1$s</string>
+    <string name="nothing_yet">Nothing logged yet</string>
+    <string name="waiting_title">Waiting for the phone</string>
+    <string name="waiting_body">Open the app on the phone once.</string>
+</resources>
