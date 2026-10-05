@@ -12,4 +12,6 @@
     <string name="nothing_yet">עוד לא נרשם</string>
     <string name="waiting_title">ממתין לטלפון</string>
     <string name="waiting_body">יש לפתוח את האפליקציה בטלפון פעם אחת.</string>
+    <string name="tile_label">האכלה ושאיבה</string>
+    <string name="tile_line">%1$s · %2$s</string>
 </resources>

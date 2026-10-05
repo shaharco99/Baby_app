@@ -12,4 +12,7 @@
     <string name="nothing_yet">Nothing logged yet</string>
     <string name="waiting_title">Waiting for the phone</string>
     <string name="waiting_body">Open the app on the phone once.</string>
+    <string name="tile_label">Feed &amp; pump</string>
+    <!-- Tile line: "Feeding · Next in". -->
+    <string name="tile_line">%1$s · %2$s</string>
 </resources>

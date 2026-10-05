@@ -33,6 +33,8 @@ mlkitDocumentScanner = "16.0.0"
 playServicesAuth = "21.3.0"
 playServicesWearable = "20.0.1"
 wearCompose = "1.7.0"
+wearTiles = "1.6.2"
+wearProtolayout = "1.4.2"
 navigation = "2.9.8"
 room = "2.8.4"
 serialization = "1.11.0"
@@ -74,6 +76,10 @@ play-services-wearable = { module = "com.google.android.gms:play-services-wearab
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
 wear-compose-material3 = { module = "androidx.wear.compose:compose-material3", version.ref = "wearCompose" }
 wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }
+wear-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "wearTiles" }
+wear-protolayout = { module = "androidx.wear.protolayout:protolayout", version.ref = "wearProtolayout" }
+wear-protolayout-expression = { module = "androidx.wear.protolayout:protolayout-expression", version.ref = "wearProtolayout" }
+wear-protolayout-material3 = { module = "androidx.wear.protolayout:protolayout-material3", version.ref = "wearProtolayout" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-material3 = { module = "androidx.compose.material3:material3" }

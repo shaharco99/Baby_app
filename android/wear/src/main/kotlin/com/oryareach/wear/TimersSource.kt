@@ -32,21 +32,23 @@ internal fun watchTimers(context: Context): Flow<WatchTimers?> = callbackFlow {
     }
     client.addListener(listener)
 
-    try {
-        val items = client.dataItems.await()
-        val stored = try {
-            items.firstOrNull { it.uri.path == WatchTimers.PATH }?.toTimers()
-        } finally {
-            items.release()
-        }
-        if (stored != null) trySend(stored)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        // No Data Layer on this watch: keep waiting rather than fail; nothing else to show.
-    }
+    storedTimers(context)?.let { trySend(it) }
 
     awaitClose { client.removeListener(listener) }
+}
+
+/** The last [WatchTimers] the phone put, or null if none ever arrived (or no Data Layer here). */
+internal suspend fun storedTimers(context: Context): WatchTimers? = try {
+    val items = Wearable.getDataClient(context).dataItems.await()
+    try {
+        items.firstOrNull { it.uri.path == WatchTimers.PATH }?.toTimers()
+    } finally {
+        items.release()
+    }
+} catch (e: CancellationException) {
+    throw e
+} catch (_: Exception) {
+    null
 }
 
 private fun DataItem.toTimers(): WatchTimers = WatchTimers.fromDataMap(DataMapItem.fromDataItem(this).dataMap)
