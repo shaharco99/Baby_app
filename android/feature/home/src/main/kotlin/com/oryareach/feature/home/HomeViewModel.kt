@@ -158,6 +158,10 @@ class HomeViewModel(
                             pumpCountdown = current.pumpCountdown,
                             pumpRunning = current.pumpRunning,
                             pumpElapsedMillis = current.pumpElapsedMillis,
+                            lastPumpAtEpochMillis = current.lastPumpAtEpochMillis,
+                            sinceLastPumpMillis = current.sinceLastPumpMillis,
+                            todayPumpCount = current.todayPumpCount,
+                            todayPumpMl = current.todayPumpMl,
                         )
                     }
                 }
@@ -237,7 +241,7 @@ class HomeViewModel(
                 ) { running, latest, settings, _ ->
                     Triple(
                         running,
-                        running?.elapsedMillisAt(now()) ?: 0L,
+                        latest?.startedAtEpochMillis,
                         nextFeedCountdown(
                             lastFedAtEpochMillis = latest?.startedAtEpochMillis,
                             intervalMinutes = settings?.pumpIntervalMinutes
@@ -245,15 +249,35 @@ class HomeViewModel(
                             nowEpochMillis = now(),
                         ),
                     )
-                }.collect { (running, elapsed, countdown) ->
+                }.collect { (running, lastPumpAt, countdown) ->
                     set {
                         it.copy(
                             pumpRunning = running,
-                            pumpElapsedMillis = elapsed,
+                            pumpElapsedMillis = running?.elapsedMillisAt(now()) ?: 0L,
                             pumpCountdown = countdown,
+                            lastPumpAtEpochMillis = lastPumpAt,
+                            sinceLastPumpMillis = lastPumpAt?.let { at -> (now() - at).coerceAtLeast(0) } ?: 0,
                         )
                     }
                 }
+            }
+
+            // Today's pump tally, on the feed tally's terms: re-subscribes when the day rolls over.
+            viewModelScope.launch {
+                ticker().map { today() }.distinctUntilChanged()
+                    .flatMapLatest { day ->
+                        val start = day.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                        pumpRepository.observeInRange(id, start, Long.MAX_VALUE)
+                    }
+                    .collect { sessions ->
+                        set {
+                            it.copy(
+                                todayPumpCount = sessions.size,
+                                todayPumpMl = sessions.mapNotNull { session -> session.amountMl }
+                                    .takeIf { ml -> ml.isNotEmpty() }?.sum(),
+                            )
+                        }
+                    }
             }
 
             // An install that predates per-child records has its pregnancy on `app_settings`

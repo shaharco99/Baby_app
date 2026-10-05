@@ -57,6 +57,14 @@ data class HomeUiState(
     val pumpRunning: PumpSession? = null,
     /** Frozen while that session is paused, the same as on the pumping page. */
     val pumpElapsedMillis: Long = 0,
+    /** When the last pump session started, for the card's "last pump at" line. */
+    val lastPumpAtEpochMillis: Long? = null,
+    /** How long ago that was, recomputed with the countdown's tick. */
+    val sinceLastPumpMillis: Long = 0,
+    /** Sessions started today, in the phone's own day — the tally under the pump timer. */
+    val todayPumpCount: Int = 0,
+    /** Null when none of today's sessions had an amount entered. */
+    val todayPumpMl: Int? = null,
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,

@@ -641,6 +641,30 @@ private fun PumpCountdownCard(uiState: HomeUiState, onClick: () -> Unit, onLongC
                     MaterialTheme.colorScheme.onSurface
                 },
             )
+            uiState.lastPumpAtEpochMillis?.let { at ->
+                val minutes = (uiState.sinceLastPumpMillis / MILLIS_PER_MINUTE).toInt()
+                Text(
+                    text = stringResource(
+                        R.string.home_last_pump,
+                        formatClock(at).asLtrIsolate(),
+                        stringResource(R.string.home_duration_hours_minutes, minutes / 60, minutes % 60),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (uiState.todayPumpCount > 0) {
+                val pumps = pluralStringResource(R.plurals.home_today_pumps, uiState.todayPumpCount, uiState.todayPumpCount)
+                Text(
+                    text = uiState.todayPumpMl
+                        ?.let { stringResource(R.string.home_today_feeds_with_ml, pumps, it) }
+                        ?: pumps,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
