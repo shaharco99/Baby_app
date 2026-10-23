@@ -87,10 +87,20 @@ jobs:
           RUN_CHECKS: ${{ steps.checks.outputs.run }}
         run: |
           if [ "$RUN_CHECKS" = "true" ]; then
-            ./gradlew test lint :app:assembleRelease :wear:assembleRelease
+            ./gradlew --profile test lint :app:assembleRelease :wear:assembleRelease
           else
-            ./gradlew :app:assembleRelease :wear:assembleRelease
+            ./gradlew --profile :app:assembleRelease :wear:assembleRelease
           fi
+
+      # Per-task timings (--profile), to see where the build minutes go. Not part of the release.
+      - name: Upload Gradle profile
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gradle-profile
+          path: android/build/reports/profile/
+          retention-days: 7
+          if-no-files-found: warn
 
       - name: Package release assets
         id: package
