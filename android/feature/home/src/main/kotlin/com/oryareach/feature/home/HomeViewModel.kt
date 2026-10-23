@@ -150,6 +150,8 @@ class HomeViewModel(
                             sinceLastFeedMillis = current.sinceLastFeedMillis,
                             todayFeedCount = current.todayFeedCount,
                             todayFeedMl = current.todayFeedMl,
+                            todayDiaperCount = current.todayDiaperCount,
+                            lastDiaperChangeAt = current.lastDiaperChangeAt,
                             bookOfLoveVisible = current.bookOfLoveVisible,
                             nightWatchTally = current.nightWatchTally,
                             nightWatchMine = current.nightWatchMine,
