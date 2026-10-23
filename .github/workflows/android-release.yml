@@ -52,8 +52,24 @@ jobs:
             exit 1
           fi
 
-      # A release is only cut from a build that passed its checks. One Gradle invocation, so
-      # configuration and daemon start-up are paid once; a failing test stops it before the APK.
+      # Tests and lint gate minor and major releases (vX.Y.0). A patch tag (vX.Y.Z, Z > 0) skips
+      # them and only builds: every push to main and feature/** already ran them in android-ci,
+      # so a patch re-runs the same checks on the same commits at several minutes' cost.
+      - name: Decide whether to run checks
+        id: checks
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          PATCH=$(echo "${TAG#v}" | cut -d. -f3 | cut -d- -f1)
+          if [ "$PATCH" = "0" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Patch release $TAG: skipping test and lint (run on minor/major tags and in android-ci)."
+          fi
+
+      # One Gradle invocation, so configuration and daemon start-up are paid once; on a
+      # minor/major release a failing test stops it before the APK.
       - name: Test, lint, build release APK
         working-directory: android
         env:
@@ -68,7 +84,13 @@ jobs:
           ORG_GRADLE_PROJECT_supabaseAnonKey: ${{ secrets.SUPABASE_ANON_KEY }}
           ORG_GRADLE_PROJECT_googleWebClientId: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           ORG_GRADLE_PROJECT_googleCalendarOauthClientId: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-        run: ./gradlew test lint :app:assembleRelease :wear:assembleRelease
+          RUN_CHECKS: ${{ steps.checks.outputs.run }}
+        run: |
+          if [ "$RUN_CHECKS" = "true" ]; then
+            ./gradlew test lint :app:assembleRelease :wear:assembleRelease
+          else
+            ./gradlew :app:assembleRelease :wear:assembleRelease
+          fi
 
       - name: Package release assets
         id: package
