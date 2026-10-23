@@ -55,8 +55,12 @@ data class ShoppingUiState(
     val budget get() = calculateBudget(items)
 
     // Still-needed items first, bought ones last — a bought item is done, so it shouldn't
-    // compete with what's still outstanding for the top of the list.
-    val sortedItems: List<ShoppingItem> get() = items.sortedBy { it.status.sortOrder }
+    // compete with what's still outstanding for the top of the list. Within a status, high
+    // priority leads; the sort is stable, so creation order is kept inside a priority.
+    val sortedItems: List<ShoppingItem>
+        get() = items.sortedWith(
+            compareBy<ShoppingItem> { it.status.sortOrder }.thenByDescending { it.priority.ordinal },
+        )
 
     /**
      * What is still outstanding, and what has been bought — the two halves the list draws

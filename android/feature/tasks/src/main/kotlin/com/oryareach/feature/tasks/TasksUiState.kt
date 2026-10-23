@@ -65,7 +65,10 @@ data class TasksUiState(
      * Both read from [visibleTasks], so the filters above still apply inside the drawer — a
      * drawer that ignored the active tag would be a second, contradictory list.
      */
-    val openTasks: List<Task> get() = visibleTasks.filter { !it.done }
+    val openTasks: List<Task>
+        get() = visibleTasks.filter { !it.done }
+            // Stable sort: within a priority the DAO's creation order is kept.
+            .sortedByDescending { it.priority.ordinal }
 
     val doneTasks: List<Task> get() = visibleTasks.filter { it.done }
 }
