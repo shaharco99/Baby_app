@@ -150,16 +150,14 @@ fun HomeScreen(
 
                     DiaperCard(uiState = uiState, onClick = onNavigateToDiapers)
 
+                    CycleCard(uiState = uiState, onClick = onNavigateToCycle)
+
                     if (uiState.showPumpCard) {
                         PumpCountdownCard(
                             uiState = uiState,
                             onClick = onNavigateToPumping,
                             onLongClick = actions::onPumpCardLongPress,
                         )
-                    }
-
-                    if (uiState.lastPeriodStart != null) {
-                        CycleCard(uiState = uiState, onClick = onNavigateToCycle)
                     }
 
                     if (uiState.openTaskCount > 0) {
@@ -182,16 +180,14 @@ fun HomeScreen(
 
                     uiState.progress?.let { progress -> WeeklyInfoCard(progress = progress) }
 
+                    CycleCard(uiState = uiState, onClick = onNavigateToCycle)
+
                     if (uiState.showPumpCard) {
                         PumpCountdownCard(
                             uiState = uiState,
                             onClick = onNavigateToPumping,
                             onLongClick = actions::onPumpCardLongPress,
                         )
-                    }
-
-                    if (uiState.lastPeriodStart != null) {
-                        CycleCard(uiState = uiState, onClick = onNavigateToCycle)
                     }
 
                     if (uiState.openTaskCount > 0) {
@@ -588,14 +584,15 @@ private fun DiaperCard(uiState: HomeUiState, onClick: () -> Unit) {
 /** Where the newest logged period stands; the whole card is the shortcut to the Cycle page. */
 @Composable
 private fun CycleCard(uiState: HomeUiState, onClick: () -> Unit) {
-    val start = uiState.lastPeriodStart ?: return
+    val start = uiState.lastPeriodStart
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(16.dp)) {
             Text(
-                text = stringResource(
-                    if (uiState.periodOngoing) R.string.home_period_ongoing else R.string.home_period_last,
-                    dateLabel(start),
-                ),
+                text = when {
+                    start == null -> stringResource(R.string.home_period_none)
+                    uiState.periodOngoing -> stringResource(R.string.home_period_ongoing, dateLabel(start))
+                    else -> stringResource(R.string.home_period_last, dateLabel(start))
+                },
                 style = MaterialTheme.typography.bodyMedium,
             )
         }

@@ -233,4 +233,5 @@
     <string name="home_id_number">ת״ז %1$s</string>
     <string name="home_period_ongoing">הווסת התחילה %1$s</string>
     <string name="home_period_last">הווסת האחרונה התחילה %1$s</string>
+    <string name="home_period_none">עדיין לא נרשמה וסת</string>
 </resources>
