@@ -14,4 +14,21 @@
     <string name="waiting_body">יש לפתוח את האפליקציה בטלפון פעם אחת.</string>
     <string name="tile_label">האכלה ושאיבה</string>
     <string name="tile_line">%1$s · %2$s</string>
+    <string name="log_feed">תיעוד האכלה</string>
+    <string name="breastfeed">הנקה</string>
+    <string name="side_left">שמאל</string>
+    <string name="side_right">ימין</string>
+    <string name="side_both">שני הצדדים</string>
+    <string name="pause">השהיה</string>
+    <string name="resume">המשך</string>
+    <string name="stop">עצירה</string>
+    <string name="status_sending">שולח…</string>
+    <string name="status_done">בוצע</string>
+    <string name="status_no_child">לא הוגדר ילד בטלפון</string>
+    <string name="status_not_running">אין הנקה פעילה</string>
+    <string name="status_failed">משהו השתבש</string>
+    <string name="status_unreachable">הטלפון לא זמין</string>
+    <string name="complication_label">ההאכלה הבאה</string>
+    <string name="complication_title">האכלה</string>
+    <string name="complication_late">באיחור</string>
 </resources>

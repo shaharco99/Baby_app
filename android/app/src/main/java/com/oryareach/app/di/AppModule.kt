@@ -270,6 +270,17 @@ val appModule = module {
             workspaceId = { scope.backgroundWorkspaceId() },
         )
     }
+    single {
+        val scope = this
+        com.oryareach.app.watch.WatchCommandHandler(
+            babies = get(),
+            feeds = get(),
+            settings = get(),
+            auth = get(),
+            publisher = get(),
+            workspaceId = { scope.backgroundWorkspaceId() },
+        )
+    }
     single { ConflictRepository(database = get(), codec = get()) }
 
     viewModel { AuthViewModel(auth = get()) }

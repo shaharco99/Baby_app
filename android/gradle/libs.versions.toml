@@ -36,6 +36,7 @@ connectIqCompanion = "2.4.0"
 wearCompose = "1.7.0"
 wearTiles = "1.6.2"
 wearProtolayout = "1.4.2"
+wearWatchface = "1.2.1"
 navigation = "2.9.8"
 room = "2.8.4"
 serialization = "1.11.0"
@@ -82,6 +83,7 @@ wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation",
 wear-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "wearTiles" }
 wear-protolayout = { module = "androidx.wear.protolayout:protolayout", version.ref = "wearProtolayout" }
 wear-protolayout-expression = { module = "androidx.wear.protolayout:protolayout-expression", version.ref = "wearProtolayout" }
+wear-complications-datasource = { module = "androidx.wear.watchface:watchface-complications-data-source-ktx", version.ref = "wearWatchface" }
 wear-protolayout-material3 = { module = "androidx.wear.protolayout:protolayout-material3", version.ref = "wearProtolayout" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

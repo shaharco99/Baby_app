@@ -54,6 +54,20 @@
             </intent-filter>
         </service>
 
+        <!-- The watch's quick-log buttons. Exported because the Data Layer delivers into it; only
+             the paired watch app (same applicationId, same signing key) can send to it. -->
+        <service
+            android:name=".watch.WatchCommandService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:path="/command"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".notifications.ReminderAlarmReceiver"
             android:exported="false" />

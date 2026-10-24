@@ -2,13 +2,17 @@ package com.oryareach.wear
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,12 +28,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
+import com.oryareach.core.watch.CommandResult
+import com.oryareach.core.watch.NursingSide
 import com.oryareach.core.watch.RunningTimer
+import com.oryareach.core.watch.WatchCommand
 import com.oryareach.core.watch.WatchTimers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -38,6 +48,19 @@ internal fun TimersApp() {
     val flow = remember(context) { watchTimers(context.applicationContext) }
     val timers by flow.collectAsStateWithLifecycle(initialValue = null)
     val now = rememberNow()
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf<Status?>(null) }
+    // One command in flight at a time: a second tap while the first is still out is the same intent.
+    val send: (WatchCommand) -> Unit = { command ->
+        if (status != Status.Sending) {
+            status = Status.Sending
+            scope.launch {
+                status = sendToPhone(context.applicationContext, command).toStatus()
+                delay(STATUS_SHOWN_MILLIS)
+                status = null
+            }
+        }
+    }
 
     MaterialTheme {
         AppScaffold {
@@ -58,6 +81,7 @@ internal fun TimersApp() {
                                 now = now,
                             )
                         }
+                        item { FeedActions(nursing = current.nursing, status = status, send = send) }
                         item {
                             TimerCard(
                                 title = R.string.pumping,
@@ -163,5 +187,79 @@ private fun Waiting() {
             textAlign = TextAlign.Center,
         )
         Caption(stringResource(R.string.waiting_body))
+    }
+}
+
+private const val STATUS_SHOWN_MILLIS = 3_000L
+
+/** What the last command did, shown under the buttons for a moment. */
+private enum class Status(@StringRes val label: Int) {
+    Sending(R.string.status_sending),
+    Done(R.string.status_done),
+    NoChild(R.string.status_no_child),
+    NotRunning(R.string.status_not_running),
+    Failed(R.string.status_failed),
+    Unreachable(R.string.status_unreachable),
+}
+
+private fun CommandResult?.toStatus(): Status = when (this) {
+    CommandResult.DONE -> Status.Done
+    CommandResult.NOTHING_TO_LOG -> Status.NoChild
+    CommandResult.NOT_RUNNING -> Status.NotRunning
+    CommandResult.FAILED -> Status.Failed
+    null -> Status.Unreachable
+}
+
+/**
+ * Quick-log under the feeding clock. While a breastfeed runs the buttons are its controls
+ * (pause or resume, stop); otherwise they log a feed or start one on a side.
+ */
+@Composable
+private fun FeedActions(nursing: RunningTimer?, status: Status?, send: (WatchCommand) -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        if (nursing != null) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val toggle = if (nursing.isPaused) WatchCommand.ResumeNursing else WatchCommand.PauseNursing
+                FilledTonalButton(
+                    onClick = { send(toggle) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(if (nursing.isPaused) R.string.resume else R.string.pause)) },
+                )
+                Button(
+                    onClick = { send(WatchCommand.StopNursing) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.stop)) },
+                )
+            }
+        } else {
+            Button(
+                onClick = { send(WatchCommand.LogFeed) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.log_feed)) },
+            )
+            Caption(stringResource(R.string.breastfeed))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilledTonalButton(
+                    onClick = { send(WatchCommand.StartNursing(NursingSide.LEFT)) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.side_left)) },
+                )
+                FilledTonalButton(
+                    onClick = { send(WatchCommand.StartNursing(NursingSide.RIGHT)) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.side_right)) },
+                )
+            }
+            FilledTonalButton(
+                onClick = { send(WatchCommand.StartNursing(NursingSide.BOTH)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.side_both)) },
+            )
+        }
+        status?.let { Caption(stringResource(it.label)) }
     }
 }
