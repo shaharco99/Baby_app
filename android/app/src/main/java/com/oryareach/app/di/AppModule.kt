@@ -275,6 +275,7 @@ val appModule = module {
         com.oryareach.app.watch.WatchCommandHandler(
             babies = get(),
             feeds = get(),
+            pumps = get(),
             settings = get(),
             auth = get(),
             publisher = get(),

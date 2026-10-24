@@ -26,7 +26,7 @@
     <string name="status_sending">Sending…</string>
     <string name="status_done">Done</string>
     <string name="status_no_child">No child set up on the phone</string>
-    <string name="status_not_running">No breastfeed running</string>
+    <string name="status_not_running">Nothing running</string>
     <string name="status_failed">Something went wrong</string>
     <string name="status_unreachable">Phone not reachable</string>
     <string name="complication_label">Next feed</string>

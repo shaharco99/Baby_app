@@ -25,7 +25,7 @@
     <string name="status_sending">שולח…</string>
     <string name="status_done">בוצע</string>
     <string name="status_no_child">לא הוגדר ילד בטלפון</string>
-    <string name="status_not_running">אין הנקה פעילה</string>
+    <string name="status_not_running">אין טיימר פעיל</string>
     <string name="status_failed">משהו השתבש</string>
     <string name="status_unreachable">הטלפון לא זמין</string>
     <string name="complication_label">ההאכלה הבאה</string>

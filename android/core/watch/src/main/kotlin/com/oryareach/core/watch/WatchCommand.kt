@@ -23,12 +23,25 @@ sealed interface WatchCommand {
 
     data object StopNursing : WatchCommand
 
+    /** A pumping session, timed. Unlike a feed it belongs to the mother, so it needs no child. */
+    data class StartPump(val side: NursingSide) : WatchCommand
+
+    data object PausePump : WatchCommand
+
+    data object ResumePump : WatchCommand
+
+    data object StopPump : WatchCommand
+
     fun encode(): ByteArray = when (this) {
         LogFeed -> LOG_FEED
         is StartNursing -> "$START_NURSING:${side.name}"
         PauseNursing -> PAUSE_NURSING
         ResumeNursing -> RESUME_NURSING
         StopNursing -> STOP_NURSING
+        is StartPump -> "$START_PUMP:${side.name}"
+        PausePump -> PAUSE_PUMP
+        ResumePump -> RESUME_PUMP
+        StopPump -> STOP_PUMP
     }.toByteArray(Charsets.UTF_8)
 
     companion object {
@@ -40,6 +53,10 @@ sealed interface WatchCommand {
         private const val PAUSE_NURSING = "pause-nursing"
         private const val RESUME_NURSING = "resume-nursing"
         private const val STOP_NURSING = "stop-nursing"
+        private const val START_PUMP = "start-pump"
+        private const val PAUSE_PUMP = "pause-pump"
+        private const val RESUME_PUMP = "resume-pump"
+        private const val STOP_PUMP = "stop-pump"
 
         /** Null for anything that is not a command this build knows — a newer watch, or noise. */
         fun decode(bytes: ByteArray): WatchCommand? {
@@ -49,6 +66,13 @@ sealed interface WatchCommand {
                 text == PAUSE_NURSING -> PauseNursing
                 text == RESUME_NURSING -> ResumeNursing
                 text == STOP_NURSING -> StopNursing
+                text == PAUSE_PUMP -> PausePump
+                text == RESUME_PUMP -> ResumePump
+                text == STOP_PUMP -> StopPump
+                text.startsWith("$START_PUMP:") -> {
+                    val side = NursingSide.entries.firstOrNull { it.name == text.substringAfter(':') }
+                    side?.let(::StartPump)
+                }
                 text.startsWith("$START_NURSING:") -> {
                     val side = NursingSide.entries.firstOrNull { it.name == text.substringAfter(':') }
                     side?.let(::StartNursing)
@@ -66,7 +90,7 @@ enum class CommandResult {
     /** No child born yet, or no workspace on this phone: there is nowhere to write the feed. */
     NOTHING_TO_LOG,
 
-    /** Pause/resume/stop with no breastfeed running. */
+    /** Pause/resume/stop with no breastfeed (or pump session) running. */
     NOT_RUNNING,
     FAILED,
     ;

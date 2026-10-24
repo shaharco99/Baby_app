@@ -50,9 +50,12 @@ internal fun TimersApp() {
     val now = rememberNow()
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<Status?>(null) }
+    // Which section's caption shows the status: the one whose button was last tapped.
+    var statusIsPump by remember { mutableStateOf(false) }
     // One command in flight at a time: a second tap while the first is still out is the same intent.
     val send: (WatchCommand) -> Unit = { command ->
         if (status != Status.Sending) {
+            statusIsPump = command.isPump()
             status = Status.Sending
             scope.launch {
                 status = sendToPhone(context.applicationContext, command).toStatus()
@@ -73,17 +76,6 @@ internal fun TimersApp() {
                     } else {
                         item {
                             TimerCard(
-                                title = R.string.feeding,
-                                running = current.nursing,
-                                runningLabel = R.string.nursing_now,
-                                lastAt = current.lastFedAt,
-                                dueAt = current.feedDueAt,
-                                now = now,
-                            )
-                        }
-                        item { FeedActions(nursing = current.nursing, status = status, send = send) }
-                        item {
-                            TimerCard(
                                 title = R.string.pumping,
                                 running = current.pumping,
                                 runningLabel = R.string.pumping_now,
@@ -92,6 +84,18 @@ internal fun TimersApp() {
                                 now = now,
                             )
                         }
+                        item { PumpActions(pumping = current.pumping, status = status.takeIf { statusIsPump }, send = send) }
+                        item {
+                            TimerCard(
+                                title = R.string.feeding,
+                                running = current.nursing,
+                                runningLabel = R.string.nursing_now,
+                                lastAt = current.lastFedAt,
+                                dueAt = current.feedDueAt,
+                                now = now,
+                            )
+                        }
+                        item { FeedActions(nursing = current.nursing, status = status.takeUnless { statusIsPump }, send = send) }
                     }
                 }
             }
@@ -210,6 +214,9 @@ private fun CommandResult?.toStatus(): Status = when (this) {
     null -> Status.Unreachable
 }
 
+private fun WatchCommand.isPump() = this is WatchCommand.StartPump || this == WatchCommand.PausePump ||
+    this == WatchCommand.ResumePump || this == WatchCommand.StopPump
+
 /**
  * Quick-log under the feeding clock. While a breastfeed runs the buttons are its controls
  * (pause or resume, stop); otherwise they log a feed or start one on a side.
@@ -256,6 +263,54 @@ private fun FeedActions(nursing: RunningTimer?, status: Status?, send: (WatchCom
             }
             FilledTonalButton(
                 onClick = { send(WatchCommand.StartNursing(NursingSide.BOTH)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.side_both)) },
+            )
+        }
+        status?.let { Caption(stringResource(it.label)) }
+    }
+}
+
+/**
+ * Controls under the pumping clock. While a session runs they are its controls (pause or resume,
+ * stop); otherwise they start one on a side.
+ */
+@Composable
+private fun PumpActions(pumping: RunningTimer?, status: Status?, send: (WatchCommand) -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        if (pumping != null) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val toggle = if (pumping.isPaused) WatchCommand.ResumePump else WatchCommand.PausePump
+                FilledTonalButton(
+                    onClick = { send(toggle) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(if (pumping.isPaused) R.string.resume else R.string.pause)) },
+                )
+                Button(
+                    onClick = { send(WatchCommand.StopPump) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.stop)) },
+                )
+            }
+        } else {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilledTonalButton(
+                    onClick = { send(WatchCommand.StartPump(NursingSide.LEFT)) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.side_left)) },
+                )
+                FilledTonalButton(
+                    onClick = { send(WatchCommand.StartPump(NursingSide.RIGHT)) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(R.string.side_right)) },
+                )
+            }
+            FilledTonalButton(
+                onClick = { send(WatchCommand.StartPump(NursingSide.BOTH)) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.side_both)) },
             )

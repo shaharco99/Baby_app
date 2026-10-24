@@ -4,6 +4,7 @@ import android.util.Log
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
+import com.oryareach.core.database.repository.PumpSessionRepository
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.PumpSide
@@ -30,6 +31,7 @@ private const val DUPLICATE_WINDOW_MILLIS = 20_000L
 class WatchCommandHandler(
     private val babies: BabyRepository,
     private val feeds: FeedingEntryRepository,
+    private val pumps: PumpSessionRepository,
     private val settings: AppSettingsRepository,
     private val auth: AuthRepository,
     private val publisher: WatchTimerPublisher,
@@ -52,11 +54,13 @@ class WatchCommandHandler(
 
     private suspend fun run(command: WatchCommand): CommandResult {
         val workspace = workspaceId() ?: return CommandResult.NOTHING_TO_LOG
+        val userId = auth.currentUserId().orEmpty()
+        // Pumping is the mother's record: it needs a workspace, not a born child.
+        if (command.isPump) return runPump(command, workspace, userId)
         val baby = babies.observeActive(workspace).first()?.takeIf { it.isBorn }
             ?: return CommandResult.NOTHING_TO_LOG
         val interval = settings.observe(workspace).first()?.feedIntervalMinutes
             ?: AppSettings.DEFAULT_FEED_INTERVAL_MINUTES
-        val userId = auth.currentUserId().orEmpty()
 
         return when (command) {
             WatchCommand.LogFeed -> {
@@ -92,7 +96,36 @@ class WatchCommandHandler(
             WatchCommand.PauseNursing -> withRunning(workspace, baby.id) { feeds.pauseNursing(it) }
             WatchCommand.ResumeNursing -> withRunning(workspace, baby.id) { feeds.resumeNursing(it) }
             WatchCommand.StopNursing -> withRunning(workspace, baby.id) { feeds.stopNursing(it) }
+            else -> CommandResult.FAILED
         }
+    }
+
+    private val WatchCommand.isPump
+        get() = this is WatchCommand.StartPump || this == WatchCommand.PausePump ||
+            this == WatchCommand.ResumePump || this == WatchCommand.StopPump
+
+    private suspend fun runPump(command: WatchCommand, workspace: String, userId: String): CommandResult {
+        val interval = settings.observe(workspace).first()?.pumpIntervalMinutes
+            ?: AppSettings.DEFAULT_PUMP_INTERVAL_MINUTES
+        if (command is WatchCommand.StartPump) {
+            // Returns the one already running if there is one, so a repeat tap is harmless.
+            pumps.start(workspace, userId, command.side.toPumpSide())
+            return CommandResult.DONE
+        }
+        val running = pumps.findRunning(workspace) ?: return CommandResult.NOT_RUNNING
+        when (command) {
+            WatchCommand.PausePump -> pumps.pause(running.id)
+            WatchCommand.ResumePump -> pumps.resume(running.id)
+            // Side, amount and note stay as the session had them; the phone fills the amount in later.
+            else -> pumps.stop(
+                id = running.id,
+                side = running.side,
+                amountMl = running.amountMl,
+                note = running.note,
+                intervalMinutes = interval,
+            )
+        }
+        return CommandResult.DONE
     }
 
     private suspend fun withRunning(workspace: String, babyId: String, act: suspend (String) -> Unit): CommandResult {

@@ -12,7 +12,11 @@ class WatchCommandTest {
             WatchCommand.PauseNursing,
             WatchCommand.ResumeNursing,
             WatchCommand.StopNursing,
-        ) + NursingSide.entries.map { WatchCommand.StartNursing(it) }
+            WatchCommand.PausePump,
+            WatchCommand.ResumePump,
+            WatchCommand.StopPump,
+        ) + NursingSide.entries.map { WatchCommand.StartNursing(it) } +
+            NursingSide.entries.map { WatchCommand.StartPump(it) }
 
         all.forEach { WatchCommand.decode(it.encode()) shouldBe it }
     }
@@ -21,6 +25,7 @@ class WatchCommandTest {
     fun `unknown bytes are not a command`() {
         WatchCommand.decode("delete-everything".toByteArray()) shouldBe null
         WatchCommand.decode("start-nursing:UP".toByteArray()) shouldBe null
+        WatchCommand.decode("start-pump:UP".toByteArray()) shouldBe null
         WatchCommand.decode(ByteArray(0)) shouldBe null
     }
 
