@@ -4,6 +4,9 @@
     <string name="cycle_no_ongoing">No period logged right now.</string>
     <string name="cycle_ongoing_started">Period started %1$s</string>
     <string name="cycle_start">Start period</string>
+    <string name="cycle_start_earlier">Started earlier…</string>
+    <string name="cycle_pick_confirm">Set</string>
+    <string name="cycle_pick_cancel">Cancel</string>
     <string name="cycle_end">End period</string>
     <string name="cycle_history_title">History</string>
     <string name="cycle_history_empty">No periods logged yet.</string>

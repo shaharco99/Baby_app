@@ -4,6 +4,9 @@
     <string name="cycle_no_ongoing">אין וסת רשומה כרגע.</string>
     <string name="cycle_ongoing_started">הווסת התחילה %1$s</string>
     <string name="cycle_start">התחלת וסת</string>
+    <string name="cycle_start_earlier">התחלה בתאריך קודם…</string>
+    <string name="cycle_pick_confirm">אישור</string>
+    <string name="cycle_pick_cancel">ביטול</string>
     <string name="cycle_end">סיום וסת</string>
     <string name="cycle_history_title">היסטוריה</string>
     <string name="cycle_history_empty">עדיין לא נרשמו וסתות.</string>

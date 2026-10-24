@@ -33,6 +33,9 @@ import kotlin.time.Clock
 @Stable
 interface CycleActions {
     fun onStartPeriod()
+    fun onShowStartPicker()
+    fun onDismissStartPicker()
+    fun onStartPeriodOn(date: LocalDate)
     fun onEndPeriod()
     fun onDelete(id: String)
     fun onPreviousMonth()
@@ -103,8 +106,15 @@ class CycleViewModel(
         }
     }
 
-    override fun onStartPeriod() {
+    override fun onStartPeriod() = onStartPeriodOn(today)
+
+    override fun onShowStartPicker() = set { it.copy(startPickerVisible = true) }
+
+    override fun onDismissStartPicker() = set { it.copy(startPickerVisible = false) }
+
+    override fun onStartPeriodOn(date: LocalDate) {
         val workspace = workspaceId() ?: return
+        set { it.copy(startPickerVisible = false) }
         if (_uiState.value.busy || _uiState.value.isPeriodOngoing) return
         set { it.copy(busy = true) }
 
@@ -112,7 +122,7 @@ class CycleViewModel(
             repository.startPeriod(
                 workspaceId = workspace,
                 userId = auth.currentUserId().orEmpty(),
-                startDate = today,
+                startDate = minOf(date, today),
             )
             set { it.copy(busy = false) }
         }

@@ -90,7 +90,10 @@ import com.oryareach.core.ui.text.monthLabel
 import com.oryareach.core.ui.theme.OrYareachTheme
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
@@ -174,6 +177,34 @@ fun CycleScreen(
       }
     }
 
+    if (uiState.startPickerVisible) {
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val pickerState = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = today.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds(),
+            selectableDates = object : androidx.compose.material3.SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis <= today.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+            },
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = actions::onDismissStartPicker,
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let {
+                        actions.onStartPeriodOn(Instant.fromEpochMilliseconds(it).toLocalDateTime(TimeZone.UTC).date)
+                    }
+                }) { Text(stringResource(R.string.cycle_pick_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = actions::onDismissStartPicker) {
+                    Text(stringResource(R.string.cycle_pick_cancel))
+                }
+            },
+        ) {
+            androidx.compose.material3.DatePicker(state = pickerState)
+        }
+    }
+
     if (uiState.daySheetVisible) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = actions::onDismissDaySheet, sheetState = sheetState) {
@@ -245,6 +276,13 @@ private fun OngoingCard(uiState: CycleUiState, actions: CycleActions) {
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(R.string.cycle_start))
+                }
+                TextButton(
+                    onClick = actions::onShowStartPicker,
+                    enabled = !uiState.busy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.cycle_start_earlier))
                 }
             } else {
                 OutlinedButton(
@@ -775,6 +813,9 @@ private fun CyclePreview() {
 
 private object NoopCycleActions : CycleActions {
     override fun onStartPeriod() = Unit
+    override fun onShowStartPicker() = Unit
+    override fun onDismissStartPicker() = Unit
+    override fun onStartPeriodOn(date: LocalDate) = Unit
     override fun onEndPeriod() = Unit
     override fun onDelete(id: String) = Unit
     override fun onPreviousMonth() = Unit

@@ -42,6 +42,7 @@ data class CycleUiState(
     // Transient UI-only.
     val busy: Boolean = false,
     val refreshing: Boolean = false,
+    val startPickerVisible: Boolean = false,
 ) {
     val isPeriodOngoing: Boolean get() = ongoing != null
     val daySheetVisible: Boolean get() = selectedDate != null
