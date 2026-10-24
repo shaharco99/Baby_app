@@ -13,6 +13,8 @@ import kotlinx.datetime.TimeZone
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -615,6 +617,7 @@ private fun AttachmentsSection(uiState: CycleUiState, actions: CycleActions) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick: () -> Unit) {
     val date = uiState.selectedDate ?: return
@@ -634,7 +637,10 @@ private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick:
         )
 
         Text(stringResource(R.string.cycle_day_flow), style = MaterialTheme.typography.labelMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             FlowLevel.entries.forEach { level ->
                 FilterChip(
                     selected = uiState.formFlow == level,
@@ -645,7 +651,10 @@ private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick:
         }
 
         Text(stringResource(R.string.cycle_day_pain), style = MaterialTheme.typography.labelMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             PainLevel.entries.forEach { level ->
                 FilterChip(
                     selected = uiState.formPain == level,
@@ -656,7 +665,10 @@ private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick:
         }
 
         Text(stringResource(R.string.cycle_day_mood), style = MaterialTheme.typography.labelMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Mood.entries.forEach { mood ->
                 FilterChip(
                     selected = mood in uiState.formMood,
@@ -667,7 +679,10 @@ private fun DayForm(uiState: CycleUiState, actions: CycleActions, onDeleteClick:
         }
 
         Text(stringResource(R.string.cycle_day_symptoms), style = MaterialTheme.typography.labelMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Symptom.entries.forEach { symptom ->
                 FilterChip(
                     selected = symptom in uiState.formSymptoms,
