@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oryareach.core.database.repository.AppSettingsRepository
 import com.oryareach.core.database.repository.BabyRepository
+import com.oryareach.core.database.repository.CycleRepository
 import com.oryareach.core.database.repository.DiaperChangeRepository
 import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.domain.diaper.diaperEvents
@@ -87,6 +88,7 @@ class HomeViewModel(
     private val babyRepository: BabyRepository,
     private val feedingRepository: FeedingEntryRepository,
     private val diaperRepository: DiaperChangeRepository,
+    private val cycleRepository: CycleRepository,
     private val pumpRepository: PumpSessionRepository,
     private val taskRepository: TaskRepository,
     private val shoppingRepository: ShoppingItemRepository,
@@ -150,6 +152,8 @@ class HomeViewModel(
                             sinceLastFeedMillis = current.sinceLastFeedMillis,
                             todayFeedCount = current.todayFeedCount,
                             todayFeedMl = current.todayFeedMl,
+                            lastPeriodStart = current.lastPeriodStart,
+                            periodOngoing = current.periodOngoing,
                             todayDiaperCount = current.todayDiaperCount,
                             lastDiaperChangeAt = current.lastDiaperChangeAt,
                             bookOfLoveVisible = current.bookOfLoveVisible,
@@ -166,6 +170,13 @@ class HomeViewModel(
                             todayPumpMl = current.todayPumpMl,
                         )
                     }
+                }
+            }
+
+            viewModelScope.launch {
+                cycleRepository.observeAll(id).collect { cycles ->
+                    val latest = cycles.maxByOrNull { it.startDate }
+                    set { it.copy(lastPeriodStart = latest?.startDate, periodOngoing = latest != null && latest.endDate == null) }
                 }
             }
 

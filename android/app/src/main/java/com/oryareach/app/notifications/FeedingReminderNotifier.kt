@@ -36,7 +36,7 @@ object FeedingReminderNotifier {
             ?.createNotificationChannel(channel)
     }
 
-    fun show(context: Context) {
+    fun show(context: Context, soon: Boolean = false) {
         val hasPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) ==
             android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -52,7 +52,9 @@ object FeedingReminderNotifier {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(context.getString(R.string.feeding_reminder_title))
-            .setContentText(context.getString(R.string.feeding_reminder_body))
+            .setContentText(
+                context.getString(if (soon) R.string.feeding_reminder_soon_body else R.string.feeding_reminder_body),
+            )
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .build()

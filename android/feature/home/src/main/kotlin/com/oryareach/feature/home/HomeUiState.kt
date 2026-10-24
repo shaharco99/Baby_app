@@ -65,6 +65,10 @@ data class HomeUiState(
     val todayPumpCount: Int = 0,
     /** Null when none of today's sessions had an amount entered. */
     val todayPumpMl: Int? = null,
+    /** Start of the newest logged period, ongoing or finished; null before the first one. */
+    val lastPeriodStart: LocalDate? = null,
+    /** True while that period has no end date yet. */
+    val periodOngoing: Boolean = false,
     val openTaskCount: Int = 0,
     val budgetEstimated: Double = 0.0,
     val budgetSpent: Double = 0.0,

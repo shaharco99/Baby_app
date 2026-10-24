@@ -32,16 +32,20 @@ enum class ReminderKind(
     FEEDING(requestCode = 2, prefKey = "feeding-due-at"),
     PUMP(requestCode = 3, prefKey = "pump-due-at"),
     VITAMIN_D(requestCode = 4, prefKey = "vitamin-d-due-at", repeatsDaily = true),
+
+    /** Heads-up shortly before [FEEDING]; same channel, and its notification is replaced by the real one. */
+    FEEDING_SOON(requestCode = 5, prefKey = "feeding-soon-at"),
     ;
 
     internal fun show(context: Context) = when (this) {
         FEEDING -> FeedingReminderNotifier.show(context)
+        FEEDING_SOON -> FeedingReminderNotifier.show(context, soon = true)
         PUMP -> PumpReminderNotifier.show(context)
         VITAMIN_D -> VitaminReminderNotifier.show(context)
     }
 
     internal fun ensureChannel(context: Context) = when (this) {
-        FEEDING -> FeedingReminderNotifier.ensureChannel(context)
+        FEEDING, FEEDING_SOON -> FeedingReminderNotifier.ensureChannel(context)
         PUMP -> PumpReminderNotifier.ensureChannel(context)
         VITAMIN_D -> VitaminReminderNotifier.ensureChannel(context)
     }

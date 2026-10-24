@@ -304,4 +304,6 @@
     <string name="home_age_and">%1$s and %2$s</string>
     <string name="home_age_and_number">%1$s and %2$s</string>
     <string name="home_id_number">ID %1$s</string>
+    <string name="home_period_ongoing">Period started %1$s</string>
+    <string name="home_period_last">Last period started %1$s</string>
 </resources>

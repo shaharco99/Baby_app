@@ -8,6 +8,9 @@ import com.oryareach.core.settings.VitaminReminderScheduler
 
 private const val MILLIS_PER_MINUTE = 60_000L
 
+/** How long before a feed is due the heads-up rings. */
+private const val FEED_HEADS_UP_MINUTES = 10
+
 /**
  * Also the feed widget's only writer: every path that moves the feed reminder — a feed logged
  * here, one pulled from the partner, the interval changed — comes through here, so the widget
@@ -17,11 +20,13 @@ class AlarmFeedingReminderScheduler(private val context: Context) : FeedingRemin
     override fun scheduleNext(fedAtEpochMillis: Long, intervalMinutes: Int) {
         val dueAt = fedAtEpochMillis + intervalMinutes * MILLIS_PER_MINUTE
         ReminderAlarms.schedule(context, ReminderKind.FEEDING, dueAt)
+        ReminderAlarms.schedule(context, ReminderKind.FEEDING_SOON, dueAt - FEED_HEADS_UP_MINUTES * MILLIS_PER_MINUTE)
         FeedWidgetStore.save(context, lastFedAt = fedAtEpochMillis, dueAt = dueAt)
     }
 
     override fun cancel() {
         ReminderAlarms.cancel(context, ReminderKind.FEEDING)
+        ReminderAlarms.cancel(context, ReminderKind.FEEDING_SOON)
         FeedWidgetStore.clear(context)
     }
 }

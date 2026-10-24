@@ -445,6 +445,7 @@ private fun HomeRoute() {
                 onNavigateToFeeding = { navigateTo(HomeTab.Feeding) },
                 onNavigateToPumping = { navigateTo(HomeTab.Pumping) },
                 onNavigateToDiapers = { navigateTo(HomeTab.Diaper) },
+                onNavigateToCycle = { navigateTo(HomeTab.Cycle) },
             )
             HomeTab.Tasks -> TasksRoute(
                 modifier = content,
@@ -510,6 +511,7 @@ private fun HomeTabRoute(
     onNavigateToFeeding: () -> Unit = {},
     onNavigateToPumping: () -> Unit = {},
     onNavigateToDiapers: () -> Unit = {},
+    onNavigateToCycle: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -522,6 +524,7 @@ private fun HomeTabRoute(
         onNavigateToFeeding = onNavigateToFeeding,
         onNavigateToPumping = onNavigateToPumping,
         onNavigateToDiapers = onNavigateToDiapers,
+        onNavigateToCycle = onNavigateToCycle,
     )
 }
 

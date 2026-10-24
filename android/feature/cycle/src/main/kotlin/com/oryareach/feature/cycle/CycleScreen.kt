@@ -7,6 +7,10 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import kotlin.time.Clock
+import kotlinx.datetime.todayIn
+import kotlinx.datetime.TimeZone
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -406,7 +410,8 @@ private fun CalendarGrid(uiState: CycleUiState, onSelectDate: (LocalDate) -> Uni
     // wrapping puts Sunday at offset 0.
     val leadingBlanks = (month.dayOfWeek.ordinal + 1) % 7
 
-    val actualDays = remember(uiState.history) { actualPeriodDays(uiState.history) }
+    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val actualDays = remember(uiState.history, today) { actualPeriodDays(uiState.history, today) }
     val prediction = uiState.prediction
     val predictedDays = remember(prediction, uiState.statistics) {
         predictedPeriodDays(prediction, uiState.statistics.averagePeriodLengthDays ?: 5)
@@ -435,6 +440,7 @@ private fun CalendarGrid(uiState: CycleUiState, onSelectDate: (LocalDate) -> Uni
                             isFertile = date in fertileDays,
                             isOvulation = date == prediction.ovulationDate,
                             hasEntry = date in loggedDates,
+                            isToday = date == today,
                             onClick = { onSelectDate(date) },
                         )
                     }
@@ -453,6 +459,7 @@ private fun DayCell(
     isFertile: Boolean,
     isOvulation: Boolean,
     hasEntry: Boolean,
+    isToday: Boolean,
     onClick: () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -468,6 +475,7 @@ private fun DayCell(
                         else -> Modifier
                     },
                 )
+                .then(if (isToday) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) else Modifier)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
@@ -476,7 +484,7 @@ private fun DayCell(
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 softWrap = false,
-                fontWeight = if (hasEntry) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (hasEntry || isToday) FontWeight.Bold else FontWeight.Normal,
                 color = if (isActual) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -691,10 +699,11 @@ private fun daysInMonth(month: LocalDate): Int {
     return (nextMonth.minus(1, DateTimeUnit.DAY).day)
 }
 
-private fun actualPeriodDays(history: List<MenstrualCycle>): Set<LocalDate> {
+private fun actualPeriodDays(history: List<MenstrualCycle>, today: LocalDate): Set<LocalDate> {
     val days = mutableSetOf<LocalDate>()
     history.forEach { cycle ->
-        val end = cycle.endDate ?: cycle.startDate
+        // No end date yet: the period is still going, so it runs through today, not just day one.
+        val end = cycle.endDate ?: maxOf(cycle.startDate, today)
         var d = cycle.startDate
         while (d <= end) {
             days += d

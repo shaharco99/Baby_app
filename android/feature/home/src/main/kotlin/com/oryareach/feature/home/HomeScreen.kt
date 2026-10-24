@@ -112,6 +112,7 @@ fun HomeScreen(
     onNavigateToFeeding: () -> Unit = {},
     onNavigateToPumping: () -> Unit = {},
     onNavigateToDiapers: () -> Unit = {},
+    onNavigateToCycle: () -> Unit = {},
 ) {
     Scaffold(modifier = modifier.fillMaxSize().safeDrawingPadding()) { padding ->
         PullToRefreshBox(
@@ -157,6 +158,10 @@ fun HomeScreen(
                         )
                     }
 
+                    if (uiState.lastPeriodStart != null) {
+                        CycleCard(uiState = uiState, onClick = onNavigateToCycle)
+                    }
+
                     if (uiState.openTaskCount > 0) {
                         OpenTasksCard(count = uiState.openTaskCount, onClick = onNavigateToTasks)
                     }
@@ -183,6 +188,10 @@ fun HomeScreen(
                             onClick = onNavigateToPumping,
                             onLongClick = actions::onPumpCardLongPress,
                         )
+                    }
+
+                    if (uiState.lastPeriodStart != null) {
+                        CycleCard(uiState = uiState, onClick = onNavigateToCycle)
                     }
 
                     if (uiState.openTaskCount > 0) {
@@ -572,6 +581,23 @@ private fun DiaperCard(uiState: HomeUiState, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+}
+
+/** Where the newest logged period stands; the whole card is the shortcut to the Cycle page. */
+@Composable
+private fun CycleCard(uiState: HomeUiState, onClick: () -> Unit) {
+    val start = uiState.lastPeriodStart ?: return
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(16.dp)) {
+            Text(
+                text = stringResource(
+                    if (uiState.periodOngoing) R.string.home_period_ongoing else R.string.home_period_last,
+                    dateLabel(start),
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }
