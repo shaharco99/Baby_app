@@ -7,6 +7,7 @@ import com.oryareach.core.database.entity.PumpSessionEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.SyncOperationEntity
 import com.oryareach.core.database.mapper.toPumpSession
+import com.oryareach.core.domain.log.clampToNow
 import com.oryareach.core.model.EntityType
 import com.oryareach.core.model.PumpSession
 import com.oryareach.core.model.PumpSide
@@ -109,10 +110,11 @@ class PumpSessionRepository(
         intervalMinutes: Int,
     ): String {
         val timestamp = now()
+        val loggedStartedAt = clampToNow(startedAt, timestamp)
         val entity = PumpSessionEntity(
             id = newId(),
-            startedAt = startedAt,
-            endedAt = startedAt + durationMinutes * MILLIS_PER_MINUTE,
+            startedAt = loggedStartedAt,
+            endedAt = loggedStartedAt + durationMinutes * MILLIS_PER_MINUTE,
             side = side,
             amountMl = amountMl,
             note = note,
@@ -131,7 +133,7 @@ class PumpSessionRepository(
             search.index(EntityType.PUMP_SESSION, entity.id, workspaceId, "", entity.note.orEmpty())
             enqueue(entity.id, SyncOperationType.CREATE, entity.sync.clientMutationId, timestamp)
         }
-        rescheduleReminder(workspaceId, startedAt, intervalMinutes)
+        rescheduleReminder(workspaceId, loggedStartedAt, intervalMinutes)
         syncTrigger.syncNow()
         return entity.id
     }

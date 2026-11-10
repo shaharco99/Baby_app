@@ -67,6 +67,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.oryareach.core.ui.component.FutureTimeDialog
+import com.oryareach.core.ui.component.notAfterToday
 import com.oryareach.core.ui.component.MilkStashDialog
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Path
@@ -224,6 +226,7 @@ fun PumpingScreen(
     if (uiState.datePickerVisible) {
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = uiState.formStartedAtEpochMillis.toUtcDateMillis(),
+            selectableDates = notAfterToday(),
         )
         DatePickerDialog(
             onDismissRequest = actions::onDismissDatePicker,
@@ -241,6 +244,8 @@ fun PumpingScreen(
             DatePicker(state = pickerState)
         }
     }
+
+    if (uiState.futureTimeVisible) FutureTimeDialog(onDismiss = actions::onDismissFutureTime)
 
     if (uiState.timePickerVisible) {
         val startedAt = uiState.formStartedAtEpochMillis.toLocalDateTime()
@@ -979,6 +984,7 @@ private object NoopPumpingActions : PumpingActions {
     override fun onStartedDateChange(value: LocalDate) = Unit
     override fun onOpenTimePicker() = Unit
     override fun onDismissTimePicker() = Unit
+    override fun onDismissFutureTime() = Unit
     override fun onStartedTimeChange(value: LocalTime) = Unit
     override fun onSave() = Unit
     override fun onDiscard() = Unit

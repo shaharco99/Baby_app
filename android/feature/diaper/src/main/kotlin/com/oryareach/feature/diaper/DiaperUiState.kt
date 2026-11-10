@@ -24,6 +24,8 @@ data class DiaperUiState(
     val formChangedAtEpochMillis: Long = 0,
     val datePickerVisible: Boolean = false,
     val timePickerVisible: Boolean = false,
+    /** A date or time that has not happened yet was refused; tells the person why. */
+    val futureTimeVisible: Boolean = false,
 
     // Transient UI-only.
     val busy: Boolean = false,

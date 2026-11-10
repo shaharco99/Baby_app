@@ -69,4 +69,7 @@
     </string-array>
     <string name="duration_minutes">%1$d דק׳</string>
     <string name="duration_hours_minutes">%1$d ש׳ %2$d דק׳</string>
+    <string name="future_time_title">לא בעתיד</string>
+    <string name="future_time_message">אפשר לתעד רק משהו שכבר קרה. בחרו שעה של עכשיו או קודם.</string>
+    <string name="future_time_ok">אישור</string>
 </resources>

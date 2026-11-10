@@ -8,6 +8,7 @@ import com.oryareach.core.database.entity.FeedingEntryEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.SyncOperationEntity
 import com.oryareach.core.database.mapper.toFeedingEntry
+import com.oryareach.core.domain.log.clampToNow
 import com.oryareach.core.model.EntityType
 import com.oryareach.core.model.FeedType
 import com.oryareach.core.model.FeedingEntry
@@ -77,10 +78,11 @@ class FeedingEntryRepository(
         nursingMinutes: Int? = null,
     ): String {
         val timestamp = now()
+        val loggedFedAt = clampToNow(fedAt, timestamp)
         val entity = FeedingEntryEntity(
             id = newId(),
             babyId = babyId,
-            fedAt = fedAt,
+            fedAt = loggedFedAt,
             feedType = feedType,
             breastMl = breastMl,
             formulaMl = formulaMl,
@@ -90,7 +92,7 @@ class FeedingEntryRepository(
             diaperChanged = diaperChanged,
             note = note,
             nursingSide = nursingSide,
-            nursingEndedAt = nursingSide?.let { fedAt + (nursingMinutes ?: 0) * MILLIS_PER_MINUTE },
+            nursingEndedAt = nursingSide?.let { loggedFedAt + (nursingMinutes ?: 0) * MILLIS_PER_MINUTE },
             sync = SyncMetaEntity(
                 workspaceId = workspaceId,
                 createdBy = userId,
@@ -111,7 +113,7 @@ class FeedingEntryRepository(
         // after it actually happened, while a retroactive entry older than the last feed leaves
         // the pending reminder where it is instead of dragging it into the past.
         val latest = entries.findLatest(workspaceId, babyId)
-        reminders.scheduleNext(latest?.fedAt ?: fedAt, intervalMinutes)
+        reminders.scheduleNext(latest?.fedAt ?: loggedFedAt, intervalMinutes)
         syncTrigger.syncNow()
         return entity.id
     }
@@ -137,8 +139,9 @@ class FeedingEntryRepository(
     ) {
         val existing = entries.findById(id) ?: return
         val timestamp = now()
+        val correctedFedAt = clampToNow(fedAt, timestamp)
         val entity = existing.copy(
-            fedAt = fedAt,
+            fedAt = correctedFedAt,
             feedType = feedType,
             breastMl = breastMl,
             formulaMl = formulaMl,
@@ -149,7 +152,7 @@ class FeedingEntryRepository(
             note = note,
             nursingSide = nursingSide,
             nursingEndedAt = nursingSide?.let {
-                fedAt + (nursingMinutes ?: 0) * MILLIS_PER_MINUTE + existing.nursingPausedMillis
+                correctedFedAt + (nursingMinutes ?: 0) * MILLIS_PER_MINUTE + existing.nursingPausedMillis
             },
             nursingPausedMillis = if (nursingSide == null) 0 else existing.nursingPausedMillis,
             nursingPausedAt = null,

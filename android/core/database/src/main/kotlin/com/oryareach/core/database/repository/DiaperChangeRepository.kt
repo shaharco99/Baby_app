@@ -7,6 +7,7 @@ import com.oryareach.core.database.entity.DiaperChangeEntity
 import com.oryareach.core.database.entity.SyncMetaEntity
 import com.oryareach.core.database.entity.SyncOperationEntity
 import com.oryareach.core.database.mapper.toDiaperChange
+import com.oryareach.core.domain.log.clampToNow
 import com.oryareach.core.model.DiaperChange
 import com.oryareach.core.model.EntityType
 import com.oryareach.core.model.SyncOperationType
@@ -52,7 +53,7 @@ class DiaperChangeRepository(
         val entity = DiaperChangeEntity(
             id = newId(),
             babyId = babyId,
-            changedAt = changedAt,
+            changedAt = clampToNow(changedAt, timestamp),
             hadUrine = hadUrine,
             hadStool = hadStool,
             note = note,
@@ -85,7 +86,7 @@ class DiaperChangeRepository(
         val existing = changes.findById(id) ?: return
         val timestamp = now()
         val entity = existing.copy(
-            changedAt = changedAt,
+            changedAt = clampToNow(changedAt, timestamp),
             hadUrine = hadUrine,
             hadStool = hadStool,
             note = note,

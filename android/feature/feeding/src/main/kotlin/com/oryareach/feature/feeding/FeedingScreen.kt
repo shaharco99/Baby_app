@@ -77,6 +77,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.oryareach.core.ui.component.FutureTimeDialog
+import com.oryareach.core.ui.component.notAfterToday
 import com.oryareach.core.ui.component.NightWatchDialog
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.geometry.CornerRadius
@@ -362,6 +364,7 @@ fun FeedingScreen(
     if (uiState.datePickerVisible) {
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = uiState.formFedAtEpochMillis.toUtcDateMillis(),
+            selectableDates = notAfterToday(),
         )
         DatePickerDialog(
             onDismissRequest = actions::onDismissDatePicker,
@@ -379,6 +382,8 @@ fun FeedingScreen(
             DatePicker(state = pickerState)
         }
     }
+
+    if (uiState.futureTimeVisible) FutureTimeDialog(onDismiss = actions::onDismissFutureTime)
 
     if (uiState.timePickerVisible) {
         val fedAt = uiState.formFedAtEpochMillis.toLocalDateTime()
@@ -1796,6 +1801,7 @@ private object NoopFeedingActions : FeedingActions {
     override fun onFedDateChange(value: LocalDate) = Unit
     override fun onOpenTimePicker() = Unit
     override fun onDismissTimePicker() = Unit
+    override fun onDismissFutureTime() = Unit
     override fun onFedTimeChange(value: LocalTime) = Unit
     override fun onLogFeed() = Unit
     override fun onDeleteFeedClick(feed: FeedingEntry) = Unit

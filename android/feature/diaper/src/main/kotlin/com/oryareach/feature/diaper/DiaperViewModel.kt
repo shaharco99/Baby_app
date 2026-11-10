@@ -9,6 +9,8 @@ import com.oryareach.core.database.repository.FeedingEntryRepository
 import com.oryareach.core.domain.diaper.DiaperDay
 import com.oryareach.core.domain.diaper.DiaperEvent
 import com.oryareach.core.domain.diaper.diaperDays
+import com.oryareach.core.domain.log.isInFuture
+import com.oryareach.core.domain.log.resolvePickedTime
 import com.oryareach.core.model.Baby
 import com.oryareach.core.network.auth.AuthRepository
 import com.oryareach.core.sync.SyncEngine
@@ -44,6 +46,7 @@ interface DiaperActions {
     fun onDateChange(value: LocalDate)
     fun onOpenTimePicker()
     fun onDismissTimePicker()
+    fun onDismissFutureTime()
     fun onTimeChange(value: LocalTime)
     fun onSave()
     fun onDeleteClick(event: DiaperEvent)
@@ -134,26 +137,38 @@ class DiaperViewModel(
     override fun onDismissDatePicker() = set { it.copy(datePickerVisible = false) }
     override fun onOpenTimePicker() = set { it.copy(timePickerVisible = true) }
     override fun onDismissTimePicker() = set { it.copy(timePickerVisible = false) }
+    override fun onDismissFutureTime() = set { it.copy(futureTimeVisible = false) }
 
-    override fun onDateChange(value: LocalDate) = set {
-        it.copy(formChangedAtEpochMillis = it.formChangedAtEpochMillis.movedTo(date = value), datePickerVisible = false)
+    override fun onDateChange(value: LocalDate) {
+        val moved = _uiState.value.formChangedAtEpochMillis.movedTo(date = value)
+        if (isInFuture(moved, now())) {
+            set { it.copy(datePickerVisible = false, futureTimeVisible = true) }
+        } else {
+            set { it.copy(formChangedAtEpochMillis = moved, datePickerVisible = false) }
+        }
     }
 
-    override fun onTimeChange(value: LocalTime) = set {
-        it.copy(formChangedAtEpochMillis = it.formChangedAtEpochMillis.movedTo(time = value), timePickerVisible = false)
+    override fun onTimeChange(value: LocalTime) {
+        val moved = _uiState.value.formChangedAtEpochMillis.movedTo(time = value)
+        if (isInFuture(moved, now())) {
+            set { it.copy(timePickerVisible = false, futureTimeVisible = true) }
+        } else {
+            set { it.copy(formChangedAtEpochMillis = moved, timePickerVisible = false) }
+        }
     }
 
     /** Rebuilds the instant with one half replaced, in the device's own zone. */
-    private fun Long.movedTo(date: LocalDate? = null, time: LocalTime? = null): Long {
-        val zone = timeZone()
-        val current = Instant.fromEpochMilliseconds(this).toLocalDateTime(zone)
-        return LocalDateTime(date ?: current.date, time ?: current.time).toInstant(zone).toEpochMilliseconds()
-    }
+    private fun Long.movedTo(date: LocalDate? = null, time: LocalTime? = null): Long =
+        resolvePickedTime(this, timeZone(), date, time)
 
     override fun onSave() {
         val workspace = workspaceId() ?: return
         val state = _uiState.value
         val baby = state.baby ?: return
+        if (isInFuture(state.formChangedAtEpochMillis, now())) {
+            set { it.copy(futureTimeVisible = true) }
+            return
+        }
         if (state.busy) return
         set { it.copy(busy = true) }
 

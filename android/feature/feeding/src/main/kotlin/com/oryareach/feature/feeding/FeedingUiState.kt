@@ -83,6 +83,8 @@ data class FeedingUiState(
     val formFedAtEpochMillis: Long = 0,
     val datePickerVisible: Boolean = false,
     val timePickerVisible: Boolean = false,
+    /** A date or time that has not happened yet was refused; tells the person why. */
+    val futureTimeVisible: Boolean = false,
 
     // The daily vitamin. Its own small card above the countdown: it is the one thing in the
     // day that is not a feed but is asked about at the same moment.

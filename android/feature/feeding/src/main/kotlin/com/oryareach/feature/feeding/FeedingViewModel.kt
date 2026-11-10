@@ -16,6 +16,8 @@ import com.oryareach.core.domain.feeding.doctorSummary
 import com.oryareach.core.domain.feeding.feedingTally
 import com.oryareach.core.domain.feeding.groupFeedsByDay
 import com.oryareach.core.domain.feeding.nextFeedCountdown
+import com.oryareach.core.domain.log.isInFuture
+import com.oryareach.core.domain.log.resolvePickedTime
 import com.oryareach.core.model.AppSettings
 import com.oryareach.core.model.Baby
 import com.oryareach.core.model.FeedType
@@ -76,6 +78,7 @@ interface FeedingActions {
     fun onFedDateChange(value: LocalDate)
     fun onOpenTimePicker()
     fun onDismissTimePicker()
+    fun onDismissFutureTime()
     fun onFedTimeChange(value: LocalTime)
     fun onLogFeed()
     fun onDeleteFeedClick(feed: FeedingEntry)
@@ -367,33 +370,33 @@ class FeedingViewModel(
     override fun onDismissDatePicker() = set { it.copy(datePickerVisible = false) }
     override fun onOpenTimePicker() = set { it.copy(timePickerVisible = true) }
     override fun onDismissTimePicker() = set { it.copy(timePickerVisible = false) }
+    override fun onDismissFutureTime() = set { it.copy(futureTimeVisible = false) }
 
     /** Keeps the time of day and moves the date, so picking either one at a time works. */
-    override fun onFedDateChange(value: LocalDate) = set {
-        it.copy(
-            formFedAtEpochMillis = it.formFedAtEpochMillis.movedTo(date = value),
-            datePickerVisible = false,
-        )
+    override fun onFedDateChange(value: LocalDate) {
+        val moved = _uiState.value.formFedAtEpochMillis.movedTo(date = value)
+        if (isInFuture(moved, now())) {
+            set { it.copy(datePickerVisible = false, futureTimeVisible = true) }
+        } else {
+            set { it.copy(formFedAtEpochMillis = moved, datePickerVisible = false) }
+        }
     }
 
-    override fun onFedTimeChange(value: LocalTime) = set {
-        it.copy(
-            formFedAtEpochMillis = it.formFedAtEpochMillis.movedTo(time = value),
-            timePickerVisible = false,
-        )
+    override fun onFedTimeChange(value: LocalTime) {
+        val moved = _uiState.value.formFedAtEpochMillis.movedTo(time = value)
+        if (isInFuture(moved, now())) {
+            set { it.copy(timePickerVisible = false, futureTimeVisible = true) }
+        } else {
+            set { it.copy(formFedAtEpochMillis = moved, timePickerVisible = false) }
+        }
     }
 
     /**
      * Rebuilds an instant with one half of it replaced, in the device's own zone — the pickers
      * hand back a date or a time, never both, and the other half has to survive.
      */
-    private fun Long.movedTo(date: LocalDate? = null, time: LocalTime? = null): Long {
-        val zone = timeZone()
-        val current = Instant.fromEpochMilliseconds(this).toLocalDateTime(zone)
-        return LocalDateTime(date ?: current.date, time ?: current.time)
-            .toInstant(zone)
-            .toEpochMilliseconds()
-    }
+    private fun Long.movedTo(date: LocalDate? = null, time: LocalTime? = null): Long =
+        resolvePickedTime(this, timeZone(), date, time)
 
     override fun onLogFeed() {
         val workspace = workspaceId() ?: return
@@ -401,6 +404,10 @@ class FeedingViewModel(
         val baby = state.baby ?: return
         if (!state.canSaveFeed) {
             set { it.copy(nursingMinutesTouched = true) }
+            return
+        }
+        if (isInFuture(state.formFedAtEpochMillis, now())) {
+            set { it.copy(futureTimeVisible = true) }
             return
         }
         if (state.busy) return

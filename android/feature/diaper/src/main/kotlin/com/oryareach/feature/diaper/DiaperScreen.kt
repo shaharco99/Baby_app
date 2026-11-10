@@ -71,6 +71,8 @@ import com.oryareach.core.domain.diaper.DiaperDay
 import com.oryareach.core.domain.diaper.DiaperEvent
 import com.oryareach.core.domain.diaper.changesSince
 import com.oryareach.core.domain.log.splitLogDays
+import com.oryareach.core.ui.component.FutureTimeDialog
+import com.oryareach.core.ui.component.notAfterToday
 import com.oryareach.core.ui.component.DrawerHeader
 import com.oryareach.core.ui.text.asLtrIsolate
 import com.oryareach.core.ui.text.dateLabel
@@ -166,6 +168,7 @@ fun DiaperScreen(
     if (uiState.datePickerVisible) {
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = uiState.formChangedAtEpochMillis.toUtcDateMillis(),
+            selectableDates = notAfterToday(),
         )
         DatePickerDialog(
             onDismissRequest = actions::onDismissDatePicker,
@@ -183,6 +186,8 @@ fun DiaperScreen(
             DatePicker(state = pickerState)
         }
     }
+
+    if (uiState.futureTimeVisible) FutureTimeDialog(onDismiss = actions::onDismissFutureTime)
 
     if (uiState.timePickerVisible) {
         val changedAt = uiState.formChangedAtEpochMillis.toLocalDateTime()
@@ -540,6 +545,7 @@ private object NoopDiaperActions : DiaperActions {
     override fun onDateChange(value: LocalDate) = Unit
     override fun onOpenTimePicker() = Unit
     override fun onDismissTimePicker() = Unit
+    override fun onDismissFutureTime() = Unit
     override fun onTimeChange(value: LocalTime) = Unit
     override fun onSave() = Unit
     override fun onDeleteClick(event: DiaperEvent) = Unit
